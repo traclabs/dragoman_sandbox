@@ -60,6 +60,7 @@ ament_export_dependencies(
 
 install(PROGRAMS
   scripts/simulated_spacecraft_1.py
+  scripts/move_robot.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
