@@ -69,7 +69,7 @@ install(PROGRAMS
 #)
 
 install(
-  DIRECTORY launch rviz
+  DIRECTORY launch rviz urdf
   DESTINATION share/${PROJECT_NAME}
 )
 
