@@ -3,7 +3,8 @@ Panels:
     Help Height: 78
     Name: Displays
     Property Tree Widget:
-      Expanded: ~
+      Expanded:
+        - /wrist_camera1
       Splitter Ratio: 0.5
     Tree Height: 355
   - Class: rviz_common/Selection
@@ -890,7 +891,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 8.880331039428711
+      Distance: 5.173223495483398
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -905,10 +906,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5353984236717224
+      Pitch: 0.39039865136146545
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.1003918647766113
+      Yaw: 3.4335696697235107
     Saved: ~
 Window Geometry:
   Displays:
@@ -926,7 +927,7 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 376
-  Y: 166
+  X: 2152
+  Y: 142
   wrist_camera:
     collapsed: false

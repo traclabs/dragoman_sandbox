@@ -12,10 +12,11 @@ from launch_ros.parameter_descriptions import ParameterValue, ParameterFile
 from launch_ros.substitutions import FindPackageShare
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition, UnlessCondition
-
-# This launch files uses use_sim_time:=False because it is using the current (october 10)
-# version of mujoco_ros2_sim, which does not publish the clock timely. It is using 
-# ros2_control_node (as opposed to mujoco_Ros2_control_node)
+from chonkur_deploy.launch_helpers import (
+    include_launch_file,
+    parameter_file,
+    spawn_controller,
+)
 
 ##############################################
 def evaluate_nodes(context, *args, **kwargs):
@@ -25,7 +26,7 @@ def evaluate_nodes(context, *args, **kwargs):
     urdf_mapping_yaml = yaml.safe_load(urdf_mapping_dict)
 
     urdf_str = xacro.process_file(urdf_path, mappings=urdf_mapping_yaml).toprettyxml(indent="  ")
-
+    
     rsp = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -49,16 +50,19 @@ def generate_launch_description():
     rviz_config = os.path.join(dragoman_dir, 'rviz/mujoco_test_robot.rviz')
 
     robot_dir = get_package_share_directory("mujoco_ros2_simulation")
-    urdf_file = os.path.join(robot_dir, 'test_resources/test_robot.urdf')
+    urdf_file = os.path.join(dragoman_dir, 'urdf/test_clr_xacro.urdf')
 
 
     launch_args = [
-        DeclareLaunchArgument("use_sim_time", default_value="False"),
+        DeclareLaunchArgument("use_sim_time", default_value="True"),
         DeclareLaunchArgument("rviz", default_value="True"),
         DeclareLaunchArgument("rviz_config", default_value=rviz_config),
         DeclareLaunchArgument(name="urdf_file", default_value=urdf_file),
         DeclareLaunchArgument(name="urdf_mapping", default_value=""),
+        DeclareLaunchArgument(name="tf_prefix", default_value="")
     ]
+    
+    tf_prefix = LaunchConfiguration("tf_prefix")
 
     # Controller parameter
     controller_parameters = ParameterFile(
@@ -68,41 +72,34 @@ def generate_launch_description():
     # Robot publisher
     nodes_eval = OpaqueFunction(function=evaluate_nodes)
 
-    control_node = Node(
-        package="controller_manager",
+    mujoco_control_node = Node(
+        package="mujoco_ros2_simulation",
         executable="ros2_control_node",
         output="both",
         parameters=[
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
-            controller_parameters,
+            #controller_parameters,
+            parameter_file("clr_deploy", "controllers_common.yaml", True),
+            parameter_file("chonkur_deploy", "ur10e_controllers.yaml", True),
+            parameter_file("chonkur_deploy", "hande_controllers.yaml", True),        
+            parameter_file("vention_rail_deploy", "rail_controllers.yaml", True),
+            parameter_file("ewellix_liftkit_deploy", "liftkit_controllers.yaml", True),
         ],
         remappings=[("~/robot_description", "/robot_description")],
     )
 
-    spawn_joint_state_broadcaster = Node(
-        package="controller_manager",
-        executable="spawner",
-        name="spawn_joint_state_broadcaster",
-        arguments=["joint_state_broadcaster"],
-        output="both",
-    )
-
-    spawn_position_controller = Node(
-        package="controller_manager",
-        executable="spawner",
-        name="spawn_position_controller",
-        arguments=["position_controller"],
-        output="both",
-    )
-
+    # CLR specific joint_state_broadcaster
+    spawn_joint_state_broadcaster = spawn_controller("joint_state_broadcaster")
+    spawn_rail_position_trajectory_controller = spawn_controller("rail_position_trajectory_controller")
+    spawn_joint_trajectory_controller = spawn_controller("joint_trajectory_controller")
+    spawn_lift_position_trajectory_controller = spawn_controller("lift_position_trajectory_controller")
+    spawn_robotiq_gripper_hande_controller = spawn_controller("robotiq_gripper_hande_controller")
+    
     # Rviz
     rviz = Node(package='rviz2',
              executable='rviz2',
              name='rviz2',
              arguments=['--display-config', LaunchConfiguration("rviz_config")],
-             parameters=[
-              {"use_sim_time": LaunchConfiguration("use_sim_time")},
-             ],
              condition=IfCondition(LaunchConfiguration("rviz")),
              output="screen",
     )
@@ -110,9 +107,12 @@ def generate_launch_description():
     return LaunchDescription(
         launch_args + 
         [nodes_eval,
-         control_node,
+         mujoco_control_node,
          spawn_joint_state_broadcaster,
-         spawn_position_controller,
+         spawn_rail_position_trajectory_controller,
+         spawn_lift_position_trajectory_controller,
+         spawn_joint_trajectory_controller,
+         #spawn_robotiq_gripper_hande_controller,
          rviz
         ]
     )

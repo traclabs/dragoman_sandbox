@@ -6,18 +6,19 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
+from launch.substitutions import (
+    Command,
+    FindExecutable,
+    PathJoinSubstitution,
+    LaunchConfiguration
+)
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue, ParameterFile
 from launch_ros.substitutions import FindPackageShare
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition, UnlessCondition
 
-# This launch files uses use_sim_time:=False because it is using the current (october 10)
-# version of mujoco_ros2_sim, which does not publish the clock timely. It is using 
-# ros2_control_node (as opposed to mujoco_Ros2_control_node)
-
-##############################################
+########################################
 def evaluate_nodes(context, *args, **kwargs):
 
     urdf_path = LaunchConfiguration("urdf_file").perform(context)
@@ -25,7 +26,7 @@ def evaluate_nodes(context, *args, **kwargs):
     urdf_mapping_yaml = yaml.safe_load(urdf_mapping_dict)
 
     urdf_str = xacro.process_file(urdf_path, mappings=urdf_mapping_yaml).toprettyxml(indent="  ")
-
+    
     rsp = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -42,7 +43,7 @@ def evaluate_nodes(context, *args, **kwargs):
 
     return nodes
 
-#####################################
+#######################################
 def generate_launch_description():
 
     dragoman_dir = get_package_share_directory("dragoman_sandbox")
@@ -53,37 +54,36 @@ def generate_launch_description():
 
 
     launch_args = [
-        DeclareLaunchArgument("use_sim_time", default_value="False"),
+        DeclareLaunchArgument("use_sim_time", default_value="True"),
         DeclareLaunchArgument("rviz", default_value="True"),
         DeclareLaunchArgument("rviz_config", default_value=rviz_config),
         DeclareLaunchArgument(name="urdf_file", default_value=urdf_file),
         DeclareLaunchArgument(name="urdf_mapping", default_value=""),
     ]
 
-    # Controller parameter
     controller_parameters = ParameterFile(
         PathJoinSubstitution([FindPackageShare("mujoco_ros2_simulation"), "config", "controllers.yaml"]),
     )
 
-    # Robot publisher
     nodes_eval = OpaqueFunction(function=evaluate_nodes)
 
-    control_node = Node(
-        package="controller_manager",
+    mujoco_control_node = Node(
+        package="mujoco_ros2_simulation",
         executable="ros2_control_node",
         output="both",
         parameters=[
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
             controller_parameters,
         ],
-        remappings=[("~/robot_description", "/robot_description")],
     )
 
     spawn_joint_state_broadcaster = Node(
         package="controller_manager",
         executable="spawner",
         name="spawn_joint_state_broadcaster",
-        arguments=["joint_state_broadcaster"],
+        arguments=[
+            "joint_state_broadcaster",
+        ],
         output="both",
     )
 
@@ -91,7 +91,9 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         name="spawn_position_controller",
-        arguments=["position_controller"],
+        arguments=[
+            "position_controller",
+        ],
         output="both",
     )
 
@@ -106,13 +108,12 @@ def generate_launch_description():
              condition=IfCondition(LaunchConfiguration("rviz")),
              output="screen",
     )
-
     return LaunchDescription(
         launch_args + 
-        [nodes_eval,
-         control_node,
+        [nodes_eval, 
+         mujoco_control_node,
          spawn_joint_state_broadcaster,
-         spawn_position_controller,
+         spawn_position_controller, 
          rviz
         ]
     )
