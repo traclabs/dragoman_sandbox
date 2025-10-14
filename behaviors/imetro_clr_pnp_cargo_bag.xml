@@ -1,0 +1,73 @@
+<root BTCPP_format="4">
+
+  <BehaviorTree ID="MainTree">
+    
+      <Sequence>
+
+        <!-- Move arm up, away from panel -->
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="0.35" />        
+        <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="-1.741; 0.285; 1.120" goal_quat="-0.067; 0.047; 0.670; 0.738"  />
+        <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="-1.702; 0.816; 1.154" goal_quat="-0.028; -0.017; -0.047; 0.998"  />
+        <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="0.274; 0.898; 1.017" goal_quat="-0.014; 0.255; -0.053; 0.965"  />                       
+        
+        <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="0.335; 0.828; 0.619" goal_quat="0.747; 0.056; 0.038; 0.661"  />  
+          
+        <Wait msec="1000"/>  
+        <AddTemplate template="generic_pick_place" hide_waypoints="false"/>  
+        <Wait msec="1000"/>
+        <SetObjectPose template="generic_pick_place" object="pick_pose" 
+                       pose="0.7165; 0.809; 0.588; 0.598; -0.448; 0.493; 0.445" frame_id="world" id="0"/>
+        <RobotMotion  template="generic_pick_place" trajectory="pick" steps="3" />
+        <Wait msec="1000"/>  
+
+
+        <ICSendStoredPose pose="closed" group="hand" />
+        <Wait msec="1000"/>
+        <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="0.684; 0.630; 1.166" goal_quat="0.738; 0.154; 0.084; 0.652"  />  
+        <Wait msec="1000"/>  
+
+        <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="0.679; 0.632; 1.337" goal_quat="0.019; 0.667; 0.742; -0.061"  />  
+        
+        
+                               
+<!--        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />
+        <RobotMotion  template="generic_navigation" trajectory="nav_to_pose" steps="1" />
+
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />        
+        <ICSendStoredPose pose="ready_to_grasp" group="arm" />
+        <ICSendStoredPose pose="tucked" group="arm" />
+
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="0.3" />            
+        <RobotMotion  template="generic_navigation" trajectory="nav_to_pose" steps="1" />
+
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />        
+        <ICSendStoredPose pose="ready_to_grasp" group="arm" />
+        <ICSendStoredPose pose="tucked" group="arm" />
+
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />            
+        <RobotMotion  template="generic_navigation" trajectory="nav_to_pose" steps="1" />
+
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />        
+        <ICSendStoredPose pose="ready_to_grasp" group="arm" />
+        <ICSendStoredPose pose="tucked" group="arm" />
+
+        <DeleteTemplate template="generic_navigation" id="0" />
+        
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />      
+        <ICSetGoalPose  group="craftsman_navigation" 
+                       goal_frame="world" goal_xyz="0.0;0.0;0.0" goal_quat="0.0;0.0;0.0;1.0" />
+        <ICPlan group="craftsman_navigation" />
+        <ICExecute group="craftsman_navigation" />
+        <Wait msec="1000"/>     -->   
+        
+      </Sequence>
+
+  </BehaviorTree>
+
+</root>

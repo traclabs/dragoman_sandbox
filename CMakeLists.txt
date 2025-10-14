@@ -69,7 +69,7 @@ install(PROGRAMS
 #)
 
 install(
-  DIRECTORY launch rviz urdf
+  DIRECTORY launch rviz urdf templates behaviors
   DESTINATION share/${PROJECT_NAME}
 )
 
