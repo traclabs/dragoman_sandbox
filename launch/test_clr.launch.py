@@ -112,7 +112,7 @@ def generate_launch_description():
          spawn_rail_position_trajectory_controller,
          spawn_lift_position_trajectory_controller,
          spawn_joint_trajectory_controller,
-         #spawn_robotiq_gripper_hande_controller,
+         spawn_robotiq_gripper_hande_controller,
          rviz
         ]
     )
