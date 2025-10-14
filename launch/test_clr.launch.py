@@ -47,14 +47,14 @@ def evaluate_nodes(context, *args, **kwargs):
 def generate_launch_description():
 
     dragoman_dir = get_package_share_directory("dragoman_sandbox")
-    rviz_config = os.path.join(dragoman_dir, 'rviz/mujoco_test_robot.rviz')
+    rviz_config = os.path.join(dragoman_dir, 'rviz/mujoco_test_clr.rviz')
 
     robot_dir = get_package_share_directory("mujoco_ros2_simulation")
     urdf_file = os.path.join(dragoman_dir, 'urdf/test_clr_xacro.urdf')
 
 
     launch_args = [
-        DeclareLaunchArgument("use_sim_time", default_value="False"),
+        DeclareLaunchArgument("use_sim_time", default_value="True"),
         DeclareLaunchArgument("rviz", default_value="True"),
         DeclareLaunchArgument("rviz_config", default_value=rviz_config),
         DeclareLaunchArgument(name="urdf_file", default_value=urdf_file),
@@ -72,8 +72,8 @@ def generate_launch_description():
     # Robot publisher
     nodes_eval = OpaqueFunction(function=evaluate_nodes)
 
-    control_node = Node(
-        package="controller_manager",
+    mujoco_control_node = Node(
+        package="mujoco_ros2_simulation",
         executable="ros2_control_node",
         output="both",
         parameters=[
@@ -107,7 +107,7 @@ def generate_launch_description():
     return LaunchDescription(
         launch_args + 
         [nodes_eval,
-         control_node,
+         mujoco_control_node,
          spawn_joint_state_broadcaster,
          spawn_rail_position_trajectory_controller,
          spawn_lift_position_trajectory_controller,
