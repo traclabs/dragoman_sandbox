@@ -5,7 +5,7 @@
       <Sequence>
 
         <!-- Move arm up, away from panel -->
-        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="0.35" />        
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="0.5" />        
         <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
                        goal_xyz="-1.741; 0.285; 1.120" goal_quat="-0.067; 0.047; 0.670; 0.738"  />
         <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
@@ -16,55 +16,49 @@
         <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
                        goal_xyz="0.335; 0.828; 0.619" goal_quat="0.747; 0.056; 0.038; 0.661"  />  
           
+        <!-- Execute Pick trajectory from Pick-and-place affordance template -->  
         <Wait msec="1000"/>  
         <AddTemplate template="generic_pick_place" hide_waypoints="false"/>  
         <Wait msec="1000"/>
         <SetObjectPose template="generic_pick_place" object="pick_pose" 
-                       pose="0.7165; 0.809; 0.588; 0.598; -0.448; 0.493; 0.445" frame_id="world" id="0"/>
+                       pose="0.75; 0.809; 0.588; 0.598; -0.448; 0.493; 0.445" frame_id="world" id="0"/>
         <RobotMotion  template="generic_pick_place" trajectory="pick" steps="3" />
         <Wait msec="1000"/>  
-
-
-        <ICSendStoredPose pose="closed" group="hand" />
-        <Wait msec="1000"/>
+        
+        <!-- Slow down speed while carrying cargo bag -->
+        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="0.25" />
+        <Wait msec="200"/>
+       
+        <!-- Pick cargo bag up -->
         <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
-                       goal_xyz="0.684; 0.630; 1.166" goal_quat="0.738; 0.154; 0.084; 0.652"  />  
+                       goal_xyz="0.684; 0.630; 1.27" goal_quat="0.738; 0.154; 0.084; 0.652"  />  
         <Wait msec="1000"/>  
 
+        <!-- Rotate cargo back towards rail -->
+        <ICSetGoalPose robot="" group="ur_manipulator" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="0.768; 0.683; 1.389" goal_quat="0.466; 0.547; -0.507; 0.475"  />  
+        <Wait msec="1000"/>
+
+        <!-- Rotate cargo bag towards surface to place -->
+        <ICSetGoalPose robot="" group="ur_manipulator" plan="true" execute="true" goal_frame="world" 
+                       goal_xyz="0.757; 0.565; 1.418" goal_quat="0.727; 0.026; -0.685; -0.031"  />  
+        <Wait msec="1000"/>
+
+        <!-- Move arm towards the surface -->
         <ICSetGoalPose robot="" group="clr" plan="true" execute="true" goal_frame="world" 
-                       goal_xyz="0.679; 0.632; 1.337" goal_quat="0.019; 0.667; 0.742; -0.061"  />  
-        
-        
-                               
-<!--        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />
-        <RobotMotion  template="generic_navigation" trajectory="nav_to_pose" steps="1" />
-
-        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />        
-        <ICSendStoredPose pose="ready_to_grasp" group="arm" />
-        <ICSendStoredPose pose="tucked" group="arm" />
-
-        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="0.3" />            
-        <RobotMotion  template="generic_navigation" trajectory="nav_to_pose" steps="1" />
-
-        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />        
-        <ICSendStoredPose pose="ready_to_grasp" group="arm" />
-        <ICSendStoredPose pose="tucked" group="arm" />
-
-        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />            
-        <RobotMotion  template="generic_navigation" trajectory="nav_to_pose" steps="1" />
-
-        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />        
-        <ICSendStoredPose pose="ready_to_grasp" group="arm" />
-        <ICSendStoredPose pose="tucked" group="arm" />
-
-        <DeleteTemplate template="generic_navigation" id="0" />
-        
-        <SetNodeParam node="/planner_node" param="param.execution_speed_scalar" type="double" value="1.0" />      
-        <ICSetGoalPose  group="craftsman_navigation" 
-                       goal_frame="world" goal_xyz="0.0;0.0;0.0" goal_quat="0.0;0.0;0.0;1.0" />
-        <ICPlan group="craftsman_navigation" />
-        <ICExecute group="craftsman_navigation" />
-        <Wait msec="1000"/>     -->   
+                       goal_xyz="0.2; 0.630; 1.217" goal_quat="-0.077; 0.680; 0.729; -0.017"  />  
+        <Wait msec="1000"/>
+           
+        <!-- Update pose for place location and execute place trajectory -->       
+        <SetObjectPose template="generic_pick_place" object="place_pose" 
+                       pose="-0.384; 0.717; 1.210;0.372; 0.587; 0.631; -0.343" frame_id="world" id="0"/>
+        <RobotMotion  template="generic_pick_place" trajectory="place" steps="1" />
+        <Wait msec="1000"/>
+        <SetObjectPose template="generic_pick_place" object="place_pose" 
+                       pose="-0.384; 0.717; 1.210;0.286; 0.633; 0.673; -0.251" frame_id="world" id="0"/>
+        <RobotMotion  template="generic_pick_place" trajectory="place" steps="2" />
+                                       
+  
         
       </Sequence>
 
