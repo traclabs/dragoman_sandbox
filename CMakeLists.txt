@@ -10,7 +10,7 @@ find_package(ament_cmake_python REQUIRED)
 set(DEPS
   rclcpp
   rclpy
-  geometry_msgs  
+  geometry_msgs
 )
 
 foreach(dependency IN ITEMS ${DEPS})
@@ -69,7 +69,7 @@ install(PROGRAMS
 #)
 
 install(
-  DIRECTORY launch rviz urdf templates behaviors
+  DIRECTORY launch rviz urdf behaviors
   DESTINATION share/${PROJECT_NAME}
 )
 
