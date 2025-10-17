@@ -61,6 +61,7 @@ ament_export_dependencies(
 install(PROGRAMS
   scripts/simulated_spacecraft_1.py
   scripts/move_robot.py
+  scripts/quickstart_simulator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -69,7 +70,7 @@ install(PROGRAMS
 #)
 
 install(
-  DIRECTORY launch rviz urdf behaviors
+  DIRECTORY launch rviz urdf behaviors data
   DESTINATION share/${PROJECT_NAME}
 )
 
