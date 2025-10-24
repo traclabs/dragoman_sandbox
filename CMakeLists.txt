@@ -62,6 +62,7 @@ install(PROGRAMS
   scripts/simulated_spacecraft_1.py
   scripts/move_robot.py
   scripts/quickstart_simulator.py
+  scripts/pymdb_generate_imetro_demo_xtce.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -70,7 +71,7 @@ install(PROGRAMS
 #)
 
 install(
-  DIRECTORY launch rviz urdf behaviors data
+  DIRECTORY launch rviz urdf behaviors data xtce
   DESTINATION share/${PROJECT_NAME}
 )
 

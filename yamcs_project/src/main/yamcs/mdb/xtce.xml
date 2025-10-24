@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SpaceSystem name="myproject" xmlns="http://www.omg.org/spec/XTCE/20180204" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.omg.org/spec/XTCE/20180204 https://www.omg.org/spec/XTCE/20180204/SpaceSystem.xsd">
+<SpaceSystem name="imetro_demo" xmlns="http://www.omg.org/spec/XTCE/20180204" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.omg.org/spec/XTCE/20180204 https://www.omg.org/spec/XTCE/20180204/SpaceSystem.xsd">
 	<TelemetryMetaData>
 		<ParameterTypeSet>
 			<AggregateParameterType name="CCSDS_Packet_ID_Type">
@@ -291,7 +291,7 @@
 					</EntryList>
 				</CommandContainer>
 			</MetaCommand>
-			<MetaCommand name="MyProjectPacket" abstract="true">
+			<MetaCommand name="IMetroDemoPacket" abstract="true">
 				<BaseMetaCommand metaCommandRef="CCSDSPacket">
 					<ArgumentAssignmentList>
 						<ArgumentAssignment argumentName="CCSDS_Version" argumentValue="0" />
@@ -304,7 +304,7 @@
 				<ArgumentList>
 					<Argument argumentTypeRef="Packet_ID_Type" name="Packet_ID" />
 				</ArgumentList>
-				<CommandContainer name="MyProjectPacket">
+				<CommandContainer name="IMetroDemoPacket">
 					<EntryList>
 						<ArgumentRefEntry argumentRef="Packet_ID" />
 					</EntryList>
@@ -312,19 +312,19 @@
 				</CommandContainer>
 			</MetaCommand>
 			<MetaCommand name="Reboot">
-				<BaseMetaCommand metaCommandRef="MyProjectPacket">
+				<BaseMetaCommand metaCommandRef="IMetroDemoPacket">
 					<ArgumentAssignmentList>
 						<ArgumentAssignment argumentName="Packet_ID" argumentValue="1" />
 					</ArgumentAssignmentList>
 				</BaseMetaCommand>
 				<CommandContainer name="Reboot">
 					<EntryList />
-					<BaseContainer containerRef="MyProjectPacket" />
+					<BaseContainer containerRef="IMetroDemoPacket" />
 				</CommandContainer>
 				<DefaultSignificance consequenceLevel="vital" />
 			</MetaCommand>
 			<MetaCommand name="SwitchVoltageOn" shortDescription="Switches a battery on">
-				<BaseMetaCommand metaCommandRef="MyProjectPacket">
+				<BaseMetaCommand metaCommandRef="IMetroDemoPacket">
 					<ArgumentAssignmentList>
 						<ArgumentAssignment argumentName="Packet_ID" argumentValue="2" />
 					</ArgumentAssignmentList>
@@ -336,11 +336,11 @@
 					<EntryList>
 						<ArgumentRefEntry argumentRef="Battery" />
 					</EntryList>
-					<BaseContainer containerRef="MyProjectPacket" />
+					<BaseContainer containerRef="IMetroDemoPacket" />
 				</CommandContainer>
 			</MetaCommand>
 			<MetaCommand name="SwitchVoltageOff" shortDescription="Switches a battery off">
-				<BaseMetaCommand metaCommandRef="MyProjectPacket">
+				<BaseMetaCommand metaCommandRef="IMetroDemoPacket">
 					<ArgumentAssignmentList>
 						<ArgumentAssignment argumentName="Packet_ID" argumentValue="3" />
 					</ArgumentAssignmentList>
@@ -352,7 +352,7 @@
 					<EntryList>
 						<ArgumentRefEntry argumentRef="Battery" />
 					</EntryList>
-					<BaseContainer containerRef="MyProjectPacket" />
+					<BaseContainer containerRef="IMetroDemoPacket" />
 				</CommandContainer>
 			</MetaCommand>
 		</MetaCommandSet>
