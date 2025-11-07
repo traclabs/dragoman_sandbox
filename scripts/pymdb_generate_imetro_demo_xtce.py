@@ -39,8 +39,6 @@ def generate_xtce_imetro_demo(filename):
     signed = False,
     encoding = yp.uint16_t,
   )
-  
-
 
   # IMetro abstract Command
   imetro_command = yp.Command(
@@ -49,7 +47,7 @@ def generate_xtce_imetro_demo(filename):
      abstract = True,
      base = ccsds_header.tc_command,
      assignments = {
-       ccsds_header.tc_secondary_header.name: "NotPresent",
+       ccsds_header.tc_secondary_header.name: "Not Present",
        ccsds_header.tc_apid.name: 101,
      },
   )
@@ -68,18 +66,31 @@ def generate_xtce_imetro_demo(filename):
        yp.ArgumentEntry(group_state_arg)
      ]
   )
-  
-  
-  # Create an XML that conformst to XTCE
-  xtce_file = open(filename, 'w')
-  xtce_file.write(spacecraft.dumps())
 
+  data_type = yp.datatypes.FloatDataType()
+
+  # Command to move the arm to a give pose
+  #send_arm_pose_command = yp.Command(
+  #  system=spacecraft,
+  #  base=imetro_command,
+  #  name="send_arm_pose",
+  #  short_description="Send joint pose goal",
+  #  assignments={command_id.name: 4},
+  #  arguments=[
+  #    yp.commands.ArrayArgument( # DIFFERENCE IS THIS!!!!
+  #      name="arm_joint_values",
+  #      data_type = data_type, #yp.datatypes
+  #      length=6
+  #    )  
+  #  ]
+  #)
+  
   # Command to move the arm to a give pose
   send_arm_pose_command = yp.Command(
     system=spacecraft,
     base=imetro_command,
     name="send_arm_pose",
-    short_description="Send joit pose goal",
+    short_description="Send joint pose goal",
     #assignments={command_id.name: 4},
     arguments=[
       yp.ArrayArgument(
@@ -89,6 +100,11 @@ def generate_xtce_imetro_demo(filename):
       )  
     ]
   )
+
+  # Create an XML that conformst to XTCE
+  xtce_file = open(filename, 'w')
+  xtce_file.write(spacecraft.dumps())
+
 
 # **********************************************    
 if __name__ == '__main__':
