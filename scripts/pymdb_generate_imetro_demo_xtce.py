@@ -14,7 +14,25 @@ def generate_xtce_imetro_demo(filename):
   # Set CCSDS header
   ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
   
+  # Command argument
+  command_type = yp.StringArgument(
+    name="command_type",
+    min_length=1,
+    max_length=30)
   
+  group_arg = yp.StringArgument(
+    name="Group name",
+    min_length=0,
+    max_length=30
+  )
+
+  group_state_arg = yp.StringArgument(
+    name="Group state",
+    min_length=0,
+    max_length=30
+  )
+
+
   # Command argument
   command_id = yp.IntegerArgument(
     name="comand_id",
@@ -22,6 +40,8 @@ def generate_xtce_imetro_demo(filename):
     encoding = yp.uint16_t,
   )
   
+
+
   # IMetro abstract Command
   imetro_command = yp.Command(
      system=spacecraft, 
@@ -32,38 +52,22 @@ def generate_xtce_imetro_demo(filename):
        ccsds_header.tc_secondary_header.name: "NotPresent",
        ccsds_header.tc_apid.name: 101,
      },
-     arguments=[
-       command_id,
+  )
+  
+  # Command to request IC poses
+  command_set_pose = yp.Command(
+    system=spacecraft,
+    base=imetro_command,  
+    name="set_pose",
+    arguments=[
+       group_arg,
+       group_state_arg
      ],
      entries=[
-       yp.ArgumentEntry(command_id)
+       yp.ArgumentEntry(group_arg),
+       yp.ArgumentEntry(group_state_arg)
      ]
   )
-  
-  # Command to move the arm to pose 1, 2 or 3
-  pose_1_command = yp.Command(
-    system=spacecraft,
-    base=imetro_command,  
-    name="pose_1",
-    assignments={command_id.name: 1}
-  )
-  
-
-  pose_2_command = yp.Command(
-    system=spacecraft,
-    base=imetro_command,  
-    name="pose_2",
-    assignments={command_id.name: 2}
-  )
-
-
-  pose_3_command = yp.Command(
-    system=spacecraft,
-    base=imetro_command,  
-    name="pose_3",
-    assignments={command_id.name: 3}
-  )
-
   
   
   # Create an XML that conformst to XTCE
@@ -76,7 +80,7 @@ def generate_xtce_imetro_demo(filename):
     base=imetro_command,
     name="send_arm_pose",
     short_description="Send joit pose goal",
-    assignments={command_id.name: 4},
+    #assignments={command_id.name: 4},
     arguments=[
       yp.ArrayArgument(
         name="arm_joint_values",
