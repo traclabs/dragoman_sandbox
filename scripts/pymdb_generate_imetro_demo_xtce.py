@@ -18,18 +18,22 @@ def generate_xtce_imetro_demo(filename):
   command_type = yp.StringArgument(
     name="command_type",
     min_length=1,
-    max_length=30)
+    max_length=30,
+    encoding=yp.StringEncoding()
+  )
   
   group_arg = yp.StringArgument(
-    name="Group name",
+    name="group_name",
     min_length=0,
-    max_length=30
+    max_length=30,
+    encoding=yp.StringEncoding()
   )
 
   group_state_arg = yp.StringArgument(
-    name="Group state",
+    name="group_state",
     min_length=0,
-    max_length=30
+    max_length=30,
+    encoding=yp.StringEncoding()    
   )
 
 
@@ -67,25 +71,7 @@ def generate_xtce_imetro_demo(filename):
      ]
   )
 
-  data_type = yp.datatypes.FloatDataType()
-
-  # Command to move the arm to a give pose
-  #send_arm_pose_command = yp.Command(
-  #  system=spacecraft,
-  #  base=imetro_command,
-  #  name="send_arm_pose",
-  #  short_description="Send joint pose goal",
-  #  assignments={command_id.name: 4},
-  #  arguments=[
-  #    yp.commands.ArrayArgument( # DIFFERENCE IS THIS!!!!
-  #      name="arm_joint_values",
-  #      data_type = data_type, #yp.datatypes
-  #      length=6
-  #    )  
-  #  ]
-  #)
-  
-  # Command to move the arm to a give pose
+  # Command to move the arm to a non-specific pose
   send_arm_pose_command = yp.Command(
     system=spacecraft,
     base=imetro_command,
@@ -93,9 +79,9 @@ def generate_xtce_imetro_demo(filename):
     short_description="Send joint pose goal",
     #assignments={command_id.name: 4},
     arguments=[
-      yp.ArrayArgument(
+      yp.commands.ArrayArgument(
         name="arm_joint_values",
-        data_type=yp.FloatDataType,
+        data_type=yp.datatypes.FloatDataType(),
         length=6
       )  
     ]

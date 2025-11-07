@@ -115,10 +115,39 @@ The first 6 bytes of a Space Packet are known as the
       <IntegerArgumentType name="ccsds_space_packet__ccsds_apid" signed="false" sizeInBits="32">
         <IntegerDataEncoding sizeInBits="11" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
       </IntegerArgumentType>
-      <StringArgumentType name="set_pose__Group name">
+      <ArrayArgumentType name="send_arm_pose__arm_joint_values" arrayTypeRef="send_arm_pose__arm_joint_values__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>5</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayArgumentType>
+      <FloatArgumentType name="send_arm_pose__arm_joint_values__el" sizeInBits="32"/>
+      <StringArgumentType name="set_pose__group_name">
+        <StringDataEncoding encoding="US-ASCII">
+          <Variable maxSizeInBits="8388608">
+            <DynamicValue>
+              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
+            </DynamicValue>
+            <TerminationChar>00</TerminationChar>
+          </Variable>
+        </StringDataEncoding>
         <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
       </StringArgumentType>
-      <StringArgumentType name="set_pose__Group state">
+      <StringArgumentType name="set_pose__group_state">
+        <StringDataEncoding encoding="US-ASCII">
+          <Variable maxSizeInBits="8388608">
+            <DynamicValue>
+              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
+            </DynamicValue>
+            <TerminationChar>00</TerminationChar>
+          </Variable>
+        </StringDataEncoding>
         <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
       </StringArgumentType>
     </ArgumentTypeSet>
@@ -126,7 +155,7 @@ The first 6 bytes of a Space Packet are known as the
       <MetaCommand name="IMetroPacket" abstract="true">
         <BaseMetaCommand metaCommandRef="ccsds_space_packet">
           <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="ccsds_secondary_header" argumentValue="NotPresent"/>
+            <ArgumentAssignment argumentName="ccsds_secondary_header" argumentValue="Not Present"/>
             <ArgumentAssignment argumentName="ccsds_apid" argumentValue="101"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>
@@ -190,20 +219,32 @@ The first 6 bytes of a Space Packet are known as the
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>
       </MetaCommand>
+      <MetaCommand name="send_arm_pose" abstract="false" shortDescription="Send joint pose goal">
+        <BaseMetaCommand metaCommandRef="IMetroPacket"/>
+        <ArgumentList>
+          <Argument name="arm_joint_values" argumentTypeRef="send_arm_pose__arm_joint_values"/>
+        </ArgumentList>
+        <CommandContainer name="send_arm_pose">
+          <EntryList/>
+          <BaseContainer containerRef="IMetroPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
       <MetaCommand name="set_pose" abstract="false">
         <BaseMetaCommand metaCommandRef="IMetroPacket"/>
         <ArgumentList>
-          <Argument name="Group name" argumentTypeRef="set_pose__Group name"/>
-          <Argument name="Group state" argumentTypeRef="set_pose__Group state"/>
+          <Argument name="group_name" argumentTypeRef="set_pose__group_name"/>
+          <Argument name="group_state" argumentTypeRef="set_pose__group_state"/>
         </ArgumentList>
         <CommandContainer name="set_pose">
           <EntryList>
-            <ArgumentRefEntry argumentRef="Group name">
+            <ArgumentRefEntry argumentRef="group_name">
               <LocationInContainerInBits referenceLocation="previousEntry">
                 <FixedValue>0</FixedValue>
               </LocationInContainerInBits>
             </ArgumentRefEntry>
-            <ArgumentRefEntry argumentRef="Group state">
+            <ArgumentRefEntry argumentRef="group_state">
               <LocationInContainerInBits referenceLocation="previousEntry">
                 <FixedValue>0</FixedValue>
               </LocationInContainerInBits>
