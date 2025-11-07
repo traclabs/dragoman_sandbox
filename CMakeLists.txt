@@ -63,6 +63,7 @@ install(PROGRAMS
   scripts/move_robot.py
   scripts/quickstart_simulator.py
   scripts/pymdb_generate_imetro_demo_xtce.py
+  scripts/imetro_demo_simulator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

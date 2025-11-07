@@ -29,7 +29,7 @@ def generate_xtce_imetro_demo(filename):
      abstract = True,
      base = ccsds_header.tc_command,
      assignments = {
-       ccsds_header.tc_secondary_header.name: "NotPresent",
+       ccsds_header.tc_secondary_header.name: "Not Present",
        ccsds_header.tc_apid.name: 101,
      },
      arguments=[
@@ -45,7 +45,9 @@ def generate_xtce_imetro_demo(filename):
     system=spacecraft,
     base=imetro_command,  
     name="pose_1",
-    assignments={command_id.name: 1}
+    assignments={
+      command_id.name: 1
+    }
   )
   
 
@@ -59,32 +61,50 @@ def generate_xtce_imetro_demo(filename):
 
   pose_3_command = yp.Command(
     system=spacecraft,
-    base=imetro_command,  
+    base=imetro_command,
     name="pose_3",
+    short_description="Send stored pose 3",
     assignments={command_id.name: 3}
   )
 
+  a = yp.datatypes.FloatDataType
+  b = isinstance(a, yp.datatypes.FloatDataType)
+  print("B: {}".format(b))
+
+  c = float
+  c2 = 3.5
+  b2 = isinstance(c, float)
+  b3 = isinstance(c2, float)
+  print("C: {} {} class: {} {}".format(b2, b3, c.__class__, c2.__class__))
+
+  name = "nanex"
+  data_type = yp.datatypes.FloatDataType()
+  
+  print("Tried")
+  d = yp.commands.ArrayArgument(name, data_type, length=5)
+  print("Lived")
+  # Command to move the arm to a give pose
+  send_arm_pose_command = yp.Command(
+    system=spacecraft,
+    base=imetro_command,
+    name="send_arm_pose",
+    short_description="Send joint pose goal",
+    assignments={command_id.name: 4},
+    arguments=[
+      yp.commands.ArrayArgument(
+        name="arm_joint_values",
+        data_type = data_type, #yp.datatypes
+        length=6
+      )  
+    ]
+  )
   
   
   # Create an XML that conformst to XTCE
   xtce_file = open(filename, 'w')
   xtce_file.write(spacecraft.dumps())
 
-  # Command to move the arm to a give pose
-  send_arm_pose_command = yp.Command(
-    system=spacecraft,
-    base=imetro_command,
-    name="send_arm_pose",
-    short_description="Send joit pose goal",
-    assignments={command_id.name: 4},
-    arguments=[
-      yp.ArrayArgument(
-        name="arm_joint_values",
-        data_type=yp.FloatDataType,
-        length=6
-      )  
-    ]
-  )
+
 
 # **********************************************    
 if __name__ == '__main__':
