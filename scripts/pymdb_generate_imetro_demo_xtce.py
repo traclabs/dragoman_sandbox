@@ -13,31 +13,11 @@ def generate_xtce_imetro_demo(filename):
   
   # Set CCSDS header
   ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
-  
-  # Command argument
-  command_type = yp.StringArgument(
-    name="command_type",
-    min_length=1,
-    max_length=30,
-    encoding=yp.StringEncoding()
-  )
-  
-  group_arg = yp.StringArgument(
-    name="group_name",
-    min_length=0,
-    max_length=30,
-    encoding=yp.StringEncoding()
-  )
-
-  group_state_arg = yp.StringArgument(
-    name="group_state",
-    min_length=0,
-    max_length=30,
-    encoding=yp.StringEncoding()    
-  )
 
 
-  # Command argument
+  # ********************************
+  # Generic iMetro command
+  # ********************************
   command_id = yp.IntegerArgument(
     name="comand_id",
     signed = False,
@@ -54,13 +34,40 @@ def generate_xtce_imetro_demo(filename):
        ccsds_header.tc_secondary_header.name: "Not Present",
        ccsds_header.tc_apid.name: 101,
      },
+     arguments=[command_id],
+     entries=[
+       yp.ArgumentEntry(command_id)
+     ]
   )
+
+  #############################################
+  # COMMAND
+  #############################################
   
+  # ********************************
   # Command to request IC poses
+  # ********************************
+  group_arg = yp.StringArgument(
+    name="group_name",
+    min_length=0,
+    max_length=30,
+    encoding=yp.StringEncoding()
+  )
+
+  group_state_arg = yp.StringArgument(
+    name="group_state",
+    min_length=0,
+    max_length=30,
+    encoding=yp.StringEncoding()    
+  )
+
+
   command_set_pose = yp.Command(
     system=spacecraft,
     base=imetro_command,  
-    name="set_pose",
+    name="send_canned_pose",
+    short_description="Send a canned pose",
+    assignments={command_id.name: 0},
     arguments=[
        group_arg,
        group_state_arg
@@ -71,38 +78,44 @@ def generate_xtce_imetro_demo(filename):
      ]
   )
 
-  # Command to move the arm to a non-specific pose
+  # ***********************************************
+  # Command to move the arm to an arbitrary pose
+  # ***********************************************
+  arm_js = yp.commands.ArrayArgument(
+        name="arm_joint_values",
+        data_type=yp.datatypes.FloatDataType(encoding=yp.float32_t),
+        length=6
+      )
+  
   send_arm_pose_command = yp.Command(
     system=spacecraft,
     base=imetro_command,
-    name="send_arm_pose",
-    short_description="Send joint pose goal",
-    #assignments={command_id.name: 4},
+    name="send_joint_state_goal",
+    short_description="Send an arbitrary joint state goal",
+    assignments={command_id.name: 1},
     arguments=[
-      yp.commands.ArrayArgument(
-        name="arm_joint_values",
-        data_type=yp.datatypes.FloatDataType(),
-        length=6
-      )  
+      arm_js  
+    ],
+    entries=[
+      yp.ArgumentEntry(arm_js)
     ]
   )
 
-  # Define parameter type
-  #joint_state_parameter = yp.FloatParameter(
-  #  system=spacecraft,
-  #  name="joint_state",
-  #  encoding=yp.float32_t
-  #)
-  
+  #############################################
+  # TELEMETRY
+  #############################################
+
+
+  # ***********************************************
+  # Telemetry packet containing joint state data
+  # ***********************************************
   joint_state_parameter = yp.ArrayParameter(
     system=spacecraft,
     name="joint_state",
     data_type=yp.datatypes.FloatDataType(encoding=yp.float32_t),
     length=6
   )
-  
-  
-  # Set telemetry packet
+    
   telemetry_container = yp.Container(
     system=spacecraft,
     name="IMetroTelemetryPacket",

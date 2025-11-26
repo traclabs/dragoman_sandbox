@@ -18,11 +18,9 @@ from launch.conditions import IfCondition, UnlessCondition
 def generate_launch_description():
 
     dragoman_dir = get_package_share_directory("dragoman_sandbox")
-    test_data = os.path.join(dragoman_dir, 'data/testdata.ccsds')
 
     launch_args = [
         DeclareLaunchArgument("use_sim_time", default_value="False"),
-        DeclareLaunchArgument("test_data", default_value=test_data),
         DeclareLaunchArgument("tm_host", default_value="127.0.0.1"),
         DeclareLaunchArgument("tm_port", default_value="10015"),
         DeclareLaunchArgument("tc_host", default_value="127.0.0.1"),
@@ -36,7 +34,6 @@ def generate_launch_description():
         output="both",
         parameters=[
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
-            {"test_data": LaunchConfiguration("test_data")},
             {"tm_host": LaunchConfiguration("tm_host")},
             {"tm_port": LaunchConfiguration("tm_port")},
             {"tc_host": LaunchConfiguration("tc_host")},

@@ -137,13 +137,38 @@ The first 6 bytes of a Space Packet are known as the
   </TelemetryMetaData>
   <CommandMetaData>
     <ArgumentTypeSet>
+      <IntegerArgumentType name="IMetroPacket__comand_id" signed="false" sizeInBits="32">
+        <IntegerDataEncoding sizeInBits="16" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
+      </IntegerArgumentType>
       <BooleanArgumentType name="ccsds_space_packet__ccsds_secondary_header" zeroStringValue="Not Present" oneStringValue="Present">
         <IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
       </BooleanArgumentType>
       <IntegerArgumentType name="ccsds_space_packet__ccsds_apid" signed="false" sizeInBits="32">
         <IntegerDataEncoding sizeInBits="11" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
       </IntegerArgumentType>
-      <ArrayArgumentType name="send_arm_pose__arm_joint_values" arrayTypeRef="send_arm_pose__arm_joint_values__el">
+      <StringArgumentType name="send_canned_pose__group_name">
+        <StringDataEncoding encoding="US-ASCII">
+          <Variable maxSizeInBits="8388608">
+            <DynamicValue>
+              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
+            </DynamicValue>
+            <TerminationChar>00</TerminationChar>
+          </Variable>
+        </StringDataEncoding>
+        <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
+      </StringArgumentType>
+      <StringArgumentType name="send_canned_pose__group_state">
+        <StringDataEncoding encoding="US-ASCII">
+          <Variable maxSizeInBits="8388608">
+            <DynamicValue>
+              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
+            </DynamicValue>
+            <TerminationChar>00</TerminationChar>
+          </Variable>
+        </StringDataEncoding>
+        <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
+      </StringArgumentType>
+      <ArrayArgumentType name="send_joint_state_goal__arm_joint_values" arrayTypeRef="send_joint_state_goal__arm_joint_values__el">
         <DimensionList>
           <Dimension>
             <StartingIndex>
@@ -155,29 +180,9 @@ The first 6 bytes of a Space Packet are known as the
           </Dimension>
         </DimensionList>
       </ArrayArgumentType>
-      <FloatArgumentType name="send_arm_pose__arm_joint_values__el" sizeInBits="32"/>
-      <StringArgumentType name="set_pose__group_name">
-        <StringDataEncoding encoding="US-ASCII">
-          <Variable maxSizeInBits="8388608">
-            <DynamicValue>
-              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
-            </DynamicValue>
-            <TerminationChar>00</TerminationChar>
-          </Variable>
-        </StringDataEncoding>
-        <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
-      </StringArgumentType>
-      <StringArgumentType name="set_pose__group_state">
-        <StringDataEncoding encoding="US-ASCII">
-          <Variable maxSizeInBits="8388608">
-            <DynamicValue>
-              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
-            </DynamicValue>
-            <TerminationChar>00</TerminationChar>
-          </Variable>
-        </StringDataEncoding>
-        <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
-      </StringArgumentType>
+      <FloatArgumentType name="send_joint_state_goal__arm_joint_values__el" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
+      </FloatArgumentType>
     </ArgumentTypeSet>
     <MetaCommandSet>
       <MetaCommand name="IMetroPacket" abstract="true">
@@ -187,8 +192,17 @@ The first 6 bytes of a Space Packet are known as the
             <ArgumentAssignment argumentName="ccsds_apid" argumentValue="101"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="comand_id" argumentTypeRef="IMetroPacket__comand_id"/>
+        </ArgumentList>
         <CommandContainer name="IMetroPacket">
-          <EntryList/>
+          <EntryList>
+            <ArgumentRefEntry argumentRef="comand_id">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
           <BaseContainer containerRef="ccsds_space_packet"/>
         </CommandContainer>
         <DefaultSignificance consequenceLevel="normal"/>
@@ -247,25 +261,17 @@ The first 6 bytes of a Space Packet are known as the
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>
       </MetaCommand>
-      <MetaCommand name="send_arm_pose" abstract="false" shortDescription="Send joint pose goal">
-        <BaseMetaCommand metaCommandRef="IMetroPacket"/>
+      <MetaCommand name="send_canned_pose" abstract="false" shortDescription="Send a canned pose">
+        <BaseMetaCommand metaCommandRef="IMetroPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="0"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
         <ArgumentList>
-          <Argument name="arm_joint_values" argumentTypeRef="send_arm_pose__arm_joint_values"/>
+          <Argument name="group_name" argumentTypeRef="send_canned_pose__group_name"/>
+          <Argument name="group_state" argumentTypeRef="send_canned_pose__group_state"/>
         </ArgumentList>
-        <CommandContainer name="send_arm_pose">
-          <EntryList/>
-          <BaseContainer containerRef="IMetroPacket"/>
-        </CommandContainer>
-        <DefaultSignificance consequenceLevel="normal"/>
-        <VerifierSet/>
-      </MetaCommand>
-      <MetaCommand name="set_pose" abstract="false">
-        <BaseMetaCommand metaCommandRef="IMetroPacket"/>
-        <ArgumentList>
-          <Argument name="group_name" argumentTypeRef="set_pose__group_name"/>
-          <Argument name="group_state" argumentTypeRef="set_pose__group_state"/>
-        </ArgumentList>
-        <CommandContainer name="set_pose">
+        <CommandContainer name="send_canned_pose">
           <EntryList>
             <ArgumentRefEntry argumentRef="group_name">
               <LocationInContainerInBits referenceLocation="previousEntry">
@@ -273,6 +279,28 @@ The first 6 bytes of a Space Packet are known as the
               </LocationInContainerInBits>
             </ArgumentRefEntry>
             <ArgumentRefEntry argumentRef="group_state">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="IMetroPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="send_joint_state_goal" abstract="false" shortDescription="Send an arbitrary joint state goal">
+        <BaseMetaCommand metaCommandRef="IMetroPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="1"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="arm_joint_values" argumentTypeRef="send_joint_state_goal__arm_joint_values"/>
+        </ArgumentList>
+        <CommandContainer name="send_joint_state_goal">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="arm_joint_values">
               <LocationInContainerInBits referenceLocation="previousEntry">
                 <FixedValue>0</FixedValue>
               </LocationInContainerInBits>
