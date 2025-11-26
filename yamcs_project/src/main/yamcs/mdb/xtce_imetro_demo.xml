@@ -62,6 +62,21 @@ use a different convention where 0=core and 1=payload.
       <IntegerParameterType name="ccsds_packet_sequence__source_sequence_count" signed="false" sizeInBits="32">
         <IntegerDataEncoding sizeInBits="14" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
       </IntegerParameterType>
+      <ArrayParameterType name="joint_state" arrayTypeRef="joint_state__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>5</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayParameterType>
+      <FloatParameterType name="joint_state__el" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
+      </FloatParameterType>
     </ParameterTypeSet>
     <ParameterSet>
       <Parameter name="ccsds_packet_id" parameterTypeRef="ccsds_packet_id" shortDescription="First word of the primary CCSDS header">
@@ -73,8 +88,21 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="ccsds_packet_sequence" parameterTypeRef="ccsds_packet_sequence" shortDescription="Second word of the primary CCSDS header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
+      <Parameter name="joint_state" parameterTypeRef="joint_state">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
     </ParameterSet>
     <ContainerSet>
+      <SequenceContainer name="IMetroTelemetryPacket" abstract="false">
+        <EntryList>
+          <ParameterRefEntry parameterRef="joint_state">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+        </EntryList>
+        <BaseContainer containerRef="ccsds_space_packet"/>
+      </SequenceContainer>
       <SequenceContainer name="ccsds_space_packet" abstract="true" shortDescription="CCSDS 133.0-B-1 Space Packet">
         <LongDescription>
 Represents a Space Packet as defined in CCSDS 133.0-B-1

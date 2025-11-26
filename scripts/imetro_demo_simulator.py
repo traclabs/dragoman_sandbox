@@ -10,30 +10,54 @@ import socket
 import sys
 import argparse
 
-from struct import unpack_from
+from struct import unpack_from, pack
 from threading import Thread
 from time import sleep
-
-from yamcs.client import YamcsClient
 
 # **********************************************
 def send_tm(simulator):
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    with io.open(simulator.TEST_DATA, 'rb') as f:
-        simulator.tm_counter = 1
-        header = bytearray(6)
-        while f.readinto(header) == 6:
-            (len,) = unpack_from('>H', header, 4)
+    header_length = 6
+    tm_data_length = 4*6 # 32 bits of joint_state's float type * array size
 
-            packet = bytearray(len + 7)
-            f.seek(-6, io.SEEK_CUR)
-            f.readinto(packet)
+    simulator.tm_counter = 1
+    header = bytearray(header_length)   
+    tm_count = 0xc000    
+    
+    # Just to update data
+    js_vals = [0.25, 0.36, 0.49, 0.64, 0.81, 1.21]
+    while True:
+    
+        tm_msg_length = header_length + tm_data_length
+        # 1-3 bits: 000 (packet version number)
+        # 4 bit: 0 (telemetry)
+        # 5 bit: 0 (secondary header)
+        # 6-16 bits: 100 (APID - identifier)
+        # 17-18 bit: 11 (sequence flag: 11 = unsegmented data)
+        # 19-32 bit: 14 (sequential binary count)
+        # 32-48 bit: 	
+        # 000|0  |  0|000 0110 0100 | 11 | 00 0010 1110 1000
+        header = pack('>HHH', 0x0064, tm_count, tm_data_length - 1)
 
-            #tm_socket.sendto(packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
-            simulator.tm_counter += 1
+        jsi_vals = [x + 0.001*float(simulator.tm_counter) for x in js_vals]
+        simulator.get_logger().info("Sim jsi: {}, {}".format(jsi_vals[0], jsi_vals[1]))
+        js = pack('>ffffff', jsi_vals[0], jsi_vals[1], jsi_vals[2], jsi_vals[3], jsi_vals[4], jsi_vals[5])
 
-            sleep(1 / simulator.rate)
+        # Debug  
+        #packet_hex = binascii.hexlify(packet).decode('ascii')
+        #simulator.get_logger().info("Packet: {}".format(packet_hex))
+
+         
+        packet = bytearray(tm_msg_length)
+        packet[0:header_length] = header
+        packet[header_length:tm_msg_length] = js
+        
+        tm_socket.sendto(packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
+        tm_count += 1
+        simulator.tm_counter += 1
+
+        sleep(1 / simulator.rate)
 
 # **********************************************
 def receive_tc(simulator):
@@ -50,7 +74,7 @@ def receive_tc(simulator):
 class Simulator(Node):
 
     def __init__(self):
-        super().__init__('quickstart_simulator')
+        super().__init__('imetro_simulator')
         
         self.tm_counter = 0
         self.tc_counter = 0
@@ -78,8 +102,6 @@ class Simulator(Node):
         self.TC_RECEIVE_ADDRESS = self.get_parameter("tc_host").value
         self.TC_RECEIVE_PORT    = self.get_parameter("tc_port").value
 
-        self.client = YamcsClient("localhost:8090")
-        
         
     def start(self):
         self.tm_thread = Thread(target=send_tm, args=(self,))
@@ -94,13 +116,6 @@ class Simulator(Node):
         self.get_logger().info('TC host= {}, TC port= {}'.format(self.TC_RECEIVE_ADDRESS, self.TC_RECEIVE_PORT) );
 
        
-        self.instance = "imetro_demo"
-        self.client.create_event_subscription(instance=self.instance, on_data=self.callback)
-
-
-    def callback(event):
-      self.get_logger().info("Event from Yamcs: {}".format(event))
-        
     def print_status(self):
         cmdhex = None
         if self.last_tc:

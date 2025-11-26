@@ -87,6 +87,32 @@ def generate_xtce_imetro_demo(filename):
     ]
   )
 
+  # Define parameter type
+  #joint_state_parameter = yp.FloatParameter(
+  #  system=spacecraft,
+  #  name="joint_state",
+  #  encoding=yp.float32_t
+  #)
+  
+  joint_state_parameter = yp.ArrayParameter(
+    system=spacecraft,
+    name="joint_state",
+    data_type=yp.datatypes.FloatDataType(encoding=yp.float32_t),
+    length=6
+  )
+  
+  
+  # Set telemetry packet
+  telemetry_container = yp.Container(
+    system=spacecraft,
+    name="IMetroTelemetryPacket",
+    base=ccsds_header.tm_container,
+    entries=[
+      yp.ParameterEntry(parameter=joint_state_parameter)
+    ]
+  )
+  
+
   # Create an XML that conformst to XTCE
   xtce_file = open(filename, 'w')
   xtce_file.write(spacecraft.dumps())
