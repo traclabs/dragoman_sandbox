@@ -6,7 +6,11 @@ import yamcs.pymdb as yp
 from ament_index_python.packages import get_package_share_directory
 import os
 
-# -----------------------------------------
+# ===============================================================================
+# Telemetry: Joint state (float[9]: 6 arm + 1 finger + 1 rail + 1 lift joints 
+# Command: arm_joint_goal (float[6]), finger_joint_goal(float), 
+#          rail_joint_goal (float), lift_joint_goal(float)
+# ================================================================================
 def generate_xtce_imetro_demo(filename):
 
   spacecraft = yp.System("Spacecraft")
@@ -78,20 +82,20 @@ def generate_xtce_imetro_demo(filename):
      ]
   )
 
-  # ***********************************************
-  # Command to move the arm to an arbitrary pose
-  # ***********************************************
+  # **************************************************
+  # Command to move the arm to a joint state (6DOF)
+  # **************************************************
   arm_js = yp.commands.ArrayArgument(
         name="arm_joint_values",
         data_type=yp.datatypes.FloatDataType(encoding=yp.float32_t),
         length=6
       )
   
-  send_arm_pose_command = yp.Command(
+  arm_js_command = yp.Command(
     system=spacecraft,
     base=imetro_command,
-    name="send_joint_state_goal",
-    short_description="Send an arbitrary joint state goal",
+    name="arm_joint_state_goal",
+    short_description="Send an arm joint state goal",
     assignments={command_id.name: 1},
     arguments=[
       arm_js  
@@ -100,6 +104,75 @@ def generate_xtce_imetro_demo(filename):
       yp.ArgumentEntry(arm_js)
     ]
   )
+
+  # **************************************************
+  # Command to move the gripper to a joint state (1DOF)
+  # **************************************************
+  gripper_js = yp.commands.FloatArgument(
+        name="gripper_joint_value",
+        encoding=yp.float32_t
+      )
+  
+  gripper_js_command = yp.Command(
+    system=spacecraft,
+    base=imetro_command,
+    name="gripper_joint_state_goal",
+    short_description="Send a gripper joint state goal",
+    assignments={command_id.name: 2},
+    arguments=[
+      gripper_js  
+    ],
+    entries=[
+      yp.ArgumentEntry(gripper_js)
+    ]
+  )
+
+  # **************************************************
+  # Command to move the rail joint (1DOF)
+  # **************************************************
+  rail_js = yp.commands.FloatArgument(
+        name="rail_joint_value",
+        encoding=yp.float32_t
+      )
+  
+  rail_js_command = yp.Command(
+    system=spacecraft,
+    base=imetro_command,
+    name="rail_joint_state_goal",
+    short_description="Send a rail joint state goal",
+    assignments={command_id.name: 3},
+    arguments=[
+      rail_js  
+    ],
+    entries=[
+      yp.ArgumentEntry(rail_js)
+    ]
+  )
+
+
+  # **************************************************
+  # Command to move the lift joint (1DOF)
+  # **************************************************
+  lift_js = yp.commands.FloatArgument(
+        name="lift_joint_value",
+        encoding=yp.float32_t
+      )
+  
+  lift_js_command = yp.Command(
+    system=spacecraft,
+    base=imetro_command,
+    name="lift_joint_state_goal",
+    short_description="Send a lift joint state goal",
+    assignments={command_id.name: 4},
+    arguments=[
+      lift_js
+    ],
+    entries=[
+      yp.ArgumentEntry(lift_js)
+    ]
+  )
+
+
 
   #############################################
   # TELEMETRY
@@ -113,7 +186,7 @@ def generate_xtce_imetro_demo(filename):
     system=spacecraft,
     name="joint_state",
     data_type=yp.datatypes.FloatDataType(encoding=yp.float32_t),
-    length=6
+    length=9
   )
     
   telemetry_container = yp.Container(

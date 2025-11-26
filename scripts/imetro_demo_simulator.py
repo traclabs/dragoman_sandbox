@@ -21,14 +21,14 @@ def send_tm(simulator):
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     header_length = 6
-    tm_data_length = 4*6 # 32 bits of joint_state's float type * array size
+    tm_data_length = 4*9 # 4 bytes of joint_state's float type * 9 joints of full arm
 
     simulator.tm_counter = 1
     header = bytearray(header_length)   
     tm_count = 0xc000    
     
     # Just to update data
-    js_vals = [0.25, 0.36, 0.49, 0.64, 0.81, 1.21]
+    js_vals = [0.25, 0.36, 0.49, 0.64, 0.81, 1.21, 2.35, 0.22, 0.87]
     while True:
     
         tm_msg_length = header_length + tm_data_length
@@ -43,7 +43,7 @@ def send_tm(simulator):
         header = pack('>HHH', 0x0064, tm_count, tm_data_length - 1)
 
         jsi_vals = [x + 0.001*float(simulator.tm_counter) for x in js_vals]
-        js = pack('>ffffff', jsi_vals[0], jsi_vals[1], jsi_vals[2], jsi_vals[3], jsi_vals[4], jsi_vals[5])
+        js = pack('>fffffffff', jsi_vals[0], jsi_vals[1], jsi_vals[2], jsi_vals[3], jsi_vals[4], jsi_vals[5], jsi_vals[6], jsi_vals[7], jsi_vals[8])
 
         # Debug  
         #packet_hex = binascii.hexlify(packet).decode('ascii')
@@ -91,13 +91,19 @@ def parse_tc_data(data, logger):
   if command_id == 0:
     parse_canned_pose(data, logger)
   if command_id == 1:
-    parse_joint_state_goal(data, logger) 
+    parse_arm_joint_state_goal(data, logger) 
+  if command_id == 2:
+    parse_gripper_joint_state_goal(data, logger) 
+  if command_id == 3:
+    parse_rail_joint_state_goal(data, logger) 
+  if command_id == 4:
+    parse_lift_joint_state_goal(data, logger) 
 
 
 def parse_canned_pose(data, logger):
   logger.info("No implemented yet!")
   
-def parse_joint_state_goal(data, logger):
+def parse_arm_joint_state_goal(data, logger):
   
   header_length = 6
   command_id_length = 2
@@ -111,7 +117,43 @@ def parse_joint_state_goal(data, logger):
     offset += float_length
 
   js_goal_print = [f"{item:.3f}" for item in js_goal]
-  logger.info("Joint: {}".format(js_goal_print))
+  logger.info("* Arm Joint goal: {}".format(js_goal_print))
+
+def parse_gripper_joint_state_goal(data, logger):
+  
+  header_length = 6
+  command_id_length = 2
+  float_length = 4
+  
+  offset = header_length + command_id_length
+  
+  js_goal = (unpack_from('>f', data, offset))[0]
+
+  logger.info("* Gripper Joint goal: {:.3f}".format(js_goal))
+
+def parse_rail_joint_state_goal(data, logger):
+  
+  header_length = 6
+  command_id_length = 2
+  float_length = 4
+  
+  offset = header_length + command_id_length
+  
+  js_goal = (unpack_from('>f', data, offset))[0]
+
+  logger.info("* Rail Joint goal: {:.3f}".format(js_goal))
+
+def parse_lift_joint_state_goal(data, logger):
+  
+  header_length = 6
+  command_id_length = 2
+  float_length = 4
+  
+  offset = header_length + command_id_length
+  
+  js_goal = (unpack_from('>f', data, offset))[0]
+
+  logger.info("* Lift Joint goal: {:.3f}".format(js_goal))
 
 
 # **********************************************

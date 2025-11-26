@@ -69,7 +69,7 @@ use a different convention where 0=core and 1=payload.
               <FixedValue>0</FixedValue>
             </StartingIndex>
             <EndingIndex>
-              <FixedValue>5</FixedValue>
+              <FixedValue>8</FixedValue>
             </EndingIndex>
           </Dimension>
         </DimensionList>
@@ -140,12 +140,36 @@ The first 6 bytes of a Space Packet are known as the
       <IntegerArgumentType name="IMetroPacket__comand_id" signed="false" sizeInBits="32">
         <IntegerDataEncoding sizeInBits="16" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
       </IntegerArgumentType>
+      <ArrayArgumentType name="arm_joint_state_goal__arm_joint_values" arrayTypeRef="arm_joint_state_goal__arm_joint_values__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>5</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayArgumentType>
+      <FloatArgumentType name="arm_joint_state_goal__arm_joint_values__el" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
+      </FloatArgumentType>
       <BooleanArgumentType name="ccsds_space_packet__ccsds_secondary_header" zeroStringValue="Not Present" oneStringValue="Present">
         <IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
       </BooleanArgumentType>
       <IntegerArgumentType name="ccsds_space_packet__ccsds_apid" signed="false" sizeInBits="32">
         <IntegerDataEncoding sizeInBits="11" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
       </IntegerArgumentType>
+      <FloatArgumentType name="gripper_joint_state_goal__gripper_joint_value" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
+      </FloatArgumentType>
+      <FloatArgumentType name="lift_joint_state_goal__lift_joint_value" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
+      </FloatArgumentType>
+      <FloatArgumentType name="rail_joint_state_goal__rail_joint_value" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
+      </FloatArgumentType>
       <StringArgumentType name="send_canned_pose__group_name">
         <StringDataEncoding encoding="US-ASCII">
           <Variable maxSizeInBits="8388608">
@@ -168,21 +192,6 @@ The first 6 bytes of a Space Packet are known as the
         </StringDataEncoding>
         <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
       </StringArgumentType>
-      <ArrayArgumentType name="send_joint_state_goal__arm_joint_values" arrayTypeRef="send_joint_state_goal__arm_joint_values__el">
-        <DimensionList>
-          <Dimension>
-            <StartingIndex>
-              <FixedValue>0</FixedValue>
-            </StartingIndex>
-            <EndingIndex>
-              <FixedValue>5</FixedValue>
-            </EndingIndex>
-          </Dimension>
-        </DimensionList>
-      </ArrayArgumentType>
-      <FloatArgumentType name="send_joint_state_goal__arm_joint_values__el" sizeInBits="32">
-        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
-      </FloatArgumentType>
     </ArgumentTypeSet>
     <MetaCommandSet>
       <MetaCommand name="IMetroPacket" abstract="true">
@@ -204,6 +213,28 @@ The first 6 bytes of a Space Packet are known as the
             </ArgumentRefEntry>
           </EntryList>
           <BaseContainer containerRef="ccsds_space_packet"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="arm_joint_state_goal" abstract="false" shortDescription="Send an arm joint state goal">
+        <BaseMetaCommand metaCommandRef="IMetroPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="1"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="arm_joint_values" argumentTypeRef="arm_joint_state_goal__arm_joint_values"/>
+        </ArgumentList>
+        <CommandContainer name="arm_joint_state_goal">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="arm_joint_values">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="IMetroPacket"/>
         </CommandContainer>
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>
@@ -261,6 +292,72 @@ The first 6 bytes of a Space Packet are known as the
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>
       </MetaCommand>
+      <MetaCommand name="gripper_joint_state_goal" abstract="false" shortDescription="Send a gripper joint state goal">
+        <BaseMetaCommand metaCommandRef="IMetroPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="2"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="gripper_joint_value" argumentTypeRef="gripper_joint_state_goal__gripper_joint_value"/>
+        </ArgumentList>
+        <CommandContainer name="gripper_joint_state_goal">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="gripper_joint_value">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="IMetroPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="lift_joint_state_goal" abstract="false" shortDescription="Send a lift joint state goal">
+        <BaseMetaCommand metaCommandRef="IMetroPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="4"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="lift_joint_value" argumentTypeRef="lift_joint_state_goal__lift_joint_value"/>
+        </ArgumentList>
+        <CommandContainer name="lift_joint_state_goal">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="lift_joint_value">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="IMetroPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="rail_joint_state_goal" abstract="false" shortDescription="Send a rail joint state goal">
+        <BaseMetaCommand metaCommandRef="IMetroPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="3"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="rail_joint_value" argumentTypeRef="rail_joint_state_goal__rail_joint_value"/>
+        </ArgumentList>
+        <CommandContainer name="rail_joint_state_goal">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="rail_joint_value">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="IMetroPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
       <MetaCommand name="send_canned_pose" abstract="false" shortDescription="Send a canned pose">
         <BaseMetaCommand metaCommandRef="IMetroPacket">
           <ArgumentAssignmentList>
@@ -279,28 +376,6 @@ The first 6 bytes of a Space Packet are known as the
               </LocationInContainerInBits>
             </ArgumentRefEntry>
             <ArgumentRefEntry argumentRef="group_state">
-              <LocationInContainerInBits referenceLocation="previousEntry">
-                <FixedValue>0</FixedValue>
-              </LocationInContainerInBits>
-            </ArgumentRefEntry>
-          </EntryList>
-          <BaseContainer containerRef="IMetroPacket"/>
-        </CommandContainer>
-        <DefaultSignificance consequenceLevel="normal"/>
-        <VerifierSet/>
-      </MetaCommand>
-      <MetaCommand name="send_joint_state_goal" abstract="false" shortDescription="Send an arbitrary joint state goal">
-        <BaseMetaCommand metaCommandRef="IMetroPacket">
-          <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="comand_id" argumentValue="1"/>
-          </ArgumentAssignmentList>
-        </BaseMetaCommand>
-        <ArgumentList>
-          <Argument name="arm_joint_values" argumentTypeRef="send_joint_state_goal__arm_joint_values"/>
-        </ArgumentList>
-        <CommandContainer name="send_joint_state_goal">
-          <EntryList>
-            <ArgumentRefEntry argumentRef="arm_joint_values">
               <LocationInContainerInBits referenceLocation="previousEntry">
                 <FixedValue>0</FixedValue>
               </LocationInContainerInBits>
