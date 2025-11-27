@@ -88,7 +88,7 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="ccsds_packet_sequence" parameterTypeRef="ccsds_packet_sequence" shortDescription="Second word of the primary CCSDS header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
-      <Parameter name="joint_state" parameterTypeRef="joint_state">
+      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="elbow, lift, finger_1, shoulder_lift, shoulder_pan, rail, wrist_1, wrist_2, wrist_3">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
     </ParameterSet>
@@ -161,9 +161,6 @@ The first 6 bytes of a Space Packet are known as the
       <IntegerArgumentType name="ccsds_space_packet__ccsds_apid" signed="false" sizeInBits="32">
         <IntegerDataEncoding sizeInBits="11" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
       </IntegerArgumentType>
-      <FloatArgumentType name="gripper_joint_state_goal__gripper_joint_value" sizeInBits="32">
-        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
-      </FloatArgumentType>
       <FloatArgumentType name="lift_joint_state_goal__lift_joint_value" sizeInBits="32">
         <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="mostSignificantByteFirst"/>
       </FloatArgumentType>
@@ -217,7 +214,7 @@ The first 6 bytes of a Space Packet are known as the
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>
       </MetaCommand>
-      <MetaCommand name="arm_joint_state_goal" abstract="false" shortDescription="Send an arm joint state goal">
+      <MetaCommand name="arm_joint_state_goal" abstract="false" shortDescription="Send an arm js: [shoulder_pan, shoulder_lift, elbow, wrist_1, wrist_2, wrist_3]">
         <BaseMetaCommand metaCommandRef="IMetroPacket">
           <ArgumentAssignmentList>
             <ArgumentAssignment argumentName="comand_id" argumentValue="1"/>
@@ -292,32 +289,10 @@ The first 6 bytes of a Space Packet are known as the
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>
       </MetaCommand>
-      <MetaCommand name="gripper_joint_state_goal" abstract="false" shortDescription="Send a gripper joint state goal">
-        <BaseMetaCommand metaCommandRef="IMetroPacket">
-          <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="comand_id" argumentValue="2"/>
-          </ArgumentAssignmentList>
-        </BaseMetaCommand>
-        <ArgumentList>
-          <Argument name="gripper_joint_value" argumentTypeRef="gripper_joint_state_goal__gripper_joint_value"/>
-        </ArgumentList>
-        <CommandContainer name="gripper_joint_state_goal">
-          <EntryList>
-            <ArgumentRefEntry argumentRef="gripper_joint_value">
-              <LocationInContainerInBits referenceLocation="previousEntry">
-                <FixedValue>0</FixedValue>
-              </LocationInContainerInBits>
-            </ArgumentRefEntry>
-          </EntryList>
-          <BaseContainer containerRef="IMetroPacket"/>
-        </CommandContainer>
-        <DefaultSignificance consequenceLevel="normal"/>
-        <VerifierSet/>
-      </MetaCommand>
       <MetaCommand name="lift_joint_state_goal" abstract="false" shortDescription="Send a lift joint state goal">
         <BaseMetaCommand metaCommandRef="IMetroPacket">
           <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="comand_id" argumentValue="4"/>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="3"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>
         <ArgumentList>
@@ -339,7 +314,7 @@ The first 6 bytes of a Space Packet are known as the
       <MetaCommand name="rail_joint_state_goal" abstract="false" shortDescription="Send a rail joint state goal">
         <BaseMetaCommand metaCommandRef="IMetroPacket">
           <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="comand_id" argumentValue="3"/>
+            <ArgumentAssignment argumentName="comand_id" argumentValue="2"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>
         <ArgumentList>

@@ -59,11 +59,10 @@ ament_export_dependencies(
 #ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
-  scripts/simulated_spacecraft_1.py
   scripts/move_robot.py
-  scripts/quickstart_simulator.py
   scripts/pymdb_generate_imetro_demo_xtce.py
-  scripts/imetro_demo_simulator.py
+  scripts/imetro_demo_dummy_simulator.py
+  scripts/imetro_demo_robot_simple_simulator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

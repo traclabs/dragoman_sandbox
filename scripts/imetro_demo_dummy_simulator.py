@@ -91,12 +91,10 @@ def parse_tc_data(data, logger):
   if command_id == 0:
     parse_canned_pose(data, logger)
   if command_id == 1:
-    parse_arm_joint_state_goal(data, logger) 
+    parse_arm_joint_state_goal(data, logger)
   if command_id == 2:
-    parse_gripper_joint_state_goal(data, logger) 
-  if command_id == 3:
     parse_rail_joint_state_goal(data, logger) 
-  if command_id == 4:
+  if command_id == 3:
     parse_lift_joint_state_goal(data, logger) 
 
 
@@ -118,18 +116,6 @@ def parse_arm_joint_state_goal(data, logger):
 
   js_goal_print = [f"{item:.3f}" for item in js_goal]
   logger.info("* Arm Joint goal: {}".format(js_goal_print))
-
-def parse_gripper_joint_state_goal(data, logger):
-  
-  header_length = 6
-  command_id_length = 2
-  float_length = 4
-  
-  offset = header_length + command_id_length
-  
-  js_goal = (unpack_from('>f', data, offset))[0]
-
-  logger.info("* Gripper Joint goal: {:.3f}".format(js_goal))
 
 def parse_rail_joint_state_goal(data, logger):
   

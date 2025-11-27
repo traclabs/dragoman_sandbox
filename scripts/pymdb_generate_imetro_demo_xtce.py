@@ -95,7 +95,7 @@ def generate_xtce_imetro_demo(filename):
     system=spacecraft,
     base=imetro_command,
     name="arm_joint_state_goal",
-    short_description="Send an arm joint state goal",
+    short_description="Send an arm js: [shoulder_pan, shoulder_lift, elbow, wrist_1, wrist_2, wrist_3]",
     assignments={command_id.name: 1},
     arguments=[
       arm_js  
@@ -105,27 +105,6 @@ def generate_xtce_imetro_demo(filename):
     ]
   )
 
-  # **************************************************
-  # Command to move the gripper to a joint state (1DOF)
-  # **************************************************
-  gripper_js = yp.commands.FloatArgument(
-        name="gripper_joint_value",
-        encoding=yp.float32_t
-      )
-  
-  gripper_js_command = yp.Command(
-    system=spacecraft,
-    base=imetro_command,
-    name="gripper_joint_state_goal",
-    short_description="Send a gripper joint state goal",
-    assignments={command_id.name: 2},
-    arguments=[
-      gripper_js  
-    ],
-    entries=[
-      yp.ArgumentEntry(gripper_js)
-    ]
-  )
 
   # **************************************************
   # Command to move the rail joint (1DOF)
@@ -140,7 +119,7 @@ def generate_xtce_imetro_demo(filename):
     base=imetro_command,
     name="rail_joint_state_goal",
     short_description="Send a rail joint state goal",
-    assignments={command_id.name: 3},
+    assignments={command_id.name: 2},
     arguments=[
       rail_js  
     ],
@@ -163,7 +142,7 @@ def generate_xtce_imetro_demo(filename):
     base=imetro_command,
     name="lift_joint_state_goal",
     short_description="Send a lift joint state goal",
-    assignments={command_id.name: 4},
+    assignments={command_id.name: 3},
     arguments=[
       lift_js
     ],
@@ -186,7 +165,8 @@ def generate_xtce_imetro_demo(filename):
     system=spacecraft,
     name="joint_state",
     data_type=yp.datatypes.FloatDataType(encoding=yp.float32_t),
-    length=9
+    length=9,
+    short_description="elbow, lift, finger_1, shoulder_lift, shoulder_pan, rail, wrist_1, wrist_2, wrist_3"
   )
     
   telemetry_container = yp.Container(

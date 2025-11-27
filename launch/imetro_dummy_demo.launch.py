@@ -30,7 +30,7 @@ def generate_launch_description():
     
     simulator_node = Node(
         package="dragoman_sandbox",
-        executable="imetro_demo_simulator.py",
+        executable="imetro_demo_dummy_simulator.py",
         output="both",
         parameters=[
             {"use_sim_time": LaunchConfiguration("use_sim_time")},

@@ -10,19 +10,16 @@ from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, 
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue, ParameterFile
 from launch_ros.substitutions import FindPackageShare
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, IncludeLaunchDescription
 from launch.conditions import IfCondition, UnlessCondition
-
 
 #####################################
 def generate_launch_description():
 
     dragoman_dir = get_package_share_directory("dragoman_sandbox")
-    test_data = os.path.join(dragoman_dir, 'data/testdata.ccsds')
 
     launch_args = [
         DeclareLaunchArgument("use_sim_time", default_value="False"),
-        DeclareLaunchArgument("test_data", default_value=test_data),
         DeclareLaunchArgument("tm_host", default_value="127.0.0.1"),
         DeclareLaunchArgument("tm_port", default_value="10015"),
         DeclareLaunchArgument("tc_host", default_value="127.0.0.1"),
@@ -32,11 +29,10 @@ def generate_launch_description():
     
     simulator_node = Node(
         package="dragoman_sandbox",
-        executable="quickstart_simulator.py",
+        executable="imetro_demo_robot_simple_simulator.py",
         output="both",
         parameters=[
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
-            {"test_data": LaunchConfiguration("test_data")},
             {"tm_host": LaunchConfiguration("tm_host")},
             {"tm_port": LaunchConfiguration("tm_port")},
             {"tc_host": LaunchConfiguration("tc_host")},
@@ -45,9 +41,14 @@ def generate_launch_description():
         ]
     )
 
+    launch_robot_dir = PathJoinSubstitution([FindPackageShare('dragoman_sandbox'), 'launch'])
+    robot_launch = IncludeLaunchDescription(
+             PathJoinSubstitution([launch_robot_dir, 'view_clr.launch.py'])
+    )
 
     return LaunchDescription(
         launch_args + 
         [simulator_node,
+        robot_launch
         ]
     )
