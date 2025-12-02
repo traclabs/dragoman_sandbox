@@ -11,6 +11,8 @@
 
   <depend>ament_index_cpp</depend>
   <depend>geometry_msgs</depend>
+  <depend>java</depend>
+  <depend>maven</depend>
   <depend>nav_msgs</depend>
   <depend>orocos_kdl_vendor</depend>
   <depend>rclcpp</depend>
@@ -18,8 +20,8 @@
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
-  <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
+  <depend>tf2</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
