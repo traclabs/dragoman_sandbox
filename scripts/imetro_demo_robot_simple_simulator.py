@@ -47,7 +47,7 @@ def send_tm(simulator):
           })
 
           tm_socket.sendto(tm_packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
-          tm_count = (tm_count + 1) % 16384  # Wrap at 14-bit max
+          tm_count += 1
           simulator.tm_counter += 1
 
         sleep(1 / simulator.rate)
