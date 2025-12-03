@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 
 import rclpy
-from rclpy.node  import Node
-
+from rclpy.node import Node
 
 import binascii
-import io
 import socket
-import sys
-import argparse
-
-from struct import unpack_from, pack
 from threading import Thread
 from time import sleep
 
 from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint 
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
+
+from construct import Int16ub
+from xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
 
 # *************************
 # Send telemetry
@@ -24,45 +21,33 @@ from builtin_interfaces.msg import Duration
 def send_tm(simulator):
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    header_length = 6
     num_joints = 9
-    tm_data_length = 4*num_joints # 4 bytes of joint_state's float type * 9 joints of full arm
-
     simulator.tm_counter = 1
-    header = bytearray(header_length)   
-    tm_count = 0xc000    
-    
-    while True:
-    
-        tm_msg_length = header_length + tm_data_length
-        # 1-3 bits: 000 (packet version number)
-        # 4 bit: 0 (telemetry)
-        # 5 bit: 0 (secondary header)
-        # 6-16 bits: 100 (APID - identifier)
-        # 17-18 bit: 11 (sequence flag: 11 = unsegmented data)
-        # 19-32 bit: 14 (sequential binary count)
-        # 32-48 bit: 	
-        # 000|0  |  0|000 0110 0100 | 11 | 00 0010 1110 1000
-        header = pack('>HHH', 0x0064, tm_count, tm_data_length - 1)
+    tm_count = 0
 
+    while True:
         js = simulator.js
-        
+
         if js is None:
           continue
-          
-        if len(js) == num_joints:
-          tm_data = pack('>fffffffff', js[0], js[1], js[2], js[3], js[4], js[5], js[6], js[7], js[8])
 
-          # Debug  
-          #packet_hex = binascii.hexlify(packet).decode('ascii')
-          #simulator.get_logger().info("Packet: {}".format(packet_hex))
-         
-          packet = bytearray(tm_msg_length)
-          packet[0:header_length] = header
-          packet[header_length:tm_msg_length] = tm_data
-        
-          tm_socket.sendto(packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
-          tm_count += 1
+        if len(js) == num_joints:
+          # Build telemetry packet using construct structures from XTCE
+          tm_packet = simulator.tm_packet_struct.build({
+              "header": {
+                  "version": 0,
+                  "type": 0,  # 0 = Telemetry
+                  "secondary_header_flag": 0,
+                  "apid": 100,  # APID for telemetry
+                  "sequence_flags": 3,  # 3 = Unsegmented
+                  "sequence_count": tm_count,
+                  "packet_length": num_joints * 4 - 1  # 9 floats * 4 bytes - 1
+              },
+              "joint_state": list(js)
+          })
+
+          tm_socket.sendto(tm_packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
+          tm_count = (tm_count + 1) % 16384  # Wrap at 14-bit max
           simulator.tm_counter += 1
 
         sleep(1 / simulator.rate)
@@ -77,154 +62,148 @@ def receive_tc(simulator):
     while True:
         data, _ = tc_socket.recvfrom(4096)
         parse_tc_data(data, simulator)
-        
+
         simulator.last_tc = data
         simulator.tc_counter += 1
 
 
 def parse_tc_data(data, simulator):
+    """Parse telecommand data using XTCE-generated construct structures"""
+    logger = simulator.get_logger()
 
-  logger = simulator.get_logger()
+    try:
+        # Parse command_id (2 bytes after 6-byte CCSDS header)
+        command_id = Int16ub.parse(data[6:8])
 
-  # Read length of command data
-  offset = 4
-  tc_length = (unpack_from('>H', data, offset))[0]
-  
-  # Read command id
-  offset = 6
-  command_id = (unpack_from('>H', data, offset))[0]
+        # Get the appropriate command structure and parse
+        command_struct = COMMAND_STRUCTS.get(command_id)
+        if command_struct is None:
+            logger.error(f"Unknown command_id: {command_id}")
+            return
 
-  logger.info("Received command of length: {}, tc_length: {} with command_id: {}".format(len(data), tc_length, command_id))
+        # Parse the full packet
+        parsed_packet = command_struct.parse(data)
 
-  # From the xtce, canned_pose: command_id= 0, arbitrary joint goal=1
-  if command_id == 0:
-    parse_canned_pose(data, logger)
-  if command_id == 1:
-    parse_arm_joint_state_goal(data, logger, simulator.arm_pub)
-  if command_id == 2:
-    parse_rail_joint_state_goal(data, logger, simulator.rail_pub) 
-  if command_id == 3:
-    parse_lift_joint_state_goal(data, logger, simulator.lift_pub) 
-
-
-def parse_canned_pose(data, logger):
-  logger.info("No implemented yet!")
-  
-def parse_arm_joint_state_goal(data, logger, pub):
-  
-  header_length = 6
-  command_id_length = 2
-  float_length = 4
-  
-  offset = header_length + command_id_length
-  
-  js_goal = [0, 0, 0, 0, 0, 0]
-  for i in range (0, 6):
-    js_goal[i] = (unpack_from('>f', data, offset))[0]
-    offset += float_length
-
-  js_goal_print = [f"{item:.3f}" for item in js_goal]
-  logger.info("* Arm Joint goal: {}".format(js_goal_print))
-
-  # Send arm command 
-  traj = JointTrajectory()
-  traj.joint_names = [
-            "shoulder_pan_joint", "shoulder_lift_joint",
-            "elbow_joint",
-            "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"             
-  ]
-
-  point1 = JointTrajectoryPoint()
-  point1.positions = js_goal
-  point1.time_from_start = Duration(sec=4)
-
-  traj.points.append(point1)
-  pub.publish(traj)
-
-def parse_rail_joint_state_goal(data, logger, pub):
-  
-  header_length = 6
-  command_id_length = 2
-  float_length = 4
-  
-  offset = header_length + command_id_length
-  
-  js_goal = (unpack_from('>f', data, offset))[0]
-
-  logger.info("* Rail Joint goal: {:.3f}".format(js_goal))
-
-  # Send rail command 
-  traj = JointTrajectory()
-  traj.joint_names = ["vention_rail_base_to_carriage"]
-
-  point1 = JointTrajectoryPoint()
-  point1.positions = [js_goal]
-  point1.time_from_start = Duration(sec=4)
-
-  traj.points.append(point1)
-  pub.publish(traj)
-  
-def parse_lift_joint_state_goal(data, logger, pub):
-  
-  header_length = 6
-  command_id_length = 2
-  float_length = 4
-  
-  offset = header_length + command_id_length
-  
-  js_goal = (unpack_from('>f', data, offset))[0]
-
-  logger.info("* Lift Joint goal: {:.3f}".format(js_goal))
-
-  # Send Lift command 
-  traj = JointTrajectory()
-  traj.joint_names = ["ewellix_lift_lower_to_higher"]
-
-  point1 = JointTrajectoryPoint()
-  point1.positions = [js_goal]
-  point1.time_from_start = Duration(sec=4)
-
-  traj.points.append(point1)
-  pub.publish(traj)
+        # Route to appropriate handler
+        if command_id == 0:
+            parse_canned_pose(parsed_packet, logger)
+        elif command_id == 1:
+            parse_arm_joint_state_goal(parsed_packet, logger, simulator.arm_pub)
+        elif command_id == 2:
+            parse_rail_joint_state_goal(parsed_packet, logger, simulator.rail_pub)
+        elif command_id == 3:
+            parse_lift_joint_state_goal(parsed_packet, logger, simulator.lift_pub)
+    except Exception as e:
+        logger.error(f"Error parsing command packet: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
 
-# **********************************************
+def parse_canned_pose(parsed_packet, logger):
+    """Handle canned pose command (not yet implemented)"""
+    logger.info("Canned pose command not implemented yet!")
+
+
+def parse_arm_joint_state_goal(parsed_packet, logger, pub):
+    """Parse and execute arm joint state goal command"""
+    # Extract arm joint values from parsed packet (field name from XTCE)
+    js_goal = list(parsed_packet.arm_joint_values)
+    logger.info(f"* Arm Joint goal: {[f'{v:.3f}' for v in js_goal]}")
+
+    # Send arm command
+    traj = JointTrajectory()
+    traj.joint_names = [
+        "shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
+        "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"
+    ]
+
+    point = JointTrajectoryPoint()
+    point.positions = js_goal
+    point.time_from_start = Duration(sec=4)
+
+    traj.points.append(point)
+    pub.publish(traj)
+
+
+def parse_rail_joint_state_goal(parsed_packet, logger, pub):
+    """Parse and execute rail joint state goal command"""
+    # Extract rail joint value from parsed packet (field name from XTCE)
+    js_goal = parsed_packet.rail_joint_value
+    logger.info(f"* Rail Joint goal: {js_goal:.3f}")
+
+    # Send rail command
+    traj = JointTrajectory()
+    traj.joint_names = ["vention_rail_base_to_carriage"]
+
+    point = JointTrajectoryPoint()
+    point.positions = [js_goal]
+    point.time_from_start = Duration(sec=4)
+
+    traj.points.append(point)
+    pub.publish(traj)
+
+
+def parse_lift_joint_state_goal(parsed_packet, logger, pub):
+    """Parse and execute lift joint state goal command"""
+    # Extract lift joint value from parsed packet (field name from XTCE)
+    js_goal = parsed_packet.lift_joint_value
+    logger.info(f"* Lift Joint goal: {js_goal:.3f}")
+
+    # Send lift command
+    traj = JointTrajectory()
+    traj.joint_names = ["ewellix_lift_lower_to_higher"]
+
+    point = JointTrajectoryPoint()
+    point.positions = [js_goal]
+    point.time_from_start = Duration(sec=4)
+
+    traj.points.append(point)
+    pub.publish(traj)
+
+
 class Simulator(Node):
+    """ROS2 node that simulates robot telemetry and command handling using XTCE definitions"""
 
     def __init__(self):
         super().__init__('imetro_simulator')
-        
+
+        # Counters and state
         self.tm_counter = 0
         self.tc_counter = 0
-        self.tm_thread = None
-        self.tc_thread = None
         self.last_tc = None
-        self.prev_status = None
         self.js = None
-  
+
+        # Status timer
         self.timer = self.create_timer(5, self.timer_cb)
 
-        self.declare_parameter("tm_host", rclpy.Parameter.Type.STRING) #'127.0.0.1'
-        self.declare_parameter("tm_port", rclpy.Parameter.Type.INTEGER) #'10015'
-        self.declare_parameter("rate", rclpy.Parameter.Type.INTEGER) #'1 Hz'
+        # Declare parameters
+        self.declare_parameter("tm_host", rclpy.Parameter.Type.STRING)
+        self.declare_parameter("tm_port", rclpy.Parameter.Type.INTEGER)
+        self.declare_parameter("rate", rclpy.Parameter.Type.INTEGER)
+        self.declare_parameter("tc_host", rclpy.Parameter.Type.STRING)
+        self.declare_parameter("tc_port", rclpy.Parameter.Type.INTEGER)
 
-        self.declare_parameter("tc_host", rclpy.Parameter.Type.STRING) #'127.0.0.1'
-        self.declare_parameter("tc_port", rclpy.Parameter.Type.INTEGER) #'10025'
-
+        # Get parameter values
         self.TM_SEND_ADDRESS = self.get_parameter("tm_host").value
         self.TM_SEND_PORT = self.get_parameter("tm_port").value
         self.rate = self.get_parameter("rate").value
-
         self.TC_RECEIVE_ADDRESS = self.get_parameter("tc_host").value
-        self.TC_RECEIVE_PORT    = self.get_parameter("tc_port").value
+        self.TC_RECEIVE_PORT = self.get_parameter("tc_port").value
+
+        # Use hard-coded construct structures from xtce_construct_generator module
+        self.tm_packet_struct = TM_PACKET_STRUCT
+
+        # Log available command structures
+        self.get_logger().info("Using hard-coded command structures: {}".format(
+            list(COMMAND_STRUCTS.keys())))
 
         # Subscribe to /joint_states
         self.js_sub = self.create_subscription(JointState, '/joint_states', self.js_cb, 10)
-         
+
         # Send motion commands
         self.arm_pub = self.create_publisher(
             JointTrajectory, "/joint_trajectory_controller/joint_trajectory", 10
-        ) 
+        )
 
         self.lift_pub = self.create_publisher(
             JointTrajectory, "/lift_position_trajectory_controller/joint_trajectory", 10
@@ -233,47 +212,39 @@ class Simulator(Node):
         self.rail_pub = self.create_publisher(
             JointTrajectory, "/rail_position_trajectory_controller/joint_trajectory", 10
         )
-        
-    def start(self):
-        self.tm_thread = Thread(target=send_tm, args=(self,))
-        self.tm_thread.daemon = True
-        self.tm_thread.start()
-        self.tc_thread = Thread(target=receive_tc, args=(self,))
-        self.tc_thread.daemon = True
-        self.tc_thread.start()
-        
-        self.get_logger().info('* Using playback rate of {} Hz'.format(self.rate) );
-        self.get_logger().info('TM host= {}, TM port= {}'.format(self.TM_SEND_ADDRESS, self.TM_SEND_PORT) );
-        self.get_logger().info('TC host= {}, TC port= {}'.format(self.TC_RECEIVE_ADDRESS, self.TC_RECEIVE_PORT) );
 
-       
+    def start(self):
+        """Start telemetry and telecommand threads"""
+        tm_thread = Thread(target=send_tm, args=(self,), daemon=True)
+        tm_thread.start()
+
+        tc_thread = Thread(target=receive_tc, args=(self,), daemon=True)
+        tc_thread.start()
+
+        self.get_logger().info(f'* Using playback rate of {self.rate} Hz')
+        self.get_logger().info(f'TM host={self.TM_SEND_ADDRESS}, TM port={self.TM_SEND_PORT}')
+        self.get_logger().info(f'TC host={self.TC_RECEIVE_ADDRESS}, TC port={self.TC_RECEIVE_PORT}')
+
     def print_status(self):
-        cmdhex = None
-        if self.last_tc:
-            cmdhex = binascii.hexlify(self.last_tc).decode('ascii')
-        return 'Sent: {} packets. Received: {} commands. Last command: {}'.format(
-                         self.tm_counter, self.tc_counter, cmdhex)
+        """Generate status string for logging"""
+        cmdhex = binascii.hexlify(self.last_tc).decode('ascii') if self.last_tc else None
+        return f'Sent: {self.tm_counter} packets. Received: {self.tc_counter} commands. Last command: {cmdhex}'
 
     def timer_cb(self):
-      prev_status = None
-      status = self.print_status()
-      if status != prev_status:
-         self.get_logger().info(status)
-         prev_status = status
+        """Periodic status logging callback"""
+        status = self.print_status()
+        self.get_logger().info(status)
 
     def js_cb(self, msg):
-      # Joints in order: elbow_joint, ewellix_lift_lower_to_higher, finger_1_joint, shoulder_lift_joint, shoulder_pan_joint
-      # vention_rail_base_to_carriage wrist_1_joint  wrist_2_joint wrist_3_joint  
-      self.js = msg.position
-   
+        """Joint state callback - stores current joint positions"""
+        self.js = msg.position
 
-# **********************************************    
+
 if __name__ == '__main__':
-
-  rclpy.init(args=None)
-  quickstart_sim = Simulator()
-  quickstart_sim.start()
-  rclpy.spin(quickstart_sim)
-  quickstart_sim.destroy_node()
-  rclpy.shutdown()
+    rclpy.init(args=None)
+    simulator = Simulator()
+    simulator.start()
+    rclpy.spin(simulator)
+    simulator.destroy_node()
+    rclpy.shutdown()
 
