@@ -25,13 +25,13 @@ DEFAULT_TRAJECTORY_DURATION = 4
 GRIPPER_TRAJECTORY_DURATION = 2
 CLR_TRAJECTORY_DURATION = 6
 
-# Joint name constants
+# Joint name constants (from SRDF group definitions)
 ARM_JOINT_NAMES = [
     "shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
     "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"
 ]
-RAIL_JOINT_NAME = "vention_rail_base_to_carriage"
-LIFT_JOINT_NAME = "ewellix_lift_lower_to_higher"
+RAIL_JOINT_NAMES = ["vention_rail_base_to_carriage"]
+LIFT_JOINT_NAMES = ["ewellix_lift_lower_to_higher"]
 
 # Gripper constants
 DEFAULT_GRIPPER_EFFORT = 100.0  # Newtons
@@ -76,11 +76,10 @@ def send_clr_trajectory(pose_config: Dict, rail_pub, lift_pub, arm_pub, logger,
     joints = pose_config["joints"]
     values = pose_config["values"]
 
-    # Separate joints by subsystem
-    rail_joints = [(j, v) for j, v in zip(joints, values) if 'rail' in j]
-    lift_joints = [(j, v) for j, v in zip(joints, values) if 'lift' in j]
-    arm_joints = [(j, v) for j, v in zip(joints, values)
-                  if 'shoulder' in j or 'elbow' in j or 'wrist' in j]
+    # Separate joints by subsystem using exact joint names from SRDF groups
+    rail_joints = [(j, v) for j, v in zip(joints, values) if j in RAIL_JOINT_NAMES]
+    lift_joints = [(j, v) for j, v in zip(joints, values) if j in LIFT_JOINT_NAMES]
+    arm_joints = [(j, v) for j, v in zip(joints, values) if j in ARM_JOINT_NAMES]
 
     # Send to each subsystem
     if rail_joints:
