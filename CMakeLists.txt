@@ -22,23 +22,6 @@ endforeach()
 ## Build ##
 ###########
 
-#include_directories(
-# include
-# ${orocos_kdl_INCLUDE_DIRS}
-#)
-#link_directories(${orocos_kdl_LIBRARY_DIRS}) # this is a hack, will eventually be unneeded once orocos-kdl is fixed
-
-#add_library(craftsman_utils SHARED
-#  src/frame_manager.cpp
-#)
-#ament_target_dependencies(craftsman_utils
-#${DEPS}
-#)
-#target_link_libraries(craftsman_utils Eigen3::Eigen)
-
-
-#ament_export_include_directories(include)
-#ament_export_libraries(craftsman_utils interpolators srdf_publisher_node urdf_publisher_node)
 ament_export_dependencies(
   ${DEPS}
 )
@@ -47,32 +30,26 @@ ament_export_dependencies(
 ## Install ##
 #############
 
-## Mark executables and/or libraries for installation
-#install(TARGETS
-#    craftsman_utils
-#  ARCHIVE DESTINATION lib
-#  LIBRARY DESTINATION lib
-#  RUNTIME DESTINATION lib/${PROJECT_NAME}
-#)
-
-# Install Python modules
-#ament_python_install_package(${PROJECT_NAME})
-
 install(PROGRAMS
   scripts/move_robot.py
   scripts/pymdb_generate_imetro_demo_xtce.py
   scripts/imetro_demo_dummy_simulator.py
   scripts/imetro_demo_robot_simple_simulator.py
+  scripts/yamcs
   DESTINATION lib/${PROJECT_NAME}
 )
-
-#install(DIRECTORY include/
-#  DESTINATION include/
-#)
 
 install(
   DIRECTORY launch rviz urdf behaviors data xtce
   DESTINATION share/${PROJECT_NAME}
+)
+
+# Install the entire yamcs_project directory structure so it can run from install
+install(
+  DIRECTORY yamcs_project/
+  DESTINATION share/${PROJECT_NAME}/yamcs_project
+  USE_SOURCE_PERMISSIONS
+  PATTERN "target" EXCLUDE
 )
 
 ament_package()
