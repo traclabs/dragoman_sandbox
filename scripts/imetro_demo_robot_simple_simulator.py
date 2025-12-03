@@ -13,7 +13,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
-from xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_sandbox.xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
 
 # *************************
 # Send telemetry

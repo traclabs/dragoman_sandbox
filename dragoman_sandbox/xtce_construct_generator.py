@@ -10,7 +10,7 @@ All structures are available as module-level constants for direct use.
 
 from construct import (
     Struct, Int16ub, Float32b,
-    Array, BitStruct, BitsInteger
+    Array, BitStruct, BitsInteger, CString
 )
 
 
@@ -55,11 +55,12 @@ TC_LIFT_JOINT_STRUCT = Struct(
     "lift_joint_value" / Float32b
 )
 
-# send_canned_pose: header + command_id
-# Note: String parameters not yet implemented
+# send_canned_pose: header + command_id + two null-terminated strings
 TC_CANNED_POSE_STRUCT = Struct(
     "header" / CCSDSHeader,
-    "command_id" / Int16ub
+    "command_id" / Int16ub,
+    "group_name" / CString("utf8"),
+    "group_state" / CString("utf8")
 )
 
 # Command ID to struct mapping
