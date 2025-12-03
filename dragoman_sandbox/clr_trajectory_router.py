@@ -22,7 +22,6 @@ from control_msgs.action import ParallelGripperCommand
 # *************************
 # Default trajectory durations (seconds)
 DEFAULT_TRAJECTORY_DURATION = 4
-GRIPPER_TRAJECTORY_DURATION = 2
 CLR_TRAJECTORY_DURATION = 6
 
 # Joint name constants (from SRDF group definitions)
