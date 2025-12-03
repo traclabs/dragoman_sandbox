@@ -19,7 +19,6 @@ from construct import Int16ub
 from dragoman_sandbox.xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
 from dragoman_sandbox.srdf_parser import parse_srdf_groups, parse_srdf_group_states
 from dragoman_sandbox.clr_trajectory_router import (
-    determine_publisher_type,
     send_trajectory,
     send_clr_trajectory,
     send_gripper_command,
@@ -141,23 +140,21 @@ def parse_canned_pose(parsed_packet, logger, simulator):
 
     pose_config = simulator.canned_poses[pose_key]
 
-    # Route to appropriate publisher(s) based on dynamically-determined type
-    publisher_type = pose_config["publisher"]
-
-    if publisher_type == "arm":
+    # Route based on group name
+    if group_name == "ur_manipulator":
         send_trajectory(pose_config, simulator.arm_pub, logger)
-    elif publisher_type == "hand":
+    elif group_name == "hand":
         send_gripper_command(pose_config, simulator.gripper_action_client, logger)
-    elif publisher_type == "rail":
+    elif group_name == "rail":
         send_trajectory(pose_config, simulator.rail_pub, logger)
-    elif publisher_type == "lift":
+    elif group_name == "lift":
         send_trajectory(pose_config, simulator.lift_pub, logger)
-    elif publisher_type == "clr":
+    elif group_name == "clr":
         send_clr_trajectory(
             pose_config, simulator.rail_pub, simulator.lift_pub, simulator.arm_pub, logger
         )
     else:
-        logger.error(f"Unknown publisher type: {publisher_type}")
+        logger.error(f"Unknown group '{group_name}'")
 
 
 def parse_arm_joint_state_goal(parsed_packet, logger, pub):
@@ -263,16 +260,10 @@ class Simulator(Node):
         # Parse group states (canned poses)
         self.canned_poses = parse_srdf_group_states(srdf_content)
 
-        # Enhance with publisher information using SRDF group data
-        for _, config in self.canned_poses.items():
-            config["publisher"] = determine_publisher_type(
-                config["group"], config["joints"], self.srdf_groups
-            )
-
         self.get_logger().info(f"Loaded {len(self.canned_poses)} canned poses from SRDF:")
         for (group, state), config in self.canned_poses.items():
             self.get_logger().info(
-                f"  - {group}/{state}: {len(config['joints'])} joints, publisher={config['publisher']}"
+                f"  - {group}/{state}: {len(config['joints'])} joints"
             )
 
         # Use hard-coded construct structures from xtce_construct_generator module
