@@ -17,7 +17,7 @@ from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
 from dragoman_sandbox.xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
-from dragoman_sandbox.srdf_parser import parse_srdf_groups, parse_srdf_group_states
+from dragoman_sandbox.srdf_parser import parse_srdf_group_states
 from dragoman_sandbox.clr_trajectory_router import (
     send_trajectory,
     send_clr_trajectory,
@@ -250,12 +250,6 @@ class Simulator(Node):
 
         # Parse SRDF and build canned poses dictionary
         srdf_content = self.get_parameter("robot_description_semantic").value
-
-        # Parse SRDF groups to get joint membership information
-        self.srdf_groups = parse_srdf_groups(srdf_content)
-        self.get_logger().info(f"Parsed {len(self.srdf_groups)} SRDF groups:")
-        for group_name, joints in self.srdf_groups.items():
-            self.get_logger().info(f"  - {group_name}: {len(joints)} joints")
 
         # Parse group states (canned poses)
         self.canned_poses = parse_srdf_group_states(srdf_content)

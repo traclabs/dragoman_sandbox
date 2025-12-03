@@ -10,37 +10,6 @@ import xml.etree.ElementTree as ET
 from typing import Dict, Tuple
 
 
-def parse_srdf_groups(srdf_content: str) -> Dict[str, set]:
-    """
-    Parse SRDF XML content and extract group definitions with their joints.
-
-    Args:
-        srdf_content: String containing processed SRDF XML
-
-    Returns:
-        Dictionary mapping group_name to set of joint names in that group
-    """
-    root = ET.fromstring(srdf_content)
-    groups = {}
-
-    # Find all group elements
-    for group in root.findall('.//group'):
-        group_name = group.get('name')
-        joint_names = set()
-
-        # Extract joints directly defined in the group
-        for joint in group.findall('joint'):
-            joint_name = joint.get('name')
-            if joint_name:
-                joint_names.add(joint_name)
-
-        # Store in dictionary
-        if joint_names:
-            groups[group_name] = joint_names
-
-    return groups
-
-
 def parse_srdf_group_states(srdf_content: str) -> Dict[Tuple[str, str], Dict]:
     """
     Parse SRDF XML content and extract group states with their joint configurations.
