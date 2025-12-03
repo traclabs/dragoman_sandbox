@@ -13,10 +13,17 @@ from launch_ros.substitutions import FindPackageShare
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, IncludeLaunchDescription
 from launch.conditions import IfCondition, UnlessCondition
 
+
 #####################################
 def generate_launch_description():
 
-    dragoman_dir = get_package_share_directory("dragoman_sandbox")
+    clr_moveit_dir = get_package_share_directory("clr_moveit_config")
+
+    # Process SRDF through xacro
+    srdf_file = os.path.join(clr_moveit_dir, "srdf", "clr.srdf.xacro")
+    robot_description_semantic = {
+        "robot_description_semantic": ParameterValue(Command(["xacro ", srdf_file]), value_type=str)
+    }
 
     launch_args = [
         DeclareLaunchArgument("use_sim_time", default_value="False"),
@@ -26,7 +33,7 @@ def generate_launch_description():
         DeclareLaunchArgument("tc_port", default_value="10025"),
         DeclareLaunchArgument("rate", default_value="1"),
     ]
-    
+
     simulator_node = Node(
         package="dragoman_sandbox",
         executable="imetro_demo_robot_simple_simulator.py",
@@ -38,17 +45,13 @@ def generate_launch_description():
             {"tc_host": LaunchConfiguration("tc_host")},
             {"tc_port": LaunchConfiguration("tc_port")},
             {"rate": LaunchConfiguration("rate")},
-        ]
+            robot_description_semantic,
+        ],
     )
 
-    launch_robot_dir = PathJoinSubstitution([FindPackageShare('dragoman_sandbox'), 'launch'])
+    launch_robot_dir = PathJoinSubstitution([FindPackageShare("dragoman_sandbox"), "launch"])
     robot_launch = IncludeLaunchDescription(
-             PathJoinSubstitution([launch_robot_dir, 'view_clr.launch.py'])
+        PathJoinSubstitution([launch_robot_dir, "view_clr.launch.py"])
     )
 
-    return LaunchDescription(
-        launch_args + 
-        [simulator_node,
-        robot_launch
-        ]
-    )
+    return LaunchDescription(launch_args + [simulator_node, robot_launch])
