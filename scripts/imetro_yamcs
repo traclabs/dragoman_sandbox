@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to run Yamcs from the installed yamcs_project directory
+# Script to run Yamcs from the installed imetro_yamcs_project directory
 
 # Use ros2 pkg prefix to get the share directory for dragoman_sandbox
 SHARE_DIR=$(ros2 pkg prefix --share dragoman_sandbox 2>/dev/null)
@@ -13,17 +13,17 @@ if [ -z "$SHARE_DIR" ]; then
     exit 1
 fi
 
-YAMCS_PROJECT_DIR="$SHARE_DIR/yamcs_project"
+IMETRO_YAMCS_PROJECT_DIR="$SHARE_DIR/imetro_yamcs_project"
 
-if [ ! -d "$YAMCS_PROJECT_DIR" ]; then
-    echo "Error: yamcs_project directory not found at $YAMCS_PROJECT_DIR"
+if [ ! -d "$IMETRO_YAMCS_PROJECT_DIR" ]; then
+    echo "Error: imetro_yamcs_project directory not found at $IMETRO_YAMCS_PROJECT_DIR"
     echo ""
     echo "Make sure you have built and installed the dragoman_sandbox package:"
     echo "  colcon build --packages-select dragoman_sandbox"
     exit 1
 fi
 
-cd "$YAMCS_PROJECT_DIR"
+cd "$IMETRO_YAMCS_PROJECT_DIR"
 
 # Check if Maven is installed
 if ! command -v mvn &> /dev/null; then
@@ -34,7 +34,7 @@ fi
 
 # Check if pom.xml exists
 if [ ! -f "pom.xml" ]; then
-    echo "Error: pom.xml not found in $YAMCS_PROJECT_DIR"
+    echo "Error: pom.xml not found in $IMETRO_YAMCS_PROJECT_DIR"
     exit 1
 fi
 

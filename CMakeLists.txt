@@ -33,21 +33,32 @@ ament_export_dependencies(
 install(PROGRAMS
   scripts/move_robot.py
   scripts/pymdb_generate_imetro_demo_xtce.py
+  scripts/pymdb_generate_curiosity_xtce.py
   scripts/imetro_demo_dummy_simulator.py
   scripts/imetro_demo_robot_simple_simulator.py
-  scripts/yamcs
+  scripts/curiosity_simple_simulator.py
+  scripts/imetro_yamcs
+  scripts/curiosity_yamcs
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
-  DIRECTORY launch rviz urdf behaviors data xtce
+  DIRECTORY launch rviz urdf behaviors data xtce config
   DESTINATION share/${PROJECT_NAME}
 )
 
-# Install the entire yamcs_project directory structure so it can run from install
+# Install the entire imetro_yamcs_project directory structure so it can run from install
 install(
-  DIRECTORY yamcs_project/
-  DESTINATION share/${PROJECT_NAME}/yamcs_project
+  DIRECTORY imetro_yamcs_project/
+  DESTINATION share/${PROJECT_NAME}/imetro_yamcs_project
+  USE_SOURCE_PERMISSIONS
+  PATTERN "target" EXCLUDE
+)
+
+# Install the entire curiosity_yamcs_project directory structure so it can run from install
+install(
+  DIRECTORY curiosity_yamcs_project/
+  DESTINATION share/${PROJECT_NAME}/curiosity_yamcs_project
   USE_SOURCE_PERMISSIONS
   PATTERN "target" EXCLUDE
 )

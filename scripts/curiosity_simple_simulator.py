@@ -6,23 +6,19 @@ import traceback
 from threading import Thread
 from time import sleep
 
+from lark import logger
+
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionClient
 
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from control_msgs.action import ParallelGripperCommand
 from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
-from dragoman_sandbox.imetro_xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_sandbox.curiosity_xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
 from dragoman_sandbox.srdf_parser import parse_srdf_group_states
-from dragoman_sandbox.clr_trajectory_router import (
-    send_trajectory,
-    send_clr_trajectory,
-    send_gripper_command,
-)
+from dragoman_sandbox.clr_trajectory_router import send_trajectory
 
 # *************************
 # Constants
@@ -30,11 +26,10 @@ from dragoman_sandbox.clr_trajectory_router import (
 # Command IDs
 CMD_CANNED_POSE = 0
 CMD_ARM_JOINT_GOAL = 1
-CMD_RAIL_JOINT_GOAL = 2
-CMD_LIFT_JOINT_GOAL = 3
+CMD_MAST_JOINT_GOAL = 2
 
 # Telemetry constants
-NUM_JOINTS = 9
+NUM_JOINTS = 24  # All rover joints (5 arm + 3 mast + 6 wheels + 10 suspension)
 
 
 # *************************
@@ -64,12 +59,11 @@ def send_tm(simulator):
                         "apid": 100,  # APID for telemetry
                         "sequence_flags": 3,  # 3 = Unsegmented
                         "sequence_count": tm_count,
-                        "packet_length": NUM_JOINTS * 4 - 1,  # 9 floats * 4 bytes - 1
+                        "packet_length": NUM_JOINTS * 4 - 1,  # 24 floats * 4 bytes - 1
                     },
                     "joint_state": list(js),
                 }
             )
-
             tm_socket.sendto(tm_packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
             tm_count += 1
             simulator.tm_counter += 1
@@ -115,10 +109,8 @@ def parse_tc_data(data, simulator):
             parse_canned_pose(parsed_packet, logger, simulator)
         elif command_id == CMD_ARM_JOINT_GOAL:
             parse_arm_joint_state_goal(parsed_packet, logger, simulator.arm_pub)
-        elif command_id == CMD_RAIL_JOINT_GOAL:
-            parse_rail_joint_state_goal(parsed_packet, logger, simulator.rail_pub)
-        elif command_id == CMD_LIFT_JOINT_GOAL:
-            parse_lift_joint_state_goal(parsed_packet, logger, simulator.lift_pub)
+        elif command_id == CMD_MAST_JOINT_GOAL:
+            parse_mast_joint_state_goal(parsed_packet, logger, simulator.mast_pub)
     except Exception as e:
         logger.error(f"Error parsing command packet: {e}")
         logger.error(traceback.format_exc())
@@ -141,18 +133,10 @@ def parse_canned_pose(parsed_packet, logger, simulator):
     pose_config = simulator.canned_poses[pose_key]
 
     # Route based on group name
-    if group_name == "ur_manipulator":
+    if group_name == "arm":
         send_trajectory(pose_config, simulator.arm_pub, logger)
-    elif group_name == "hand":
-        send_gripper_command(pose_config, simulator.gripper_action_client, logger)
-    elif group_name == "rail":
-        send_trajectory(pose_config, simulator.rail_pub, logger)
-    elif group_name == "lift":
-        send_trajectory(pose_config, simulator.lift_pub, logger)
-    elif group_name == "clr":
-        send_clr_trajectory(
-            pose_config, simulator.rail_pub, simulator.lift_pub, simulator.arm_pub, logger
-        )
+    elif group_name == "mast":
+        send_trajectory(pose_config, simulator.mast_pub, logger)
     else:
         logger.error(f"Unknown group '{group_name}'")
 
@@ -166,12 +150,11 @@ def parse_arm_joint_state_goal(parsed_packet, logger, pub):
     # Send arm command
     traj = JointTrajectory()
     traj.joint_names = [
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "elbow_joint",
-        "wrist_1_joint",
-        "wrist_2_joint",
-        "wrist_3_joint",
+        "arm_01_joint",
+        "arm_02_joint",
+        "arm_03_joint",
+        "arm_04_joint",
+        "arm_tools_joint",
     ]
 
     point = JointTrajectoryPoint()
@@ -182,36 +165,22 @@ def parse_arm_joint_state_goal(parsed_packet, logger, pub):
     pub.publish(traj)
 
 
-def parse_rail_joint_state_goal(parsed_packet, logger, pub):
-    """Parse and execute rail joint state goal command"""
-    # Extract rail joint value from parsed packet (field name from XTCE)
-    js_goal = parsed_packet.rail_joint_value
-    logger.info(f"* Rail Joint goal: {js_goal:.3f}")
+def parse_mast_joint_state_goal(parsed_packet, logger, pub):
+    """Parse and execute mast joint state goal command"""
+    # Extract mast joint values from parsed packet (field name from XTCE)
+    js_goal = list(parsed_packet.mast_joint_values)
+    logger.info(f"* Mast Joint goal: {[f'{v:.3f}' for v in js_goal]}")
 
-    # Send rail command
+    # Send mast command
     traj = JointTrajectory()
-    traj.joint_names = ["vention_rail_base_to_carriage"]
+    traj.joint_names = [
+        "mast_p_joint",
+        "mast_02_joint",
+        "mast_cameras_joint",
+    ]
 
     point = JointTrajectoryPoint()
-    point.positions = [js_goal]
-    point.time_from_start = Duration(sec=4)
-
-    traj.points.append(point)
-    pub.publish(traj)
-
-
-def parse_lift_joint_state_goal(parsed_packet, logger, pub):
-    """Parse and execute lift joint state goal command"""
-    # Extract lift joint value from parsed packet (field name from XTCE)
-    js_goal = parsed_packet.lift_joint_value
-    logger.info(f"* Lift Joint goal: {js_goal:.3f}")
-
-    # Send lift command
-    traj = JointTrajectory()
-    traj.joint_names = ["ewellix_lift_lower_to_higher"]
-
-    point = JointTrajectoryPoint()
-    point.positions = [js_goal]
+    point.positions = js_goal
     point.time_from_start = Duration(sec=4)
 
     traj.points.append(point)
@@ -219,10 +188,10 @@ def parse_lift_joint_state_goal(parsed_packet, logger, pub):
 
 
 class Simulator(Node):
-    """ROS2 node that simulates robot telemetry and command handling using XTCE definitions"""
+    """ROS2 node that simulates Curiosity rover telemetry and command handling using XTCE definitions"""
 
     def __init__(self):
-        super().__init__("imetro_simulator")
+        super().__init__("curiosity_simulator")
 
         # Counters and state
         self.tm_counter = 0
@@ -260,7 +229,7 @@ class Simulator(Node):
                 f"  - {group}/{state}: {len(config['joints'])} joints"
             )
 
-        # Use hard-coded construct structures from imetro_xtce_construct_generator module
+        # Use hard-coded construct structures from curiosity_xtce_construct_generator module
         self.tm_packet_struct = TM_PACKET_STRUCT
 
         # Log available command structures
@@ -273,20 +242,11 @@ class Simulator(Node):
 
         # Send motion commands
         self.arm_pub = self.create_publisher(
-            JointTrajectory, "/joint_trajectory_controller/joint_trajectory", 10
+            JointTrajectory, "/arm_joint_trajectory_controller/joint_trajectory", 10
         )
 
-        self.lift_pub = self.create_publisher(
-            JointTrajectory, "/lift_position_trajectory_controller/joint_trajectory", 10
-        )
-
-        self.rail_pub = self.create_publisher(
-            JointTrajectory, "/rail_position_trajectory_controller/joint_trajectory", 10
-        )
-
-        # Create action client for gripper control
-        self.gripper_action_client = ActionClient(
-            self, ParallelGripperCommand, "/robotiq_gripper_hande_controller/gripper_cmd"
+        self.mast_pub = self.create_publisher(
+            JointTrajectory, "/mast_joint_trajectory_controller/joint_trajectory", 10
         )
 
     def start(self):
