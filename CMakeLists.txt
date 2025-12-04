@@ -39,6 +39,7 @@ install(PROGRAMS
   scripts/curiosity_simple_simulator.py
   scripts/imetro_yamcs
   scripts/curiosity_yamcs
+  scripts/curiosity_yamcs_ros_bridge.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
