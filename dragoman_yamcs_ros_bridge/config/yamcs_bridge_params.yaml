@@ -29,7 +29,7 @@ bridges:
       - "/AllTypes/T_IntegerArray"
       - "/AllTypes/T_StatusAggregate"
     ros_topic: "/yamcs/all_types"
-    ros_message_type: "dragoman_msgs/msg/AllTelemetryPacket"
+    ros_message_type: "dragoman_generated_msgs/msg/AllTelemetryPacket"
     field_mapping:
       T_IntegerSigned: t_integer_signed
       T_FloatRaw64: t_float_raw64
@@ -49,7 +49,7 @@ bridges:
     yamcs_parameter:
       - "/Curiosity/joint_state"
     ros_topic: "/yamcs/curiosity"
-    ros_message_type: "dragoman_msgs/msg/CuriosityTelemetryPacket"
+    ros_message_type: "dragoman_generated_msgs/msg/CuriosityTelemetryPacket"
     field_mapping:
       joint_state: joint_state
 
@@ -58,7 +58,7 @@ bridges:
     yamcs_parameter:
       - "/IMetro/joint_state"
     ros_topic: "/yamcs/imetro"
-    ros_message_type: "dragoman_msgs/msg/IMetroTelemetryPacket"
+    ros_message_type: "dragoman_generated_msgs/msg/IMetroTelemetryPacket"
     field_mapping:
       joint_state: joint_state
 
@@ -67,7 +67,7 @@ bridges:
     yamcs_parameter:
       - "/MultiPacket/Temperature"
     ros_topic: "/yamcs/temperature"
-    ros_message_type: "dragoman_msgs/msg/TemperaturePacket"
+    ros_message_type: "dragoman_generated_msgs/msg/TemperaturePacket"
     field_mapping:
       Temperature: temperature
 
@@ -76,6 +76,6 @@ bridges:
     yamcs_parameter:
       - "/MultiPacket/Voltage"
     ros_topic: "/yamcs/voltage"
-    ros_message_type: "dragoman_msgs/msg/VoltagePacket"
+    ros_message_type: "dragoman_generated_msgs/msg/VoltagePacket"
     field_mapping:
       Voltage: voltage

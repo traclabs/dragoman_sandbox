@@ -70,7 +70,7 @@ bridges:
       - "/Spacecraft/Parameter1"
       - "/Spacecraft/Parameter2"
     ros_topic: "/telemetry"
-    ros_message_type: "dragoman_msgs/msg/TelemetryPacket"
+    ros_message_type: "dragoman_generated_msgs/msg/TelemetryPacket"
     field_mapping:
       Parameter1: field1
       Parameter2: field2
@@ -80,14 +80,14 @@ bridges:
 
 - `rclpy` - ROS2 Python client library
 - `sensor_msgs` - Standard ROS2 sensor messages
-- `dragoman_msgs` - Custom message definitions for Dragoman project
+- `dragoman_generated_msgs` - Custom message definitions for Dragoman project
 - `yamcs-client` - Python client for YAMCS
 
 ## Integration
 
 This package is part of the Dragoman project and works alongside:
 - `dragoman_yamcs_project` - YAMCS server configurations and XTCE definitions
-- `dragoman_msgs` - Custom ROS2 message definitions
+- `dragoman_generated_msgs` - Custom ROS2 message definitions
 - `dragoman_fsw_sim` - Flight software simulators
 
 ## Notes

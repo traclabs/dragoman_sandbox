@@ -10,30 +10,23 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import (
+    Command,
+    FindExecutable,
+    LaunchConfiguration,
+    PathJoinSubstitution,
+)
 from launch_ros.actions import Node
-import xacro
+from launch_ros.parameter_descriptions import ParameterValue
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
     """Generate launch description for iMetro ground visualization."""
 
     # Get package directories
-    chonkur_description_path = get_package_share_directory("chonkur_description")
-    dragoman_ground_example_path = get_package_share_directory("dragoman_ground_example")
-    dragoman_fsw_sim_dir = get_package_share_directory("dragoman_fsw_sim")
+    dragoman_ground_example_dir = get_package_share_directory("dragoman_ground_example")
     dragoman_yamcs_ros_bridge_dir = get_package_share_directory("dragoman_yamcs_ros_bridge")
-
-    # URDF/XACRO file path for CLR robot
-    urdf_model_path = os.path.join(
-        chonkur_description_path,
-        "urdf",
-        "chonkur.urdf.xacro",
-    )
-
-    # Process XACRO to get robot description
-    doc = xacro.process_file(urdf_model_path)
-    robot_description = {"robot_description": doc.toxml()}
 
     # Bridge configuration file
     bridge_config = os.path.join(
@@ -43,7 +36,7 @@ def generate_launch_description():
     )
 
     # RViz configuration file
-    rviz_config = os.path.join(dragoman_fsw_sim_dir, "rviz", "clr_sim.rviz")
+    rviz_config = os.path.join(dragoman_ground_example_dir, "rviz", "imetro.rviz")
 
     # Launch arguments
     launch_args = [
@@ -60,14 +53,23 @@ def generate_launch_description():
     ]
 
     # Robot State Publisher - publishes TF transforms from URDF
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution([FindPackageShare("clr_description"), "urdf", "clr.urdf.xacro"]),
+        ]
+    )
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         name="robot_state_publisher",
         output="screen",
         parameters=[
-            robot_description,
-            {"use_sim_time": LaunchConfiguration("use_sim_time")}
+            {
+                "robot_description": robot_description_content,
+                "use_sim_time": LaunchConfiguration("use_sim_time")
+            }
         ],
     )
 

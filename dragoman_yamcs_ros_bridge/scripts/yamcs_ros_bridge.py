@@ -19,7 +19,7 @@ Configuration file format (YAML):
       - name: "curiosity_telemetry"
         yamcs_parameter: "/Spacecraft/joint_state"
         ros_topic: "/curiosity/telemetry"
-        ros_message_type: "dragoman_msgs/Curiosity"
+        ros_message_type: "dragoman_generated_msgs/Curiosity"
         field_mapping:
           joint_state: joint_state
 
@@ -184,15 +184,15 @@ class YamcsRosBridge(Node):
             dict: Bridge information including publisher and subscription
         """
         # Load ROS message type dynamically
-        # Handle both formats: "dragoman_msgs/MessageType" and "dragoman_msgs/msg/MessageType"
+        # Handle both formats: "dragoman_generated_msgs/MessageType" and "dragoman_generated_msgs/msg/MessageType"
         msg_type_parts = config['ros_message_type'].split('/')
 
         if len(msg_type_parts) == 3:
-            # Format: "dragoman_msgs/msg/MessageType"
+            # Format: "dragoman_generated_msgs/msg/MessageType"
             msg_module = msg_type_parts[0]
             msg_class = msg_type_parts[2]
         elif len(msg_type_parts) == 2:
-            # Format: "dragoman_msgs/MessageType"
+            # Format: "dragoman_generated_msgs/MessageType"
             msg_module = msg_type_parts[0]
             msg_class = msg_type_parts[1]
         else:
@@ -272,7 +272,7 @@ class YamcsRosBridge(Node):
 
             # Publish the complete message
             # print(msg)
-            # from dragoman_msgs.msg import AllTypes  # Example import, adjust as needed
+            # from dragoman_generated_msgs.msg import AllTypes  # Example import, adjust as needed
             # # msg=AllTypes()
             # # print(msg)
             publisher.publish(msg)

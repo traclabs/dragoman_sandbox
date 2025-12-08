@@ -8,7 +8,7 @@ find_package(ament_cmake REQUIRED)
 set(DEPS
   rclpy
   sensor_msgs
-  dragoman_msgs
+  dragoman_generated_msgs
 )
 
 foreach(dependency IN ITEMS ${DEPS})

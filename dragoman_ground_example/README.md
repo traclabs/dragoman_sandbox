@@ -16,6 +16,13 @@ This package provides a complete ground station visualization setup that connect
   - Connects to YAMCS server via the dragoman_yamcs_ros_bridge
   - No simulation - purely for visualizing telemetry from YAMCS
 
+- **`launch/imetro_ground_vis.launch.py`** - Ground-side visualization for iMetro CLR robot with RViz
+  - Launches RViz for visualization
+  - Starts robot_state_publisher for TF transforms
+  - Connects to YAMCS server via the dragoman_yamcs_ros_bridge
+  - Includes joint state publisher to convert iMetro telemetry packets to joint states
+  - No simulation - purely for visualizing telemetry from YAMCS
+
 ### RViz Configuration
 
 - **`rviz/curiosity.rviz`** - RViz configuration for Curiosity rover visualization
@@ -24,29 +31,30 @@ This package provides a complete ground station visualization setup that connect
 
 - ROS2 packages: `robot_state_publisher`, `rviz2`, `xacro`
 - `curiosity_description` - Curiosity rover URDF models
+- `chonkur_description` - CLR robot URDF models (for iMetro visualization)
 - [`dragoman_yamcs_ros_bridge`](../dragoman_yamcs_ros_bridge/README.md) - Bridge between YAMCS and ROS2
 
 ## Usage
 
 ### Prerequisites
 
-1. Ensure YAMCS server is running with the Curiosity instance (see [`dragoman_yamcs_project`](../dragoman_yamcs_project/dragoman_yamcs_project/README.md))
+1. Ensure YAMCS server is running with the appropriate instance (see [`dragoman_yamcs_project`](../dragoman_yamcs_project/dragoman_yamcs_project/README.md))
 2. Ensure telemetry data is being published to YAMCS (see [`dragoman_fsw_sim`](../dragoman_fsw_sim/README.md))
 
-### Launch Ground Visualization
+### Launch Curiosity Ground Visualization
 
 ```bash
 ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py
 ```
 
-### Launch Arguments
+#### Launch Arguments
 
 - `use_sim_time` (default: `False`) - Use simulation time
 - `yamcs_url` (default: `localhost:8090`) - YAMCS server URL
 - `yamcs_instance` (default: `curiosity`) - YAMCS instance name
 - `yamcs_processor` (default: `realtime`) - YAMCS processor name
 
-### Example with Custom YAMCS Server
+#### Example with Custom YAMCS Server
 
 ```bash
 ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py \
@@ -54,13 +62,40 @@ ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py \
     yamcs_instance:=my_mission
 ```
 
+### Launch iMetro Ground Visualization
+
+```bash
+ros2 launch dragoman_ground_example imetro_ground_vis.launch.py
+```
+
+#### Launch Arguments
+
+- `use_sim_time` (default: `False`) - Use simulation time
+- `yamcs_url` (default: `localhost:8090`) - YAMCS server URL
+
+#### Example with Custom YAMCS Server
+
+```bash
+ros2 launch dragoman_ground_example imetro_ground_vis.launch.py \
+    yamcs_url:=192.168.1.100:8090
+```
+
 ## How It Works
+
+### Curiosity Ground Visualization
 
 1. **robot_state_publisher** - Publishes TF transforms based on the Curiosity rover URDF model
 2. **yamcs_ros_bridge** - Subscribes to YAMCS telemetry and publishes ROS2 joint states
 3. **RViz2** - Visualizes the robot model with real-time joint positions from YAMCS
 
-This creates a complete ground station visualization that mirrors the state of the robot/spacecraft as reported through YAMCS telemetry.
+### iMetro Ground Visualization
+
+1. **robot_state_publisher** - Publishes TF transforms based on the CLR robot URDF model
+2. **yamcs_ros_bridge** - Subscribes to YAMCS telemetry and publishes iMetro telemetry packets
+3. **joint_state_publisher** - Converts iMetro telemetry packets to ROS2 joint states
+4. **RViz2** - Visualizes the robot model with real-time joint positions from YAMCS
+
+Both setups create a complete ground station visualization that mirrors the state of the robot/spacecraft as reported through YAMCS telemetry.
 
 ## Related Packages
 

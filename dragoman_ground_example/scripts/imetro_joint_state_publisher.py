@@ -22,15 +22,15 @@ class IMetroJointStatePublisher(Node):
     # Joint names in the order they appear in the telemetry packet
     # These names must match the joint names in the URDF
     JOINT_NAMES = [
-        "ewellix_lift_lower_to_higher",
-        "vention_rail_base_to_carriage",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
         "elbow_joint",
+        "ewellix_lift_lower_to_higher",
+        "finger_1_joint",
+        "shoulder_lift_joint",
+        "shoulder_pan_joint",
+        "vention_rail_base_to_carriage",
         "wrist_1_joint",
         "wrist_2_joint",
         "wrist_3_joint",
-        "robotiq_hande_left_finger_joint",
     ]
 
     def __init__(self):
