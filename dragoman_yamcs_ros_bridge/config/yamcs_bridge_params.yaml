@@ -1,0 +1,81 @@
+# YAMCS-ROS Bridge Combined Configuration
+#
+# This configuration bridges multiple telemetry types from YAMCS to ROS2.
+# All bridges share the same YAMCS instance and processor.
+#
+# KEY CONCEPT: In XTCE/YAMCS:
+# - Containers define packet structures
+# - Parameters are the actual data values
+# - YAMCS parses packets and extracts parameters
+# - We subscribe to PARAMETERS, not containers
+
+yamcs:
+  url: "localhost:8090"
+  instance: "curiosity"
+  processor: "realtime"
+
+bridges:
+  # AllTypes telemetry - demonstrates all XTCE data types
+  - name: "all_telemetry_packet"
+    yamcs_parameter:
+      - "/AllTypes/T_IntegerSigned"
+      - "/AllTypes/T_FloatRaw64"
+      - "/AllTypes/T_EnumeratedAlarm"
+      - "/AllTypes/T_StringUTF8"
+      - "/AllTypes/T_BooleanFlag"
+      - "/AllTypes/T_AbsoluteTime"
+      - "/AllTypes/T_RelativeTimeRaw"
+      - "/AllTypes/T_BinaryBlob"
+      - "/AllTypes/T_IntegerArray"
+      - "/AllTypes/T_StatusAggregate"
+    ros_topic: "/yamcs/all_types"
+    ros_message_type: "dragoman_msgs/msg/AllTelemetryPacket"
+    field_mapping:
+      T_IntegerSigned: t_integer_signed
+      T_FloatRaw64: t_float_raw64
+      T_EnumeratedAlarm: t_enumerated_alarm
+      T_StringUTF8: t_string_utf8
+      T_BooleanFlag: t_boolean_flag
+      T_AbsoluteTime: t_absolute_time
+      T_RelativeTimeRaw: t_relative_time_raw
+      T_BinaryBlob: t_binary_blob
+      T_IntegerArray: t_integer_array
+      T_StatusAggregate.CurrentDraw: t_status_aggregate_current_draw
+      T_StatusAggregate.HeaterEnabled: t_status_aggregate_heater_enabled
+      T_StatusAggregate.RawStatusFlags: t_status_aggregate_raw_status_flags
+
+  # Curiosity rover telemetry - 24 joint positions
+  - name: "curiosity_telemetry_packet"
+    yamcs_parameter:
+      - "/Curiosity/joint_state"
+    ros_topic: "/yamcs/curiosity"
+    ros_message_type: "dragoman_msgs/msg/CuriosityTelemetryPacket"
+    field_mapping:
+      joint_state: joint_state
+
+  # IMetro demo telemetry - 9 joint positions
+  - name: "imetro_telemetry_packet"
+    yamcs_parameter:
+      - "/IMetro/joint_state"
+    ros_topic: "/yamcs/imetro"
+    ros_message_type: "dragoman_msgs/msg/IMetroTelemetryPacket"
+    field_mapping:
+      joint_state: joint_state
+
+  # MultiPacket Temperature telemetry - TemperaturePacket container
+  - name: "temperature_packet"
+    yamcs_parameter:
+      - "/MultiPacket/Temperature"
+    ros_topic: "/yamcs/temperature"
+    ros_message_type: "dragoman_msgs/msg/TemperaturePacket"
+    field_mapping:
+      Temperature: temperature
+
+  # MultiPacket Voltage telemetry - VoltagePacket container
+  - name: "voltage_packet"
+    yamcs_parameter:
+      - "/MultiPacket/Voltage"
+    ros_topic: "/yamcs/voltage"
+    ros_message_type: "dragoman_msgs/msg/VoltagePacket"
+    field_mapping:
+      Voltage: voltage

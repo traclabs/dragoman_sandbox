@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>dragoman_sample_xtce</name>
+  <version>0.0.0</version>
+  <description>Sample XTCE generation scripts for dragoman</description>
+  <maintainer email="robotics@traclabs.com">TRACLabs Robotics</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

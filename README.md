@@ -1,77 +1,33 @@
-# README #
+# dragoman_sandbox
 
+Main package for dragoman telemetry and command handling demonstrations.
 
-### Generate an XTCE file ####
+## Overview
 
-* You can generate the XTCE we are using for the iMetro demo running the following:
+This package serves as the central coordination point for the dragoman project, which demonstrates integration between YAMCS (Yet Another Mission Control System) and ROS2 for spacecraft/robot telemetry and command handling.
 
-  ```
-  ros2 run dragoman_sandbox pymdb_generate_imetro_demo_xtce.py
-  ```
+## Package Organization
 
-  This will generate the XTCE file in the install/share folder of dragoman_sandbox/xtce.
-  For it to be used by YAMCS, you'll have to copy and paste it to dragoman_sandbox/imetro_yamcs_project
-  (in src/main/yamcs/mdb).
+The dragoman project has been refactored into specialized packages for better organization:
 
+- **[`dragoman_sample_xtce`](dragoman_sample_xtce/README.md)** - XTCE file generation scripts for telemetry definitions
+- **[`dragoman_fsw_sim`](dragoman_fsw_sim/README.md)** - Flight software simulators and demo launch files
+- **[`dragoman_yamcs_project`](dragoman_yamcs_project/dragoman_yamcs_project/README.md)** - YAMCS server configurations and setup
+- **[`dragoman_yamcs_ros_bridge`](dragoman_yamcs_ros_bridge/README.md)** - Bridge between YAMCS and ROS2
+- **[`dragoman_xtce2msg`](dragoman_xtce2msg/README.md)** - Tools for converting XTCE to ROS2 message definitions
+- **[`dragoman_generated_msgs`](dragoman_generated_msgs/README.md)** - Auto-generated ROS2 message definitions from XTCE files
+- **[`dragoman_ground_example`](dragoman_ground_example/README.md)** - Ground station visualization example
 
-### Run dummy demo (hardcoded telemetry) ###
+## Quick Start
 
-* Run our imetro_yamcs project that has an XTCE defined for some ROS2 tools (first time may take a while to download dependencies):
+For detailed usage instructions, see the individual package READMEs linked above. A typical workflow involves:
 
-   ```
-   ros2 run dragoman_sandbox imetro_yamcs
-   ```
+1. Generate XTCE files using [`dragoman_sample_xtce`](dragoman_sample_xtce/README.md)
+2. Start YAMCS server using [`dragoman_yamcs_project`](dragoman_yamcs_project/dragoman_yamcs_project/README.md)
+3. Run simulations/demos using [`dragoman_fsw_sim`](dragoman_fsw_sim/README.md)
+4. (Optional) Visualize telemetry using [`dragoman_ground_example`](dragoman_ground_example/README.md)
 
-* In a web browser, open the terminal at: http://localhost:8090/ . You sould see the YAMCS Mission Control with the imetro interface loaded up.
+## Dependencies
 
-* Run our demo script that publishes telemetry data and reads commands:
-
-  ```
-  ros2 launch dragoman_sandbox imetro_dummy_demo.launch.py
-  ```
-
-* Use YAMCS to see the telemetry being sent from our script, and send commands.
-
-### Run simple robot demo (iMetro setup) ###
-
-* Run our imetro_yamcs project that has an XTCE defined for some ROS2 tools:
-
-   ```
-   ros2 run dragoman_sandbox imetro_yamcs
-   ```
-
-* In a web browser, open the terminal at: http://localhost:8090/ . You sould see the YAMCS Mission Control with the imetro interface loaded up.
-
-* Run our demo script that publishes telemetry data and reads commands:
-
-  ```
-  ros2 launch dragoman_sandbox imetro_robot_simple_demo.launch.py
-  ```
-
-* Use YAMCS to see the telemetry being sent from our script (from the robot) and move the arm and the lift/rail joints
-
-### Run simple robot demo (Curiosity setup) ###
-
-* Run our curiosity_yamcs project that has an XTCE defined for some ROS2 tools:
-
-   ```
-   ros2 run dragoman_sandbox curiosity_yamcs
-   ```
-
-* In a web browser, open the terminal at: http://localhost:8090/ . You sould see the YAMCS Mission Control with the imetro interface loaded up.
-
-* Run the simulation with Gazebo (spacecraft side):
-
-  ```
-  ros2 launch dragoman_sandbox curiosity_simulation.launch.py
-  ```
-
-  *This runs in ROS_DOMAIN_ID=100 to isolate ROS2 communication with the ground side.*
-
-* Run YAMCS <-> ROS2 bridge and RViz visualization (ground side, optional):
-
-  ```
-  ros2 launch dragoman_sandbox curiosity_ground_vis.launch.py
-  ```
-
-  *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication with the spacecraft side.*
+- ROS2 packages: `rclpy`, `sensor_msgs`, `trajectory_msgs`, etc.
+- Related dragoman packages (see Package Organization above)

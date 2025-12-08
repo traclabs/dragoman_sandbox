@@ -1,0 +1,46 @@
+#!/bin/bash
+# Script to run Yamcs from the installed dragoman_yamcs_project directory
+
+# Use ros2 pkg prefix to get the share directory for dragoman_yamcs_project
+SHARE_DIR=$(ros2 pkg prefix --share dragoman_yamcs_project 2>/dev/null)
+
+if [ -z "$SHARE_DIR" ]; then
+    echo "Error: Could not find dragoman_yamcs_project package."
+    echo ""
+    echo "Make sure you have:"
+    echo "  1. Built the package: colcon build --packages-select dragoman_yamcs_project"
+    echo "  2. Sourced the workspace: source install/setup.bash"
+    exit 1
+fi
+
+DRAGOMAN_YAMCS_PROJECT_DIR="$SHARE_DIR/dragoman_yamcs_project"
+
+if [ ! -d "$DRAGOMAN_YAMCS_PROJECT_DIR" ]; then
+    echo "Error: dragoman_yamcs_project directory not found at $DRAGOMAN_YAMCS_PROJECT_DIR"
+    echo ""
+    echo "Make sure you have built and installed the dragoman_yamcs_project package:"
+    echo "  colcon build --packages-select dragoman_yamcs_project"
+    exit 1
+fi
+
+cd "$DRAGOMAN_YAMCS_PROJECT_DIR"
+
+# Check if Maven is installed
+if ! command -v mvn &> /dev/null; then
+    echo "Error: Maven (mvn) is not installed. Please install it with:"
+    echo "  sudo apt-get install maven"
+    exit 1
+fi
+
+# Check if pom.xml exists
+if [ ! -f "pom.xml" ]; then
+    echo "Error: pom.xml not found in $DRAGOMAN_YAMCS_PROJECT_DIR"
+    exit 1
+fi
+
+echo "Starting Yamcs from: $(pwd)"
+echo "Press Ctrl+C to stop Yamcs"
+echo ""
+
+# Run Yamcs
+mvn yamcs:run

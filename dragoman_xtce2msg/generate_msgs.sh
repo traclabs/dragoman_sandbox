@@ -1,0 +1,29 @@
+#!/bin/bash
+
+XTCE_DIR=$(ros2 pkg prefix --share dragoman_sample_xtce)/xtce
+MSG_DIR=$(ros2 pkg prefix --share dragoman_generated_msgs)/msg
+
+echo "========================================"
+echo "  XTCE to ROS2 Message Generator"
+echo "========================================"
+echo ""
+
+echo "→ Processing IMetro.xtce..."
+python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/IMetro.xtce ${MSG_DIR}
+echo ""
+
+echo "→ Processing Curiosity.xtce..."
+python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/Curiosity.xtce ${MSG_DIR}
+echo ""
+
+echo "→ Processing AllTypes.xtce..."
+python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/AllTypes.xtce ${MSG_DIR}
+echo ""
+
+echo "→ Processing MultiPacket.xtce..."
+python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/MultiPacket.xtce ${MSG_DIR}
+echo ""
+
+echo "========================================"
+echo "  ✓ All XTCE files processed"
+echo "========================================"
