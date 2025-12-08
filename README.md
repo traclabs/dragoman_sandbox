@@ -50,10 +50,21 @@ Open web interface at `http://localhost:8090/`
 
 ### 2. Launch Spacecraft-Side Simulation
 Choose one:
-```bash
-# iMetro dummy demo (hardcoded telemetry)
-ros2 launch dragoman_fsw_sim imetro_dummy_demo.launch.py
 
+**Standalone Python Simulators (No ROS dependencies):**
+```bash
+# iMetro dummy demo - joint state telemetry with command handling
+$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/imetro_demo_dummy_simulator.py
+
+# AllTypes demo - demonstrates all XTCE parameter types
+$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/all_types_simulator.py
+
+# MultiPacket demo - demonstrates multi-packet telemetry
+$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/multipacket_simulator.py
+```
+
+**ROS2-Integrated Demos:**
+```bash
 # iMetro robot demo (ros2_control fake hardware)
 ros2 launch dragoman_fsw_sim imetro_robot_simple_demo.launch.py
 
@@ -62,6 +73,8 @@ ros2 launch dragoman_fsw_sim curiosity_simulation.launch.py
 ```
 
 ### 3. Launch Ground-Side Visualization (Optional)
+
+For iMetro or Curiosity demos, launch the corresponding ground station visualization:
 ```bash
 # For iMetro demos
 ros2 launch dragoman_ground_example imetro_ground.launch.py
@@ -70,7 +83,7 @@ ros2 launch dragoman_ground_example imetro_ground.launch.py
 ros2 launch dragoman_ground_example curiosity_ground.launch.py
 ```
 
-**Note:** Spacecraft-side runs in `ROS_DOMAIN_ID=100`, ground-side in `ROS_DOMAIN_ID=0` to isolate communications.
+**Note:** Spacecraft-side ROS2 demos run in `ROS_DOMAIN_ID=100` to isolate communications.
 
 ## Architecture
 
