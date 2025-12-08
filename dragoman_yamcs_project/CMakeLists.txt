@@ -39,10 +39,15 @@ install(PROGRAMS
 
 # Install the entire dragoman_yamcs_project directory structure so it can run from install
 install(
-  DIRECTORY dragoman_yamcs_project/
+  DIRECTORY src
   DESTINATION share/${PROJECT_NAME}/dragoman_yamcs_project
   USE_SOURCE_PERMISSIONS
   PATTERN "target" EXCLUDE
+)
+
+install(
+  FILES pom.xml
+  DESTINATION share/${PROJECT_NAME}/dragoman_yamcs_project
 )
 
 ament_package()

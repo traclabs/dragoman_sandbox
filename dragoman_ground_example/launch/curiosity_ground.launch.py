@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Curiosity Ground Visualization Launch File
+
 Launches RViz, robot_state_publisher, and joint state publisher for ground visualization.
-No simulation - only visualization of telemetry from Yamcs.
-Runs in default ROS_DOMAIN_ID=0 (ground side).
+No simulation - only visualization of telemetry from YAMCS.
 """
 
 import os
@@ -17,7 +17,6 @@ from launch.substitutions import (
     PathJoinSubstitution,
 )
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 

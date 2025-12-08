@@ -3,27 +3,9 @@
 YAMCS-ROS Bridge
 
 Bridges YAMCS telemetry parameters to ROS2 messages based on YAML configuration.
-Supports multiple parameter-to-message mappings with flexible field mapping.
 
 Usage:
-    python3 yamcs_ros_bridge.py --config bridge_config.yaml
-    python3 yamcs_ros_bridge.py --config bridge_config.yaml --yamcs-url localhost:8090
-
-Configuration file format (YAML):
-    yamcs:
-      url: "localhost:8090"
-      instance: "curiosity"
-      processor: "realtime"
-
-    bridges:
-      - name: "curiosity_telemetry"
-        yamcs_parameter: "/Spacecraft/joint_state"
-        ros_topic: "/curiosity/telemetry"
-        ros_message_type: "dragoman_generated_msgs/Curiosity"
-        field_mapping:
-          joint_state: joint_state
-
-Author: Generated for Dragoman project
+    python3 yamcs_ros_bridge.py --config bridge_config.yaml [--yamcs-url localhost:8090]
 """
 
 import argparse
@@ -184,15 +166,14 @@ class YamcsRosBridge(Node):
             dict: Bridge information including publisher and subscription
         """
         # Load ROS message type dynamically
-        # Handle both formats: "dragoman_generated_msgs/MessageType" and "dragoman_generated_msgs/msg/MessageType"
         msg_type_parts = config['ros_message_type'].split('/')
 
         if len(msg_type_parts) == 3:
-            # Format: "dragoman_generated_msgs/msg/MessageType"
+            # Format: "package/msg/MessageType"
             msg_module = msg_type_parts[0]
             msg_class = msg_type_parts[2]
         elif len(msg_type_parts) == 2:
-            # Format: "dragoman_generated_msgs/MessageType"
+            # Format: "package/MessageType"
             msg_module = msg_type_parts[0]
             msg_class = msg_type_parts[1]
         else:
@@ -271,10 +252,6 @@ class YamcsRosBridge(Node):
             self.get_logger().debug(f'Message before publish: {msg}')
 
             # Publish the complete message
-            # print(msg)
-            # from dragoman_generated_msgs.msg import AllTypes  # Example import, adjust as needed
-            # # msg=AllTypes()
-            # # print(msg)
             publisher.publish(msg)
 
             self.get_logger().debug(
@@ -371,9 +348,6 @@ class YamcsRosBridge(Node):
             elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
                 # Other iterables: ensure they're lists
                 value = list(value)
-
-            # Ensure proper types for ALL ROS message fields based on message definition
-            # IMPORTANT: Keep numpy arrays as-is! ROS2 expects them for fixed-size arrays
 
             # builtin_interfaces/Time - already handled above
             if ros_field == 't_absolute_time':
