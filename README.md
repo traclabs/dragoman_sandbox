@@ -54,13 +54,13 @@ Choose one:
 **Standalone Python Simulators (No ROS dependencies):**
 ```bash
 # iMetro dummy demo - joint state telemetry with command handling
-$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/imetro_demo_dummy_simulator.py
+ros2 run dragoman_fsw_sim imetro_demo_dummy_simulator.py
 
 # AllTypes demo - demonstrates all XTCE parameter types
-$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/all_types_simulator.py
+ros2 run dragoman_fsw_sim all_types_simulator.py
 
 # MultiPacket demo - demonstrates multi-packet telemetry
-$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/multipacket_simulator.py
+ros2 run dragoman_fsw_sim multipacket_simulator.py
 ```
 
 **ROS2-Integrated Demos:**
@@ -84,13 +84,5 @@ ros2 launch dragoman_ground_example curiosity_ground.launch.py
 ```
 
 **Note:** Spacecraft-side ROS2 demos run in `ROS_DOMAIN_ID=100` to isolate communications.
-
-## Architecture
-
-**Ground Station Visualization Flow:**
-1. **robot_state_publisher** - Publishes TF transforms from URDF
-2. **yamcs_ros_bridge** - Subscribes to YAMCS telemetry, publishes ROS2 messages
-3. **joint_state_publisher** (iMetro only) - Converts telemetry packets to joint states
-4. **RViz2** - Visualizes robot with real-time telemetry from YAMCS
 
 See individual package READMEs for detailed information.

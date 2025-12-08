@@ -26,6 +26,10 @@ ros2 launch dragoman_ground_example imetro_ground.launch.py
 
 ```
 
-## Joint State Publishers
+## Architecture
 
-Unlike typical joint state publishers that read from hardware or GUI sliders, these publishers subscribe to YAMCS telemetry packets and convert them to ROS2 JointState messages for ground station visualization.
+**Ground Station Visualization Flow:**
+1. **robot_state_publisher** - Publishes TF transforms from URDF
+2. **yamcs_ros_bridge** - Subscribes to YAMCS telemetry, publishes ROS2 messages
+3. **joint_state_publisher** (iMetro only) - Converts telemetry packets to joint states
+4. **RViz2** - Visualizes robot with real-time telemetry from YAMCS
