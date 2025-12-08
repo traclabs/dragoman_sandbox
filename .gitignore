@@ -1,2 +1,2 @@
 dragoman_sample_xtce/xtce/*.xtce
-dragoman_generate_msgs/msg/*.msg
+dragoman_generated_msgs/msg/*.msg

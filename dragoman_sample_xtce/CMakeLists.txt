@@ -31,6 +31,7 @@ install(PROGRAMS
   scripts/pymdb_generate_curiosity_xtce.py
   scripts/pymdb_generate_imetro_demo_xtce.py
   scripts/pymdb_generate_multi_packet.py
+  scripts/generate_xtces.sh
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -15,21 +15,25 @@ This package provides utilities to parse XTCE XML files and automatically genera
 - **CCSDS Header Handling**: Recognizes and optionally includes CCSDS packet headers
 - **ROS 2 Compliance**: Ensures all field names comply with ROS 2 naming conventions
 
-## Installation
-
-This package is part of the dragoman workspace. Build it with:
-
-```bash
-cd /path/to/workspace
-colcon build --packages-select dragoman_xtce2msg
-source install/setup.bash
-```
-
 ## Usage
 
-### Command Line
+### Batch Generation
 
-Convert an XTCE file to ROS 2 messages:
+Use the provided shell script to generate all ROS 2 messages from XTCE files at once:
+
+```bash
+ros2 run dragoman_xtce2msg generate_msgs.sh
+```
+
+This script will automatically:
+- Locate the installed XTCE files from `dragoman_sample_xtce`
+- Locate the message output directory in `dragoman_generated_msgs`
+- Generate ROS 2 message files for all XTCE definitions
+- Provide progress feedback during generation
+
+### Command Line (Individual Files)
+
+Convert a single XTCE file to ROS 2 messages:
 
 ```bash
 ros2 run dragoman_xtce2msg xtce_to_ros <input_xtce_file.xml> <output_directory>

@@ -8,13 +8,18 @@ This package contains Python scripts that generate XTCE (XML Telemetric and Comm
 
 ## Generate XTCE Files
 
-## Batch Generation
+### Batch Generation
 
 Use the provided shell script to generate all XTCE files at once:
 
 ```bash
-./generate_xtces.sh
+ros2 run dragoman_sample_xtce generate_xtces.sh
 ```
+
+This script will automatically:
+- Locate the installed XTCE directory
+- Generate all XTCE files (IMetro, Curiosity, AllTypes, MultiPacket)
+- Provide progress feedback during generation
 
 If you don't want to run the script, you can generate each XTCE file individually as described below.
 

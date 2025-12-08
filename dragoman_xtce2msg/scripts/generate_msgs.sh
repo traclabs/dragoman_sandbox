@@ -9,19 +9,19 @@ echo "========================================"
 echo ""
 
 echo "→ Processing IMetro.xtce..."
-python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/IMetro.xtce ${MSG_DIR}
+ros2 run dragoman_xtce2msg xtce_to_ros ${XTCE_DIR}/IMetro.xtce ${MSG_DIR}
 echo ""
 
 echo "→ Processing Curiosity.xtce..."
-python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/Curiosity.xtce ${MSG_DIR}
+ros2 run dragoman_xtce2msg xtce_to_ros ${XTCE_DIR}/Curiosity.xtce ${MSG_DIR}
 echo ""
 
 echo "→ Processing AllTypes.xtce..."
-python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/AllTypes.xtce ${MSG_DIR}
+ros2 run dragoman_xtce2msg xtce_to_ros ${XTCE_DIR}/AllTypes.xtce ${MSG_DIR}
 echo ""
 
 echo "→ Processing MultiPacket.xtce..."
-python3 dragoman_xtce2msg/xtce_to_ros.py ${XTCE_DIR}/MultiPacket.xtce ${MSG_DIR}
+ros2 run dragoman_xtce2msg xtce_to_ros ${XTCE_DIR}/MultiPacket.xtce ${MSG_DIR}
 echo ""
 
 echo "========================================"

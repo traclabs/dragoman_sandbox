@@ -22,6 +22,7 @@ ament_export_dependencies(
 # Install Python executable scripts
 install(PROGRAMS
   scripts/xtce_to_ros
+  scripts/generate_msgs.sh
   DESTINATION lib/${PROJECT_NAME}
 )
 
