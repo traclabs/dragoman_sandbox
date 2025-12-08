@@ -472,9 +472,10 @@ def main(args=None):
         help='Override YAMCS URL from config file'
     )
 
-    parsed_args = parser.parse_args()
+    # Parse only known args to allow ROS args to pass through
+    parsed_args, unknown = parser.parse_known_args()
 
-    # Initialize ROS2
+    # Initialize ROS2 with all arguments (including ROS-specific ones)
     rclpy.init(args=args)
 
     node = None

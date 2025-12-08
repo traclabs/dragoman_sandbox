@@ -10,7 +10,7 @@ from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, 
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue, ParameterFile
 from launch_ros.substitutions import FindPackageShare
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
 from launch.conditions import IfCondition, UnlessCondition
 
 
@@ -44,7 +44,12 @@ def generate_launch_description():
 
 
     return LaunchDescription(
-        launch_args +
-        [simulator_node,
+        [
+            # Set ROS_DOMAIN_ID to 100 for spacecraft system
+            SetEnvironmentVariable('ROS_DOMAIN_ID', '100'),
+        ]
+        + launch_args
+        + [
+            simulator_node,
         ]
     )

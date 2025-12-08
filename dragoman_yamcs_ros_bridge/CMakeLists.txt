@@ -4,7 +4,6 @@ project(dragoman_yamcs_ros_bridge)
 add_compile_options(-std=c++17)
 
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
 
 set(DEPS
   rclpy
@@ -23,9 +22,6 @@ endforeach()
 ament_export_dependencies(
   ${DEPS}
 )
-
-# Install Python modules
-ament_python_install_package(${PROJECT_NAME})
 
 #############
 ## Install ##

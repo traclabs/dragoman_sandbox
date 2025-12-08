@@ -11,7 +11,7 @@
 
 yamcs:
   url: "localhost:8090"
-  instance: "curiosity"
+  instance: "dragoman"
   processor: "realtime"
 
 bridges:

@@ -47,7 +47,7 @@ This package includes the following simulator scripts:
 
 1. Start the YAMCS server with iMetro configuration:
    ```bash
-   ros2 run dragoman_sandbox imetro_yamcs
+   ros2 run dragoman_yamcs_project dragoman_yamcs
    ```
 
 2. Open YAMCS web interface in a browser:
@@ -56,18 +56,25 @@ This package includes the following simulator scripts:
    ```
    You should see the YAMCS Mission Control with the iMetro interface loaded.
 
-3. Launch the demo script that publishes telemetry data and reads commands:
+3. Launch the demo script that publishes telemetry data and reads commands (spacecraft side):
    ```bash
    ros2 launch dragoman_fsw_sim imetro_dummy_demo.launch.py
    ```
+   *This runs in ROS_DOMAIN_ID=100 to isolate ROS2 communication from the ground side.*
 
-4. Use YAMCS to view telemetry being sent from the script and send commands.
+4. (Optional) Launch YAMCS ↔ ROS2 bridge and RViz visualization (ground side):
+   ```bash
+   ros2 launch dragoman_ground_example imetro_ground_vis.launch.py
+   ```
+   *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication from the spacecraft side.*
+
+5. Use YAMCS to view telemetry being sent from the script and send commands.
 
 ### Run Simple Robot Demo (iMetro Setup)
 
 1. Start the YAMCS server with iMetro configuration:
    ```bash
-   ros2 run dragoman_sandbox imetro_yamcs
+   ros2 run dragoman_yamcs_project dragoman_yamcs
    ```
 
 2. Open YAMCS web interface in a browser:
@@ -76,18 +83,25 @@ This package includes the following simulator scripts:
    ```
    You should see the YAMCS Mission Control with the iMetro interface loaded.
 
-3. Launch the robot demo script:
+3. Launch the robot demo script (spacecraft side):
    ```bash
    ros2 launch dragoman_fsw_sim imetro_robot_simple_demo.launch.py
    ```
+   *This runs in ROS_DOMAIN_ID=100 to isolate ROS2 communication from the ground side.*
 
-4. Use YAMCS to view telemetry from the robot and control the arm and lift/rail joints.
+4. (Optional) Launch YAMCS ↔ ROS2 bridge and RViz visualization (ground side):
+   ```bash
+   ros2 launch dragoman_ground_example imetro_ground_vis.launch.py
+   ```
+   *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication from the spacecraft side.*
+
+5. Use YAMCS to view telemetry from the robot and control the arm and lift/rail joints.
 
 ### Run Simple Robot Demo (Curiosity Setup)
 
 1. Start the YAMCS server with Curiosity configuration:
    ```bash
-   ros2 run dragoman_sandbox curiosity_yamcs
+   ros2 run dragoman_yamcs_project dragoman_yamcs
    ```
 
 2. Open YAMCS web interface in a browser:
@@ -104,7 +118,7 @@ This package includes the following simulator scripts:
 
 4. (Optional) Launch YAMCS ↔ ROS2 bridge and RViz visualization (ground side):
    ```bash
-   ros2 launch dragoman_sandbox curiosity_ground_vis.launch.py
+   ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py
    ```
    *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication from the spacecraft side.*
 
@@ -113,7 +127,7 @@ This package includes the following simulator scripts:
 This package depends on:
 - `dragoman_sandbox` - For shared utilities and XTCE construct generators
 - `dragoman_yamcs_project` - For YAMCS server configurations
-- `dragoman_msgs` - For custom telemetry message definitions
+- `dragoman_generated_msgs` - For custom telemetry message definitions
 - ROS2 packages: `rclpy`, `sensor_msgs`, `trajectory_msgs`, `control_msgs`, etc.
 
 ## Related Packages
