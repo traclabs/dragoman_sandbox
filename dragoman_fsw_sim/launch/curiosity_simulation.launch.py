@@ -14,7 +14,6 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetE
 #####################################
 def generate_launch_description():
 
-    dragoman_sandbox_dir = get_package_share_directory("dragoman_sandbox")
     dragoman_fsw_sim_dir = get_package_share_directory("dragoman_fsw_sim")
 
     # Process SRDF through xacro

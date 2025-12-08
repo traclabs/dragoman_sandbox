@@ -10,13 +10,13 @@ This package provides a complete ground station visualization setup that connect
 
 ### Launch Files
 
-- **`launch/curiosity_ground_vis.launch.py`** - Ground-side visualization for Curiosity rover with RViz
+- **`launch/curiosity_ground.launch.py`** - Ground-side visualization for Curiosity rover with RViz
   - Launches RViz for visualization
   - Starts robot_state_publisher for TF transforms
   - Connects to YAMCS server via the dragoman_yamcs_ros_bridge
   - No simulation - purely for visualizing telemetry from YAMCS
 
-- **`launch/imetro_ground_vis.launch.py`** - Ground-side visualization for iMetro CLR robot with RViz
+- **`launch/imetro_ground.launch.py`** - Ground-side visualization for iMetro CLR robot with RViz
   - Launches RViz for visualization
   - Starts robot_state_publisher for TF transforms
   - Connects to YAMCS server via the dragoman_yamcs_ros_bridge
@@ -26,6 +26,12 @@ This package provides a complete ground station visualization setup that connect
 ### RViz Configuration
 
 - **`rviz/curiosity.rviz`** - RViz configuration for Curiosity rover visualization
+- **`rviz/imetro.rviz`** - RViz configuration for iMetro CLR robot visualization
+
+### Python Scripts
+
+- **`scripts/curiosity_joint_state_publisher.py`** - Converts Curiosity telemetry packets to ROS2 joint states
+- **`scripts/imetro_joint_state_publisher.py`** - Converts iMetro telemetry packets to ROS2 joint states
 
 ## Dependencies
 
@@ -44,7 +50,7 @@ This package provides a complete ground station visualization setup that connect
 ### Launch Curiosity Ground Visualization
 
 ```bash
-ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py
+ros2 launch dragoman_ground_example curiosity_ground.launch.py
 ```
 
 #### Launch Arguments
@@ -57,7 +63,7 @@ ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py
 #### Example with Custom YAMCS Server
 
 ```bash
-ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py \
+ros2 launch dragoman_ground_example curiosity_ground.launch.py \
     yamcs_url:=192.168.1.100:8090 \
     yamcs_instance:=my_mission
 ```
@@ -65,7 +71,7 @@ ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py \
 ### Launch iMetro Ground Visualization
 
 ```bash
-ros2 launch dragoman_ground_example imetro_ground_vis.launch.py
+ros2 launch dragoman_ground_example imetro_ground.launch.py
 ```
 
 #### Launch Arguments
@@ -76,7 +82,7 @@ ros2 launch dragoman_ground_example imetro_ground_vis.launch.py
 #### Example with Custom YAMCS Server
 
 ```bash
-ros2 launch dragoman_ground_example imetro_ground_vis.launch.py \
+ros2 launch dragoman_ground_example imetro_ground.launch.py \
     yamcs_url:=192.168.1.100:8090
 ```
 

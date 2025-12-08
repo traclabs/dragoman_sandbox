@@ -2,7 +2,16 @@
 
 Flight software simulators for dragoman telemetry and command handling.
 
-This package contains simulation scripts and launch files that were moved from `dragoman_sandbox` to better organize the codebase.
+This package contains simulation scripts, launch files, and utilities that were moved from `dragoman_sandbox` to better organize the codebase.
+
+## Python Modules
+
+This package includes the following Python modules in `dragoman_fsw_sim/`:
+
+- **clr_trajectory_router.py** - Trajectory routing utilities for CLR robot
+- **curiosity_xtce_construct_generator.py** - XTCE construct generator for Curiosity rover telemetry
+- **imetro_xtce_construct_generator.py** - XTCE construct generator for iMetro demo telemetry
+- **srdf_parser.py** - Parser for SRDF (Semantic Robot Description Format) files
 
 ## Simulators
 
@@ -13,6 +22,14 @@ This package includes the following simulator scripts:
 - **imetro_demo_robot_simple_simulator.py** - Robot simulator for iMetro demo with real robot integration
 - **all_types_simulator.py** - Simulator demonstrating all XTCE parameter types
 - **multipacket_simulator.py** - Multi-packet telemetry simulator with different APIDs
+- **move_robot.py** - Script for moving robot joints and testing robot control
+
+## Behavior Trees
+
+This package includes behavior tree definitions for CLR robot operations:
+
+- **behaviors/imetro_clr_pnp_cargo_bag.xml** - Pick and place behavior for cargo bag handling
+- **behaviors/imetro_clr_take_pictures.xml** - Behavior for taking pictures with CLR robot
 
 ## Launch Files
 
@@ -64,7 +81,7 @@ This package includes the following simulator scripts:
 
 4. (Optional) Launch YAMCS ↔ ROS2 bridge and RViz visualization (ground side):
    ```bash
-   ros2 launch dragoman_ground_example imetro_ground_vis.launch.py
+   ros2 launch dragoman_ground_example imetro_ground.launch.py
    ```
    *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication from the spacecraft side.*
 
@@ -91,7 +108,7 @@ This package includes the following simulator scripts:
 
 4. (Optional) Launch YAMCS ↔ ROS2 bridge and RViz visualization (ground side):
    ```bash
-   ros2 launch dragoman_ground_example imetro_ground_vis.launch.py
+   ros2 launch dragoman_ground_example imetro_ground.launch.py
    ```
    *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication from the spacecraft side.*
 
@@ -118,7 +135,7 @@ This package includes the following simulator scripts:
 
 4. (Optional) Launch YAMCS ↔ ROS2 bridge and RViz visualization (ground side):
    ```bash
-   ros2 launch dragoman_ground_example curiosity_ground_vis.launch.py
+   ros2 launch dragoman_ground_example curiosity_ground.launch.py
    ```
    *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication from the spacecraft side.*
 

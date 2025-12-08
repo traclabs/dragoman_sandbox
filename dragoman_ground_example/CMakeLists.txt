@@ -9,7 +9,9 @@ install(
 )
 
 install(
-  PROGRAMS scripts/imetro_joint_state_publisher.py
+  PROGRAMS
+    scripts/imetro_joint_state_publisher.py
+    scripts/curiosity_joint_state_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
