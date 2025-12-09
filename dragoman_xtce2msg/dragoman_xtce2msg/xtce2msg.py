@@ -1,4 +1,4 @@
-# xtce_to_ros.py - Main script for XTCE to ROS 2 Message Conversion
+# xtce2msg.py - Main script for XTCE to ROS 2 Message Conversion
 # Updated to support container-based message generation
 
 import sys
@@ -6,7 +6,7 @@ import os
 import re
 import xml.etree.ElementTree as ET
 from dragoman_xtce2msg.xtce_model import parse_xtce_file, parse_containers, resolve_type_definition, resolve_aggregate_type
-from dragoman_xtce2msg.ros_generator import generate_ros_msg
+from dragoman_xtce2msg.generate_msg import generate_msg
 
 def to_ros_field_name(name):
     """
@@ -114,7 +114,7 @@ def generate_message_for_container(container_name, container_params, parameter_m
 
     # Generate the ROS 2 message file
     print(f"  Generating ROS 2 message: {output_file_path}...")
-    generate_ros_msg(msg_name, ros_fields, output_file_path, xtce_file_path, ccsds_fields)
+    generate_msg(msg_name, ros_fields, output_file_path, xtce_file_path, ccsds_fields)
 
     return output_file_path
 
@@ -211,7 +211,7 @@ def main():
                     else:
                         ros_fields.append(field_entry)
 
-            generate_ros_msg(msg_name, ros_fields, output_file_path, xtce_file_path, ccsds_fields)
+            generate_msg(msg_name, ros_fields, output_file_path, xtce_file_path, ccsds_fields)
             print(f"Successfully created ROS 2 message: {output_file_path}")
 
     except Exception as e:

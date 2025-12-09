@@ -6,13 +6,13 @@ This script provides a command-line interface to convert XTCE telemetry
 definitions into ROS 2 message files.
 
 Usage:
-    ros2 run dragoman_xtce2msg xtce_to_ros <input_xtce_file.xml> <output_directory>
+    ros2 run dragoman_xtce2msg xtce2msg <input_xtce_file.xml> <output_directory>
 
 Or directly:
-    xtce_to_ros <input_xtce_file.xml> <output_directory>
+    xtce2msg <input_xtce_file.xml> <output_directory>
 """
 
-from dragoman_xtce2msg.xtce_to_ros import main
+from dragoman_xtce2msg.xtce2msg import main
 
 if __name__ == "__main__":
     main()

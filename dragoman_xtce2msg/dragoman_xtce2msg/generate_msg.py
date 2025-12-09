@@ -1,8 +1,8 @@
-# ros_generator.py - Creates the ROS 2 message file (.msg)
+# generate_msg.py - Creates the ROS 2 message file (.msg)
 
 from datetime import datetime
 
-def generate_ros_msg(msg_name, fields, output_path, source_file, ccsds_fields=None):
+def generate_msg(msg_name, fields, output_path, source_file, ccsds_fields=None):
     """
     Generates a ROS 2 message file from the processed XTCE parameter fields.
 

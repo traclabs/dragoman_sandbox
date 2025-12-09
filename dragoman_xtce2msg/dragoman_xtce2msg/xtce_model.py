@@ -1,7 +1,5 @@
 # xtce_model.py - Updated to use QName lookups exclusively
 
-import xml.etree.ElementTree as ET
-
 # XTCE Namespace URI. Must match the xmlns="..." in the XML file.
 XTCE_NS = "http://www.omg.org/spec/XTCE/20180204"
 
@@ -51,7 +49,7 @@ ROS_FLOAT_MAP = {
 
 # --- Core Parsing Functions ---
 
-def parse_xtce_file(root): # ns_map parameter REMOVED
+def parse_xtce_file(root):
     """Parses the XTCE file to extract raw ParameterTypes and Parameters."""
     type_definitions = {}
     parameter_metadata = {}

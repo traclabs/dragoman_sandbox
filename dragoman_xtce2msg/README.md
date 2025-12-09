@@ -16,7 +16,7 @@ $(ros2 pkg prefix --share dragoman_generated_msgs)/msg/
 
 ### Single File Conversion
 ```bash
-ros2 run dragoman_xtce2msg xtce_to_ros <input_xtce_file.xml> <output_directory>
+ros2 run dragoman_xtce2msg xtce2msg <input_xtce_file.xml> <output_directory>
 ```
 
 ## Features
