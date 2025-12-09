@@ -54,8 +54,8 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            # Set ROS_DOMAIN_ID to 100 for spacecraft system
-            SetEnvironmentVariable('ROS_DOMAIN_ID', '100'),
+            # Set ROS_DOMAIN_ID to 101 for spacecraft system
+            SetEnvironmentVariable('ROS_DOMAIN_ID', '101'),
         ]
         + launch_args
         + [

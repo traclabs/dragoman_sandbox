@@ -30,7 +30,7 @@ class MultiPacketSimulator:
     """Simulator that generates and sends Temperature and Voltage telemetry packets"""
 
     def __init__(self, tm_host='127.0.0.1', tm_port=10015, rate=1,
-                 temp_apid=110, voltage_apid=111):
+                 temp_apid=130, voltage_apid=131):
         """
         Initialize the simulator
 
@@ -38,8 +38,8 @@ class MultiPacketSimulator:
             tm_host: Telemetry destination host
             tm_port: Telemetry destination port
             rate: Telemetry rate in Hz (packets per second, alternating types)
-            temp_apid: APID for TemperaturePacket (default: 110)
-            voltage_apid: APID for VoltagePacket (default: 111)
+            temp_apid: APID for TemperaturePacket (default: 130)
+            voltage_apid: APID for VoltagePacket (default: 131)
         """
         self.tm_host = tm_host
         self.tm_port = tm_port

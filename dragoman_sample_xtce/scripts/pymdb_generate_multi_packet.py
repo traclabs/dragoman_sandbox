@@ -25,7 +25,7 @@ def generate_xtce_multi_packet(filename):
     ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
 
     # =========================================================================
-    # PACKET 1: Temperature data (APID 110)
+    # PACKET 1: Temperature data (APID 130)
     # =========================================================================
 
     temp_param = yp.FloatParameter(
@@ -41,11 +41,11 @@ def generate_xtce_multi_packet(filename):
         name="TemperaturePacket",
         base=ccsds_header.tm_container,
         entries=[yp.ParameterEntry(parameter=temp_param)],
-        condition=yp.eq(ccsds_header.tm_apid, 110)
+        condition=yp.eq(ccsds_header.tm_apid, 130)
     )
 
     # =========================================================================
-    # PACKET 2: Voltage data (APID 111)
+    # PACKET 2: Voltage data (APID 131)
     # =========================================================================
 
     voltage_param = yp.FloatParameter(
@@ -61,7 +61,7 @@ def generate_xtce_multi_packet(filename):
         name="VoltagePacket",
         base=ccsds_header.tm_container,
         entries=[yp.ParameterEntry(parameter=voltage_param)],
-        condition=yp.eq(ccsds_header.tm_apid, 111)
+        condition=yp.eq(ccsds_header.tm_apid, 131)
     )
 
     # =========================================================================

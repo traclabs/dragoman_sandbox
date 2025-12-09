@@ -155,8 +155,8 @@ class AllTypesSimulator:
         # - version (3 bits): 0
         # - type (1 bit): 0 (telemetry)
         # - secondary_header_flag (1 bit): 0 (not present)
-        # - apid (11 bits): 100
-        packet_id = (0 << 13) | (0 << 12) | (0 << 11) | 100
+        # - apid (11 bits): 120
+        packet_id = (0 << 13) | (0 << 12) | (0 << 11) | 120
 
         # Packet Sequence Control (2 bytes)
         # - sequence_flags (2 bits): 3 (unsegmented)

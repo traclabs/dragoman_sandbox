@@ -6,8 +6,6 @@ import traceback
 from threading import Thread
 from time import sleep
 
-from lark import logger
-
 import rclpy
 from rclpy.node import Node
 
@@ -56,7 +54,7 @@ def send_tm(simulator):
                         "version": 0,
                         "type": 0,  # 0 = Telemetry
                         "secondary_header_flag": 0,
-                        "apid": 100,  # APID for telemetry
+                        "apid": 110,  # APID for telemetry
                         "sequence_flags": 3,  # 3 = Unsegmented
                         "sequence_count": tm_count,
                         "packet_length": NUM_JOINTS * 4 - 1,  # 24 floats * 4 bytes - 1

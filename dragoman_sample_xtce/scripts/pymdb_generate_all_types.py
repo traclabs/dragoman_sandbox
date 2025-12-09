@@ -144,7 +144,8 @@ def generate_xtce_all_types(filename):
             yp.ParameterEntry(parameter=binary_param),
             yp.ParameterEntry(parameter=array_param_instance),
             yp.ParameterEntry(parameter=aggregate_param_instance),
-        ]
+        ],
+        condition=yp.eq(ccsds_header.tm_apid, 120)
     )
 
     # =========================================================================

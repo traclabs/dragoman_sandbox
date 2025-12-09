@@ -21,7 +21,7 @@ def generate_xtce_imetro_demo(filename):
   # Generic iMetro command
   # ********************************
   command_id = yp.IntegerArgument(
-    name="comand_id",
+    name="command_id",
     signed = False,
     encoding = yp.uint16_t,
   )
@@ -173,7 +173,8 @@ def generate_xtce_imetro_demo(filename):
     base=ccsds_header.tm_container,
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter)
-    ]
+    ],
+    condition=yp.eq(ccsds_header.tm_apid, 100)
   )
 
 

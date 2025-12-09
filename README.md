@@ -46,7 +46,9 @@ This project demonstrates the integration between YAMCS (Yet Another Mission Con
 ```bash
 ros2 run dragoman_yamcs_project dragoman_yamcs
 ```
-Open web interface at `http://localhost:8090/`
+Open web interface at `http://localhost:8090/`.
+
+**Note:** Before starting YAMCS, ensure the appropriate XTCE file is uncommented in [`yamcs.dragoman.yaml`](dragoman_yamcs_project/src/main/yamcs/etc/yamcs.dragoman.yaml:38) (lines 38-50) to match your chosen demo.
 
 ### 2. Launch Spacecraft-Side Simulation
 Choose one:
@@ -83,6 +85,6 @@ ros2 launch dragoman_ground_example imetro_ground.launch.py
 ros2 launch dragoman_ground_example curiosity_ground.launch.py
 ```
 
-**Note:** Spacecraft-side ROS2 demos run in `ROS_DOMAIN_ID=100` to isolate communications.
+**Note:** Spacecraft-side ROS2 demos run in a non-zero `ROS_DOMAIN_ID` to isolate communications.
 
 See individual package READMEs for detailed information.
