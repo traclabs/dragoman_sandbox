@@ -8,7 +8,7 @@ from launch.substitutions import Command, PathJoinSubstitution, LaunchConfigurat
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable
 
 
 #####################################
@@ -46,15 +46,20 @@ def generate_launch_description():
         ],
     )
 
-    launch_robot_dir = PathJoinSubstitution([FindPackageShare("dragoman_sandbox"), "launch"])
-    robot_launch = IncludeLaunchDescription(
-        PathJoinSubstitution([launch_robot_dir, "view_curiosity.launch.py"])
+    # Include curiosity_gazebo launch file directly
+    curiosity_gazebo_launch_dir = PathJoinSubstitution([FindPackageShare('curiosity_gazebo'), 'launch'])
+    curiosity_gazebo_launch = IncludeLaunchDescription(
+        PathJoinSubstitution([curiosity_gazebo_launch_dir, 'curiosity_gazebo.launch.py'])
     )
 
     return LaunchDescription(
-        launch_args
+        [
+            # Set ROS_DOMAIN_ID to 100 for spacecraft system
+            SetEnvironmentVariable('ROS_DOMAIN_ID', '100'),
+        ]
+        + launch_args
         + [
             simulator_node,
-            robot_launch,
+            curiosity_gazebo_launch,
         ]
     )
