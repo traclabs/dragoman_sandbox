@@ -6,7 +6,7 @@
       ros2 run dragoman_sandbox curiosity_yamcs
       ```
 
-* In a web browser, open the terminal at: http://localhost:8090/ . You sould see the YAMCS Mission Control with the imetro interface loaded up.
+* In a web browser, open the terminal at: [http://localhost:8090/](http://localhost:8090/) . You sould see the YAMCS Mission Control with the **Curiosity** interface loaded up.
 
 * Run the simulation with Gazebo (spacecraft side):
 
@@ -23,3 +23,6 @@
       ```
 
   *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication with the spacecraft side.*
+  
+ 
+![Curiosity sim](docs/images/curiosity_gz_demo.png "Curiosity demo")  
