@@ -14,7 +14,7 @@
       ros2 launch dragoman_sandbox curiosity_simulation.launch.py
       ```
       
-  *This runs in ROS_DOMAIN_ID=100 to isolate ROS2 communication with the ground side.*
+      *This runs in ROS_DOMAIN_ID=100 to isolate ROS2 communication with the ground side.*
 
 * Run YAMCS <-> ROS2 bridge and RViz visualization (ground side, optional):
 
@@ -22,7 +22,8 @@
       ros2 launch dragoman_sandbox curiosity_ground_vis.launch.py
       ```
 
-  *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication with the spacecraft side.*
+      *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication with the spacecraft side.*
   
  
 ![Curiosity sim](docs/images/curiosity_gz_demo.png "Curiosity demo")  
+
