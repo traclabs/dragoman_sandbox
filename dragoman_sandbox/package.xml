@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>dragoman_sandbox</name>
+  <version>0.0.0</version>
+  <description>Meta-package for dragoman telemetry and command handling demonstrations</description>
+  <maintainer email="robotics@traclabs.com">TRACLabs Robotics</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>dragoman_fsw_sim</exec_depend>
+  <exec_depend>dragoman_generated_msgs</exec_depend>
+  <exec_depend>dragoman_ground_example</exec_depend>
+  <exec_depend>dragoman_sample_xtce</exec_depend>
+  <exec_depend>dragoman_xtce2msg</exec_depend>
+  <exec_depend>dragoman_yamcs_project</exec_depend>
+  <exec_depend>dragoman_yamcs_ros_bridge</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""
+XTCE to ROS 2 Message Converter - Executable Entry Point
+
+This script provides a command-line interface to convert XTCE telemetry
+definitions into ROS 2 message files.
+
+Usage:
+    ros2 run dragoman_xtce2msg xtce2msg <input_xtce_file.xml> <output_directory>
+
+Or directly:
+    xtce2msg <input_xtce_file.xml> <output_directory>
+"""
+
+from dragoman_xtce2msg.xtce2msg import main
+
+if __name__ == "__main__":
+    main()

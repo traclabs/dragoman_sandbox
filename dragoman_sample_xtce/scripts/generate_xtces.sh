@@ -1,0 +1,28 @@
+#!/bin/bash
+
+XTCE_DIR=$(ros2 pkg prefix --share dragoman_sample_xtce)/xtce
+
+echo "========================================"
+echo "  XTCE Generator"
+echo "========================================"
+echo ""
+
+echo "→ Generating IMetro.xtce..."
+ros2 run dragoman_sample_xtce pymdb_generate_imetro_demo_xtce.py ${XTCE_DIR}/IMetro.xtce
+echo ""
+
+echo "→ Generating Curiosity.xtce..."
+ros2 run dragoman_sample_xtce pymdb_generate_curiosity_xtce.py ${XTCE_DIR}/Curiosity.xtce
+echo ""
+
+echo "→ Generating AllTypes.xtce..."
+ros2 run dragoman_sample_xtce pymdb_generate_all_types.py ${XTCE_DIR}/AllTypes.xtce
+echo ""
+
+echo "→ Generating MultiPacket.xtce..."
+ros2 run dragoman_sample_xtce pymdb_generate_multi_packet.py ${XTCE_DIR}/MultiPacket.xtce
+echo ""
+
+echo "========================================"
+echo "  ✓ All XTCE files generated"
+echo "========================================"

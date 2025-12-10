@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>dragoman_xtce2msg</name>
+  <version>0.0.0</version>
+  <description>XTCE to ROS 2 Message Converter - Converts XTCE telemetry definitions to ROS 2 message files</description>
+  <maintainer email="robotics@traclabs.com">TRACLabs Robotics</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+
+  <exec_depend>dragoman_sample_xtce</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

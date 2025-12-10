@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>dragoman_ground_example</name>
+  <version>0.0.0</version>
+  <description>Ground visualization example using the Dragoman Yamcs ROS bridge</description>
+  <maintainer email="robotics@traclabs.com">TRACLabs Robotics</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>curiosity_description</exec_depend>
+  <exec_depend>dragoman_yamcs_ros_bridge</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
