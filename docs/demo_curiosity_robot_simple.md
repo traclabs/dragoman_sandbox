@@ -25,5 +25,6 @@
       *This runs in default ROS_DOMAIN_ID=0 to isolate ROS2 communication with the spacecraft side.*
   
  
-![Curiosity sim](docs/images/curiosity_gz_demo.png "Curiosity demo")  
+![Curiosity sim](docs/images/curiosity_gz_demo.png){width=640 height=480}
+ 
 
