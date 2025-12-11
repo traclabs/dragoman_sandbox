@@ -291,14 +291,14 @@ def main():
     parser.add_argument(
         '--temp-apid',
         type=int,
-        default=110,
-        help='APID for TemperaturePacket (default: 110)'
+        default=130,
+        help='APID for TemperaturePacket (default: 130)'
     )
     parser.add_argument(
         '--voltage-apid',
         type=int,
-        default=111,
-        help='APID for VoltagePacket (default: 111)'
+        default=131,
+        help='APID for VoltagePacket (default: 131)'
     )
 
     args = parser.parse_args()
