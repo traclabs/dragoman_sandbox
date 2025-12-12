@@ -47,7 +47,7 @@ def send_tm(simulator):
                     "header": {
                         "version": 0,
                         "type": 0,  # 0 = Telemetry
-                        "secondary_header_flag": 0,
+                        "secondary_header_flag": False,
                         "apid": 110,  # APID for telemetry
                         "sequence_flags": 3,  # 3 = Unsegmented
                         "sequence_count": tm_count,
