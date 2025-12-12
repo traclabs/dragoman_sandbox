@@ -52,10 +52,10 @@ def send_tm(simulator):
                 {
                     "header": {
                         "version": 0,
-                        "type": 0,
+                        "type": 0,  # 0 = Telemetry
                         "secondary_header_flag": 0,
-                        "apid": 100,
-                        "sequence_flags": 3,
+                        "apid": 100,  # APID for IMetro TM
+                        "sequence_flags": 3,  # 3 = Unsegmented
                         "sequence_count": tm_count,
                         "packet_length": TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1,
                     },

@@ -15,7 +15,7 @@ def send_tm(simulator):
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     simulator.tm_counter = 1
-    tm_count = 0xc000
+    tm_count = 0
     js_vals = [0.25, 0.36, 0.49, 0.64, 0.81, 1.21, 2.35, 0.22, 0.87]
 
     while True:
@@ -24,18 +24,18 @@ def send_tm(simulator):
         packet = TM_PACKET_STRUCT.build({
             'header': {
                 'version': 0,
-                'type': False,
+                'type': 0,  # 0 = Telemetry
                 'secondary_header_flag': False,
-                'apid': 100,
-                'sequence_flags': 3,
-                'sequence_count': tm_count & 0x3FFF,
+                'apid': 100,  # APID for IMetro TM
+                'sequence_flags': 3,  # 3 = Unsegmented
+                'sequence_count': tm_count,
                 'packet_length': TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
             },
             'joint_state': jsi_vals
         })
 
         tm_socket.sendto(packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
-        tm_count += 1
+        tm_count = (tm_count + 1) % 16384
         simulator.tm_counter += 1
 
         sleep(1 / simulator.rate)
