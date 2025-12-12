@@ -23,10 +23,12 @@ def parse_srdf_group_states(srdf_content: str) -> Dict[Tuple[str, str], Dict]:
     root = ET.fromstring(srdf_content)
     group_states = {}
 
+    # Find all group_state elements
     for group_state in root.findall('.//group_state'):
         group_name = group_state.get('group')
         state_name = group_state.get('name')
 
+        # Extract joint values
         joints = []
         values = []
         for joint in group_state.findall('joint'):
@@ -35,6 +37,7 @@ def parse_srdf_group_states(srdf_content: str) -> Dict[Tuple[str, str], Dict]:
             joints.append(joint_name)
             values.append(joint_value)
 
+        # Store in dictionary
         key = (group_name, state_name)
         group_states[key] = {
             'joints': joints,

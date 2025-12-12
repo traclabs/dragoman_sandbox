@@ -33,4 +33,6 @@ ros2 launch dragoman_fsw_sim curiosity_simulation.launch.py
 ros2 launch dragoman_fsw_sim imetro_robot_simple_demo.launch.py
 ```
 
+All simulators support command-line options. Use `--help` to see available options.
+
 See [main README](../README.md) for details.

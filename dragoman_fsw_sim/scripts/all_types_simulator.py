@@ -75,31 +75,43 @@ class AllTypesSimulator:
         """Generate mock values for all telemetry parameters"""
         elapsed = time.time() - self.start_time
 
+        # T_IntegerSigned: Counter that increments (can go negative)
         integer_signed = int((self.tm_counter % 200) - 100)
+
+        # T_FloatRaw64: Sine wave pattern
         float_raw64 = 50.0 + 25.0 * math.sin(elapsed * 0.5)
 
+        # T_EnumeratedAlarm: Cycles through states every 10 packets
         if self.tm_counter % 10 == 0:
             self.enum_state = (self.enum_state + 1) % 3
         enum_alarm = self.enum_state
 
+        # T_StringUTF8: Rotating status messages
         if self.tm_counter % 5 == 0:
             self.string_index = (self.string_index + 1) % len(self.status_messages)
         string_utf8 = self.status_messages[self.string_index]
 
+        # T_BooleanFlag: Toggles every 3 packets
         if self.tm_counter % 3 == 0:
             self.boolean_state = not self.boolean_state
         boolean_flag = self.boolean_state
 
+        # T_AbsoluteTime: Current UNIX timestamp in seconds
         absolute_time = int(time.time())
+
+        # T_RelativeTimeRaw: Seconds since simulator start
         relative_time = int(elapsed)
 
+        # T_BinaryBlob: 16 bytes of pseudo-random data (deterministic pattern)
         random.seed(self.tm_counter)
         binary_blob = bytes([random.randint(0, 255) for _ in range(16)])
 
+        # T_IntegerArray: Array of 10 unsigned 16-bit integers
         integer_array = [(self.tm_counter + i * 100) % 65536 for i in range(10)]
 
-        current_draw = 2.5 + 0.5 * math.sin(elapsed * 0.3)
-        heater_enabled = (self.tm_counter % 20) < 10
+        # T_StatusAggregate: Struct with CurrentDraw, HeaterEnabled, RawStatusFlags
+        current_draw = 2.5 + 0.5 * math.sin(elapsed * 0.3)  # 32-bit float
+        heater_enabled = (self.tm_counter % 20) < 10  # Boolean
         raw_status_flags = bytes([
             (self.tm_counter >> 24) & 0xFF,
             (self.tm_counter >> 16) & 0xFF,
@@ -131,21 +143,19 @@ class AllTypesSimulator:
         packet_dict = {
             'header': {
                 'version': 0,
-                'type': False,
+                "type": 0,  # 0 = Telemetry
                 'secondary_header_flag': False,
                 'apid': 120,
-                'sequence_flags': 3,
+                'sequence_flags': 3, # 3 = Unsegmented
                 'sequence_count': self.sequence_count,
                 'packet_length': 0  # Placeholder, will be calculated
             },
             **data
         }
 
-        # Calculate size with the actual data (handles variable-length string)
+        # Update packet_length field (data length - 1 per CCSDS spec)
         total_size = TM_PACKET_STRUCT.sizeof(**packet_dict)
         data_length = total_size - CCSDSHeader.sizeof()  # Exclude CCSDS header
-
-        # Update packet_length field (data length - 1 per CCSDS spec)
         packet_dict['header']['packet_length'] = data_length - 1
 
         # Build the final packet
@@ -201,18 +211,6 @@ class AllTypesSimulator:
     def parse_telecommand(self, data):
         """
         Parse and process ConfigureAllTypes command
-
-        Command structure (from XTCE):
-        - CCSDS Header (6 bytes)
-        - C_ArgInt16: int16 (2 bytes)
-        - C_ArgFloat64: float64 (8 bytes)
-        - C_ArgStringUTF16: UTF-16BE string (variable, null-terminated)
-        - C_ArgBoolean: uint8 (1 byte)
-        - C_ArgArrayFloat3: 3x float32 (12 bytes)
-        - C_ArgConfigStruct: struct (13 bytes)
-          - ID: uint8 (1 byte)
-          - Value: float32 (4 bytes)
-          - ConfigData: binary (8 bytes)
         """
         try:
             # Check APID (first 2 bytes, bits 0-10)

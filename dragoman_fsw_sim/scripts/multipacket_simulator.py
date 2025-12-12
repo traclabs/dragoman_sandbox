@@ -31,27 +31,43 @@ from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 
 
 class MultiPacketSimulator:
+    """Simulator that generates and sends Temperature and Voltage telemetry packets"""
 
     def __init__(self, tm_host='127.0.0.1', tm_port=10015, rate=1,
                  temp_apid=130, voltage_apid=131):
+        """
+        Initialize the simulator
+
+        Args:
+            tm_host: Telemetry destination host
+            tm_port: Telemetry destination port
+            rate: Telemetry rate in Hz (packets per second, alternating types)
+            temp_apid: APID for TemperaturePacket (default: 130)
+            voltage_apid: APID for VoltagePacket (default: 131)
+        """
         self.tm_host = tm_host
         self.tm_port = tm_port
         self.rate = rate
         self.temp_apid = temp_apid
         self.voltage_apid = voltage_apid
 
+        # Counters
         self.tm_counter = 0
         self.temp_sequence_count = 0
         self.voltage_sequence_count = 0
+
+        # Start time for simulation patterns
         self.start_time = time.time()
 
-        self.base_temperature = 22.0
-        self.temp_cycle_period = 60.0
-        self.temp_spike_probability = 0.02
+        # Temperature simulation state
+        self.base_temperature = 22.0  # Room temperature baseline (°C)
+        self.temp_cycle_period = 60.0  # Thermal cycle period (seconds)
+        self.temp_spike_probability = 0.02  # 2% chance of thermal event per packet
 
-        self.nominal_voltage = 28.0
-        self.voltage_drift_period = 120.0
-        self.voltage_drop_probability = 0.01
+        # Voltage simulation state
+        self.nominal_voltage = 28.0  # Nominal bus voltage (V)
+        self.voltage_drift_period = 120.0  # Slow drift period (seconds)
+        self.voltage_drop_probability = 0.01  # 1% chance of load event per packet
 
         print(f"MultiPacket Simulator initialized")
         print(f"  TM Host: {self.tm_host}")
@@ -61,37 +77,64 @@ class MultiPacketSimulator:
         print(f"  Voltage APID: {self.voltage_apid}")
 
     def generate_temperature(self):
+        """
+        Generate realistic temperature value with thermal patterns
+
+        Returns:
+            float: Temperature in degrees Celsius
+        """
         elapsed = time.time() - self.start_time
 
+        # Base thermal cycle (slow sinusoidal variation)
         thermal_cycle = 3.0 * math.sin(2 * math.pi * elapsed / self.temp_cycle_period)
+
+        # Sensor noise (small random fluctuations)
         sensor_noise = random.gauss(0, 0.1)
 
+        # Occasional thermal spikes (simulating heat-generating events)
         thermal_spike = 0.0
         if random.random() < self.temp_spike_probability:
             thermal_spike = random.uniform(2.0, 5.0)
 
+        # Combine all components
         temperature = self.base_temperature + thermal_cycle + sensor_noise + thermal_spike
 
         return temperature
 
     def generate_voltage(self):
+        """
+        Generate realistic voltage value with power supply characteristics
+
+        Returns:
+            float: Voltage in Volts
+        """
         elapsed = time.time() - self.start_time
 
+        # Slow voltage drift (aging, temperature effects)
         voltage_drift = 0.5 * math.sin(2 * math.pi * elapsed / self.voltage_drift_period)
+
+        # Power supply ripple (high-frequency noise)
         ripple = random.gauss(0, 0.05)
 
+        # Occasional voltage drops (simulating load changes)
         voltage_drop = 0.0
         if random.random() < self.voltage_drop_probability:
             voltage_drop = -random.uniform(0.5, 2.0)
 
+        # Combine all components
         voltage = self.nominal_voltage + voltage_drift + ripple + voltage_drop
 
         return voltage
 
     def build_temperature_packet(self):
-        temperature = self.generate_temperature()
+        """
+        Build complete TemperaturePacket with CCSDS header
 
-        packet_length = TEMPERATURE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
+        Returns:
+            bytes: Complete telemetry packet
+        """
+        # Generate temperature value
+        temperature = self.generate_temperature()
 
         packet = TEMPERATURE_PACKET_STRUCT.build({
             'header': {
@@ -101,7 +144,7 @@ class MultiPacketSimulator:
                 'apid': self.temp_apid,
                 'sequence_flags': 3,
                 'sequence_count': self.temp_sequence_count,
-                'packet_length': packet_length
+                'packet_length': TEMPERATURE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
             },
             'temperature': temperature
         })
@@ -109,9 +152,14 @@ class MultiPacketSimulator:
         return packet
 
     def build_voltage_packet(self):
-        voltage = self.generate_voltage()
+        """
+        Build complete VoltagePacket with CCSDS header
 
-        packet_length = VOLTAGE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
+        Returns:
+            bytes: Complete telemetry packet
+        """
+        # Generate voltage value
+        voltage = self.generate_voltage()
 
         packet = VOLTAGE_PACKET_STRUCT.build({
             'header': {
@@ -121,7 +169,7 @@ class MultiPacketSimulator:
                 'apid': self.voltage_apid,
                 'sequence_flags': 3,
                 'sequence_count': self.voltage_sequence_count,
-                'packet_length': packet_length
+                'packet_length': VOLTAGE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
             },
             'voltage': voltage
         })
@@ -129,6 +177,10 @@ class MultiPacketSimulator:
         return packet
 
     def send_telemetry(self):
+        """
+        Telemetry sending thread - generates and sends packets at configured rate
+        Alternates between TemperaturePacket and VoltagePacket
+        """
         tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         print(f"\nStarting telemetry transmission at {self.rate} Hz...")
@@ -137,17 +189,22 @@ class MultiPacketSimulator:
 
         try:
             while True:
+                # Alternate between temperature and voltage packets
                 if self.tm_counter % 2 == 0:
+                    # Send TemperaturePacket
                     packet = self.build_temperature_packet()
                     tm_socket.sendto(packet, (self.tm_host, self.tm_port))
                     self.temp_sequence_count = (self.temp_sequence_count + 1) % 16384
                 else:
+                    # Send VoltagePacket
                     packet = self.build_voltage_packet()
                     tm_socket.sendto(packet, (self.tm_host, self.tm_port))
                     self.voltage_sequence_count = (self.voltage_sequence_count + 1) % 16384
 
+                # Update counter
                 self.tm_counter += 1
 
+                # Sleep for rate control
                 time.sleep(1.0 / self.rate)
 
         except KeyboardInterrupt:

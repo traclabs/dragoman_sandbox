@@ -38,6 +38,7 @@ TC_CANNED_POSE_STRUCT = Struct(
     "group_state" / CString("utf8")
 )
 
+# Command ID to struct mapping
 COMMAND_STRUCTS = {
     0: TC_CANNED_POSE_STRUCT,
     1: TC_ARM_JOINT_STRUCT,

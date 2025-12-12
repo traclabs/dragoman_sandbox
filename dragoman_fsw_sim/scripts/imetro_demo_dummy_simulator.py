@@ -21,8 +21,6 @@ def send_tm(simulator):
     while True:
         jsi_vals = [x + 0.001 * float(simulator.tm_counter) for x in js_vals]
 
-        packet_length = TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
-
         packet = TM_PACKET_STRUCT.build({
             'header': {
                 'version': 0,
@@ -31,7 +29,7 @@ def send_tm(simulator):
                 'apid': 100,
                 'sequence_flags': 3,
                 'sequence_count': tm_count & 0x3FFF,
-                'packet_length': packet_length
+                'packet_length': TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
             },
             'joint_state': jsi_vals
         })
@@ -41,7 +39,6 @@ def send_tm(simulator):
         simulator.tm_counter += 1
 
         sleep(1 / simulator.rate)
-
 
 def receive_tc(simulator):
     tc_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
