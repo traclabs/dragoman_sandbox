@@ -156,7 +156,7 @@ def generate_xtce_all_types(filename):
     arg_int = yp.IntegerArgument(
         name="C_ArgInt16",
         signed=True,
-        encoding=yp.uint16_t
+        encoding=yp.int16_t
     )
 
     # --- 2. FloatArgument (64-bit) ---
@@ -169,7 +169,7 @@ def generate_xtce_all_types(filename):
     arg_string = yp.StringArgument(
         name="C_ArgStringUTF16",
         max_length=10,
-        encoding=yp.StringEncoding(charset=yp.Charset.UTF_16BE)
+        encoding=yp.StringEncoding()
     )
 
     # --- 4. BooleanArgument ---

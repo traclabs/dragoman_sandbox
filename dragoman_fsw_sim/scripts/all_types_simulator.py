@@ -32,7 +32,7 @@ from dragoman_fsw_sim.all_types_construct_definitions import (
     TM_PACKET_STRUCT,
     TC_CONFIGURE_STRUCT
 )
-from dragoman_fsw_sim.ccsds_header import CCSDSHeader
+from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 
 
 class AllTypesSimulator:
@@ -75,7 +75,7 @@ class AllTypesSimulator:
             "IDLE"
         ]
 
-        self.COMMAND_APID = 120
+        self.COMMAND_APID = 200
 
         print(f"AllTypes Simulator initialized")
         print(f"  TM Host: {self.tm_host}")
@@ -166,12 +166,13 @@ class AllTypesSimulator:
             **data
         }
 
-        # Update packet_length field (data length - 1 per CCSDS spec)
-        total_size = TM_PACKET_STRUCT.sizeof(**packet_dict)
-        data_length = total_size - CCSDSHeader.sizeof()  # Exclude CCSDS header
-        packet_dict['header']['packet_length'] = data_length - 1
+        # Build the packet first to determine actual size
+        packet = TM_PACKET_STRUCT.build(packet_dict)
 
-        # Build the final packet
+        # Calculate actual packet_length field (packet length - CCSDS header size - 1)
+        packet_dict['header']['packet_length'] = len(packet) - CCSDSHeader.sizeof() - 1
+
+        # Rebuild with correct packet_length
         packet = TM_PACKET_STRUCT.build(packet_dict)
 
         return packet
