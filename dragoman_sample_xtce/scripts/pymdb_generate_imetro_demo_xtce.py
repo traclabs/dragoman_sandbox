@@ -4,6 +4,11 @@ import sys
 import yamcs.pymdb as yp
 import os
 
+from dragoman_sample_xtce.cfs_msg_hdr import (
+    add_cfs_command_header,
+    add_cfs_telemetry_header
+)
+
 # ===============================================================================
 # Telemetry: Joint state (float[9]: 6 arm + 1 finger + 1 rail + 1 lift joints
 # Command: arm_joint_goal (float[6]), finger_joint_goal(float),
@@ -11,12 +16,19 @@ import os
 # ================================================================================
 def generate_xtce_imetro_demo(filename):
 
-  spacecraft = yp.System("IMetro")
+  spacecraft = yp.System("Spacecraft")
 
   # Set CCSDS header
   ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
 
-
+  # CMD: 0x1800 TLM: 0x8000
+  #define EDORAS_APP_CMD_MID     (CFE_PLATFORM_CMD_MID_BASE + 0x27)
+  #define EDORAS_APP_TLM_MID   (CFE_PLATFORM_TLM_MID_BASE + 0x27)
+  CMD_MID=0x1827
+  TLM_MID=0x0827
+  
+  cFS_command = add_cfs_command_header(spacecraft, ccsds_header)  
+  
   # ********************************
   # Generic iMetro command
   # ********************************
@@ -24,6 +36,7 @@ def generate_xtce_imetro_demo(filename):
     name="command_id",
     signed = False,
     encoding = yp.uint16_t,
+    bits = 16
   )
 
   # IMetro abstract Command
@@ -31,10 +44,9 @@ def generate_xtce_imetro_demo(filename):
      system=spacecraft,
      name="IMetroPacket",
      abstract = True,
-     base = ccsds_header.tc_command,
+     base = cFS_command,
      assignments = {
-       ccsds_header.tc_secondary_header.name: "Not Present",
-       ccsds_header.tc_apid.name: 101,
+       ccsds_header.tc_apid.name: CMD_MID,
      },
      arguments=[command_id],
      entries=[
@@ -149,12 +161,11 @@ def generate_xtce_imetro_demo(filename):
     ]
   )
 
-
-
   #############################################
   # TELEMETRY
   #############################################
 
+  cFS_telemetry_container = add_cfs_telemetry_header(spacecraft, ccsds_header)  
 
   # ***********************************************
   # Telemetry packet containing joint state data
@@ -170,13 +181,12 @@ def generate_xtce_imetro_demo(filename):
   telemetry_container = yp.Container(
     system=spacecraft,
     name="IMetroTelemetryPacket",
-    base=ccsds_header.tm_container,
+    base=cFS_telemetry_container,
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter)
     ],
     condition=yp.eq(ccsds_header.tm_apid, 100)
   )
-
 
   # Create an XML that conformst to XTCE
   xtce_file = open(filename, 'w')

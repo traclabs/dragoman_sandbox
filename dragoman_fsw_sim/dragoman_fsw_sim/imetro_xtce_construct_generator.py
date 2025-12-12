@@ -25,10 +25,21 @@ CCSDSHeader = BitStruct(
     "packet_length" / BitsInteger(16)
 )
 
+CommandSecondaryHeader = BitStruct(
+  "fcn_code" / BitsInteger(8),
+  "checksum" / BitsInteger(8)
+)
+
+TelemetrySecondaryHeader = BitStruct(
+  "sec" / BitsInteger(48),
+  "spare" / BitsInteger(32)
+)
+
 # Telemetry packet structure (IMetroTelemetryPacket)
 # CCSDS Header + 9 floats for joint_state
 TM_PACKET_STRUCT = Struct(
     "header" / CCSDSHeader,
+    "sec_header" / TelemetrySecondaryHeader,
     "joint_state" / Array(9, Float32b)
 )
 
@@ -37,6 +48,7 @@ TM_PACKET_STRUCT = Struct(
 # arm_joint_state_goal: header + command_id + 6 floats
 TC_ARM_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
+    "sec_header" / CommandSecondaryHeader,
     "command_id" / Int16ub,
     "arm_joint_values" / Array(6, Float32b)
 )
@@ -44,6 +56,7 @@ TC_ARM_JOINT_STRUCT = Struct(
 # rail_joint_state_goal: header + command_id + 1 float
 TC_RAIL_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
+    "sec_header" / CommandSecondaryHeader,
     "command_id" / Int16ub,
     "rail_joint_value" / Float32b
 )
@@ -51,6 +64,7 @@ TC_RAIL_JOINT_STRUCT = Struct(
 # lift_joint_state_goal: header + command_id + 1 float
 TC_LIFT_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
+    "sec_header" / CommandSecondaryHeader,
     "command_id" / Int16ub,
     "lift_joint_value" / Float32b
 )
@@ -58,6 +72,7 @@ TC_LIFT_JOINT_STRUCT = Struct(
 # send_canned_pose: header + command_id + two null-terminated strings
 TC_CANNED_POSE_STRUCT = Struct(
     "header" / CCSDSHeader,
+    "sec_header" / CommandSecondaryHeader,    
     "command_id" / Int16ub,
     "group_name" / CString("utf8"),
     "group_state" / CString("utf8")

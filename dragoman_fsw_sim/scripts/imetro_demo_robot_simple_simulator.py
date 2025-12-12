@@ -61,10 +61,14 @@ def send_tm(simulator):
                         "version": 0,
                         "type": 0,  # 0 = Telemetry
                         "secondary_header_flag": 0,
-                        "apid": 100,  # APID for telemetry
+                        "apid": 0x0827,  # APID for telemetry
                         "sequence_flags": 3,  # 3 = Unsegmented
                         "sequence_count": tm_count,
                         "packet_length": NUM_JOINTS * 4 - 1,  # 9 floats * 4 bytes - 1
+                    },
+                    "sec_header": {
+                        "sec": 0,
+                        "spare": 0,
                     },
                     "joint_state": list(js),
                 }
@@ -98,8 +102,9 @@ def parse_tc_data(data, simulator):
     logger = simulator.get_logger()
 
     try:
-        # Parse command_id (2 bytes after 6-byte CCSDS header)
-        command_id = Int16ub.parse(data[6:8])
+        # Parse command_id (2 bytes after full CCSDS header)
+        offset = 6 + 2 # 6 bytes for primary header + 2 bytes for secondary header)
+        command_id = Int16ub.parse(data[offset:offset+2])
 
         # Get the appropriate command structure and parse
         command_struct = COMMAND_STRUCTS.get(command_id)
@@ -109,6 +114,7 @@ def parse_tc_data(data, simulator):
 
         # Parse the full packet
         parsed_packet = command_struct.parse(data)
+        debug_mid_print(parsed_packet, logger)
 
         # Route to appropriate handler
         if command_id == CMD_CANNED_POSE:
@@ -122,6 +128,19 @@ def parse_tc_data(data, simulator):
     except Exception as e:
         logger.error(f"Error parsing command packet: {e}")
         logger.error(traceback.format_exc())
+
+def debug_mid_print(parsed_packet, logger):
+  
+  # Verifying that mid and fcn_code are correctly being sent 
+  version = parsed_packet.header.version 
+  msg_type = parsed_packet.header.type
+  sec_flag = parsed_packet.header.secondary_header_flag
+  apid = parsed_packet.header.apid      
+        
+  mid = (version << 13) | (msg_type << 12) | (sec_flag << 11) | apid                
+  fcn_code = parsed_packet.sec_header.fcn_code
+        
+  logger.info(f"MID of received command: {hex(mid)} and fcn code: {fcn_code}")
 
 
 def parse_canned_pose(parsed_packet, logger, simulator):

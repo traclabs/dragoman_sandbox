@@ -15,6 +15,10 @@ echo "→ Generating Curiosity.xtce..."
 ros2 run dragoman_sample_xtce pymdb_generate_curiosity_xtce.py ${XTCE_DIR}/Curiosity.xtce
 echo ""
 
+echo "→ Generating Gateway.xtce..."
+ros2 run dragoman_sample_xtce pymdb_generate_gateway_demo_xtce.py ${XTCE_DIR}/Gateway.xtce
+echo ""
+
 echo "→ Generating AllTypes.xtce..."
 ros2 run dragoman_sample_xtce pymdb_generate_all_types.py ${XTCE_DIR}/AllTypes.xtce
 echo ""

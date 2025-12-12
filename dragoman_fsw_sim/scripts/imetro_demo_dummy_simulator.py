@@ -14,18 +14,20 @@ from time import sleep
 def send_tm(simulator):
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    header_length = 6
+    prim_header_length = 6 # Prim header: 6,
+    sec_header_length = 10 # Sec header: 6 + 4 spare
+    full_header_length = prim_header_length + sec_header_length
     tm_data_length = 4*9 # 4 bytes of joint_state's float type * 9 joints of full arm
 
     simulator.tm_counter = 1
-    header = bytearray(header_length)
-    tm_count = 0xc000
-
+    prim_header = bytearray(prim_header_length)   
+    tm_count = 0xc000    
+    
     # Just to update data
     js_vals = [0.25, 0.36, 0.49, 0.64, 0.81, 1.21, 2.35, 0.22, 0.87]
     while True:
-
-        tm_msg_length = header_length + tm_data_length
+    
+        tm_msg_length = full_header_length + tm_data_length
         # 1-3 bits: 000 (packet version number)
         # 4 bit: 0 (telemetry)
         # 5 bit: 0 (secondary header)
@@ -34,7 +36,7 @@ def send_tm(simulator):
         # 19-32 bit: 14 (sequential binary count)
         # 32-48 bit:
         # 000|0  |  0|000 0110 0100 | 11 | 00 0010 1110 1000
-        header = pack('>HHH', 0x0064, tm_count, tm_data_length - 1)
+        prim_header = pack('>HHH', 0x0064, tm_count, tm_data_length - 1)
 
         jsi_vals = [x + 0.001*float(simulator.tm_counter) for x in js_vals]
         js = pack('>fffffffff', jsi_vals[0], jsi_vals[1], jsi_vals[2], jsi_vals[3], jsi_vals[4], jsi_vals[5], jsi_vals[6], jsi_vals[7], jsi_vals[8])
@@ -45,9 +47,9 @@ def send_tm(simulator):
 
 
         packet = bytearray(tm_msg_length)
-        packet[0:header_length] = header
-        packet[header_length:tm_msg_length] = js
-
+        packet[0:prim_header_length] = prim_header
+        packet[full_header_length:tm_msg_length] = js
+        
         tm_socket.sendto(packet, (simulator.TM_SEND_ADDRESS, simulator.TM_SEND_PORT))
         tm_count += 1
         simulator.tm_counter += 1
@@ -69,14 +71,15 @@ def receive_tc(simulator):
         simulator.tc_counter += 1
 
 
-def parse_tc_data(data):
+def parse_tc_data(data, logger):
+  logger.info("Received command of length: {}".format(len(data)))
 
   # Read length of command data
   offset = 4
   tc_length = (unpack_from('>H', data, offset))[0]
-
-  # Read command id
-  offset = 6
+  
+  # Read command id 
+  offset = 8 # prim header: 6, secondary header: 2
   command_id = (unpack_from('>H', data, offset))[0]
 
   print("Received command of length: {}, tc_length: {} with command_id: {}".format(len(data), tc_length, command_id))
@@ -92,12 +95,12 @@ def parse_tc_data(data):
     parse_lift_joint_state_goal(data)
 
 
-def parse_canned_pose(data):
-  print("No implemented yet!")
-
-def parse_arm_joint_state_goal(data):
-
-  header_length = 6
+def parse_canned_pose(data, logger):
+  logger.info("No implemented yet!")
+  
+def parse_arm_joint_state_goal(data, logger):
+  
+  header_length = 8
   command_id_length = 2
   float_length = 4
 
@@ -113,7 +116,9 @@ def parse_arm_joint_state_goal(data):
 
 def parse_rail_joint_state_goal(data):
 
-  header_length = 6
+def parse_rail_joint_state_goal(data, logger):
+  
+  header_length = 8
   command_id_length = 2
   float_length = 4
 
@@ -125,7 +130,9 @@ def parse_rail_joint_state_goal(data):
 
 def parse_lift_joint_state_goal(data):
 
-  header_length = 6
+def parse_lift_joint_state_goal(data, logger):
+  
+  header_length = 8
   command_id_length = 2
   float_length = 4
 

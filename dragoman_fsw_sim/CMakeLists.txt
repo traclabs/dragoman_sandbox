@@ -11,6 +11,10 @@ set(DEPS
   rclcpp
   rclpy
   geometry_msgs
+  sensor_msgs
+  tf2
+  tf2_kdl
+  trac_ik_lib
 )
 
 foreach(dependency IN ITEMS ${DEPS})
@@ -21,6 +25,16 @@ endforeach()
 ###########
 ## Build ##
 ###########
+include_directories(include)
+
+add_executable(arm_comm_udp_node 
+  src/arm_comm_udp_node.cpp
+  src/arm_comm_udp.cpp
+  src/serialize_arm_manual.cpp
+)
+ament_target_dependencies(arm_comm_udp_node ${DEPS} )
+
+
 
 ament_export_dependencies(
   ${DEPS}
@@ -30,10 +44,16 @@ ament_export_dependencies(
 ## Install ##
 #############
 
+install(TARGETS
+  arm_comm_udp_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(PROGRAMS
   scripts/curiosity_simple_simulator.py
   scripts/imetro_demo_dummy_simulator.py
   scripts/imetro_demo_robot_simple_simulator.py
+  scripts/gateway_demo_dummy_simulator.py  
   scripts/all_types_simulator.py
   scripts/multipacket_simulator.py
   scripts/move_robot.py

@@ -21,33 +21,37 @@ services:
   - class: org.yamcs.plists.ParameterListService
   - class: org.yamcs.timeline.TimelineService
 
+#   rosfsw: 10.5.0.4 fsw: 10.5.0.3 rosgsw: 10.5.0.2
 dataLinks:
   - name: udp-in
     class: org.yamcs.tctm.UdpTmDataLink
     stream: tm_realtime
-    port: 10015
+    port: 1235
     packetPreprocessorClassName: com.traclabs.dragoman.MyPacketPreprocessor
 
   - name: udp-out
     class: org.yamcs.tctm.UdpTcDataLink
     stream: tc_realtime
-    host: localhost
-    port: 10025
+    host: 10.5.0.3 
+    port: 1235
     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
 
 mdb:
-  # - type: xtce
-  #   args:
-  #     file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/AllTypes.xtce
-  # - type: xtce
-  #   args:
-  #     file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Curiosity.xtce
-  - type: xtce
-    args:
-      file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/IMetro.xtce
-  # - type: xtce
-  #   args:
-  #     file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/MultiPacket.xtce
+#   - type: xtce
+#     args:
+#       file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/AllTypes.xtce
+#   - type: xtce
+#     args:
+#       file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Curiosity.xtce
+#  - type: xtce
+#    args:
+#      file: /code/rosws/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/IMetro.xtce
+#   - type: xtce
+#     args:
+#       file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/MultiPacket.xtce
+   - type: xtce
+     args:
+       file: /code/rosws/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Gateway.xtce
 
 # Configuration for streams created at server startup
 streamConfig:
