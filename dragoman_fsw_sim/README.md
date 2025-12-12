@@ -22,9 +22,9 @@ Flight software simulators for YAMCS telemetry and command handling.
 
 **Standalone Simulators:**
 ```bash
-$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/all_types_simulator.py --help
-$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/multipacket_simulator.py --help
-$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/imetro_demo_dummy_simulator.py --help
+$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/all_types_simulator.py
+$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/multipacket_simulator.py
+$(ros2 pkg prefix dragoman_fsw_sim --share)/scripts/imetro_demo_dummy_simulator.py
 ```
 
 **ROS2 Launches:**
