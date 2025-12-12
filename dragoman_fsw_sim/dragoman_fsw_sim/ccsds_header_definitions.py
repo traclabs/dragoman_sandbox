@@ -11,7 +11,6 @@ CCSDS 133.0-B-2 standard.
 from construct import BitStruct, BitsInteger
 
 
-# CCSDS Primary Header structure (6 bytes / 48 bits)
 CCSDSHeader = BitStruct(
     "version" / BitsInteger(3),           # Packet version (typically 0)
     "type" / BitsInteger(1),              # 0 = Telemetry, 1 = Command

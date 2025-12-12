@@ -17,6 +17,7 @@ from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
 from dragoman_fsw_sim.imetro_construct_definitions import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 from dragoman_fsw_sim.srdf_parser import parse_srdf_group_states
 from dragoman_fsw_sim.clr_trajectory_router import (
     send_trajectory,
@@ -24,22 +25,13 @@ from dragoman_fsw_sim.clr_trajectory_router import (
     send_gripper_command,
 )
 
-# *************************
-# Constants
-# *************************
-# Command IDs
 CMD_CANNED_POSE = 0
 CMD_ARM_JOINT_GOAL = 1
 CMD_RAIL_JOINT_GOAL = 2
 CMD_LIFT_JOINT_GOAL = 3
 
-# Telemetry constants
 NUM_JOINTS = 9
 
-
-# *************************
-# Send telemetry
-# *************************
 def send_tm(simulator):
     """Send telemetry packets at configured rate"""
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -54,17 +46,18 @@ def send_tm(simulator):
             continue
 
         if len(js) == NUM_JOINTS:
-            # Build telemetry packet using construct structures from XTCE
+            packet_length = TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
+
             tm_packet = simulator.tm_packet_struct.build(
                 {
                     "header": {
                         "version": 0,
-                        "type": 0,  # 0 = Telemetry
+                        "type": 0,
                         "secondary_header_flag": 0,
-                        "apid": 0x0827,  # APID for telemetry
-                        "sequence_flags": 3,  # 3 = Unsegmented
+                        "apid": 100,
+                        "sequence_flags": 3,
                         "sequence_count": tm_count,
-                        "packet_length": NUM_JOINTS * 4 - 1,  # 9 floats * 4 bytes - 1
+                        "packet_length": packet_length,
                     },
                     "sec_header": {
                         "sec": 0,
@@ -81,9 +74,6 @@ def send_tm(simulator):
         sleep(1 / simulator.rate)
 
 
-# *************************
-# Receive command
-# *************************
 def receive_tc(simulator):
     """Receive and process telecommand packets"""
     tc_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -98,25 +88,19 @@ def receive_tc(simulator):
 
 
 def parse_tc_data(data, simulator):
-    """Parse telecommand data using XTCE-generated construct structures"""
     logger = simulator.get_logger()
 
     try:
-        # Parse command_id (2 bytes after full CCSDS header)
-        offset = 6 + 2 # 6 bytes for primary header + 2 bytes for secondary header)
-        command_id = Int16ub.parse(data[offset:offset+2])
+        command_id = Int16ub.parse(data[6:8])
 
-        # Get the appropriate command structure and parse
         command_struct = COMMAND_STRUCTS.get(command_id)
         if command_struct is None:
             logger.error(f"Unknown command_id: {command_id}")
             return
 
-        # Parse the full packet
         parsed_packet = command_struct.parse(data)
         debug_mid_print(parsed_packet, logger)
 
-        # Route to appropriate handler
         if command_id == CMD_CANNED_POSE:
             parse_canned_pose(parsed_packet, logger, simulator)
         elif command_id == CMD_ARM_JOINT_GOAL:
@@ -130,27 +114,25 @@ def parse_tc_data(data, simulator):
         logger.error(traceback.format_exc())
 
 def debug_mid_print(parsed_packet, logger):
-  
-  # Verifying that mid and fcn_code are correctly being sent 
-  version = parsed_packet.header.version 
+
+  # Verifying that mid and fcn_code are correctly being sent
+  version = parsed_packet.header.version
   msg_type = parsed_packet.header.type
   sec_flag = parsed_packet.header.secondary_header_flag
-  apid = parsed_packet.header.apid      
-        
-  mid = (version << 13) | (msg_type << 12) | (sec_flag << 11) | apid                
+  apid = parsed_packet.header.apid
+
+  mid = (version << 13) | (msg_type << 12) | (sec_flag << 11) | apid
   fcn_code = parsed_packet.sec_header.fcn_code
-        
+
   logger.info(f"MID of received command: {hex(mid)} and fcn code: {fcn_code}")
 
 
 def parse_canned_pose(parsed_packet, logger, simulator):
-    """Handle canned pose command using dynamically-loaded SRDF data"""
     group_name = parsed_packet.group_name
     group_state = parsed_packet.group_state
 
     logger.info(f"* Canned pose command: group='{group_name}', state='{group_state}'")
 
-    # Look up the pose configuration from dynamically-loaded SRDF
     pose_key = (group_name, group_state)
     if pose_key not in simulator.canned_poses:
         logger.error(f"Unknown canned pose: {pose_key}")
@@ -159,7 +141,6 @@ def parse_canned_pose(parsed_packet, logger, simulator):
 
     pose_config = simulator.canned_poses[pose_key]
 
-    # Route based on group name
     if group_name == "ur_manipulator":
         send_trajectory(pose_config, simulator.arm_pub, logger)
     elif group_name == "hand":
@@ -177,12 +158,9 @@ def parse_canned_pose(parsed_packet, logger, simulator):
 
 
 def parse_arm_joint_state_goal(parsed_packet, logger, pub):
-    """Parse and execute arm joint state goal command"""
-    # Extract arm joint values from parsed packet (field name from XTCE)
     js_goal = list(parsed_packet.arm_joint_values)
     logger.info(f"* Arm Joint goal: {[f'{v:.3f}' for v in js_goal]}")
 
-    # Send arm command
     traj = JointTrajectory()
     traj.joint_names = [
         "shoulder_pan_joint",
@@ -202,12 +180,9 @@ def parse_arm_joint_state_goal(parsed_packet, logger, pub):
 
 
 def parse_rail_joint_state_goal(parsed_packet, logger, pub):
-    """Parse and execute rail joint state goal command"""
-    # Extract rail joint value from parsed packet (field name from XTCE)
     js_goal = parsed_packet.rail_joint_value
     logger.info(f"* Rail Joint goal: {js_goal:.3f}")
 
-    # Send rail command
     traj = JointTrajectory()
     traj.joint_names = ["vention_rail_base_to_carriage"]
 
@@ -220,12 +195,9 @@ def parse_rail_joint_state_goal(parsed_packet, logger, pub):
 
 
 def parse_lift_joint_state_goal(parsed_packet, logger, pub):
-    """Parse and execute lift joint state goal command"""
-    # Extract lift joint value from parsed packet (field name from XTCE)
     js_goal = parsed_packet.lift_joint_value
     logger.info(f"* Lift Joint goal: {js_goal:.3f}")
 
-    # Send lift command
     traj = JointTrajectory()
     traj.joint_names = ["ewellix_lift_lower_to_higher"]
 
@@ -238,21 +210,17 @@ def parse_lift_joint_state_goal(parsed_packet, logger, pub):
 
 
 class Simulator(Node):
-    """ROS2 node that simulates robot telemetry and command handling using XTCE definitions"""
 
     def __init__(self):
         super().__init__("imetro_simulator")
 
-        # Counters and state
         self.tm_counter = 0
         self.tc_counter = 0
         self.last_tc = None
         self.js = None
 
-        # Status timer
         self.timer = self.create_timer(5, self.timer_cb)
 
-        # Declare parameters
         self.declare_parameter("tm_host", rclpy.Parameter.Type.STRING)
         self.declare_parameter("tm_port", rclpy.Parameter.Type.INTEGER)
         self.declare_parameter("rate", rclpy.Parameter.Type.INTEGER)
@@ -260,17 +228,14 @@ class Simulator(Node):
         self.declare_parameter("tc_port", rclpy.Parameter.Type.INTEGER)
         self.declare_parameter("robot_description_semantic", rclpy.Parameter.Type.STRING)
 
-        # Get parameter values
         self.TM_SEND_ADDRESS = self.get_parameter("tm_host").value
         self.TM_SEND_PORT = self.get_parameter("tm_port").value
         self.rate = self.get_parameter("rate").value
         self.TC_RECEIVE_ADDRESS = self.get_parameter("tc_host").value
         self.TC_RECEIVE_PORT = self.get_parameter("tc_port").value
 
-        # Parse SRDF and build canned poses dictionary
         srdf_content = self.get_parameter("robot_description_semantic").value
 
-        # Parse group states (canned poses)
         self.canned_poses = parse_srdf_group_states(srdf_content)
 
         self.get_logger().info(f"Loaded {len(self.canned_poses)} canned poses from SRDF:")
@@ -279,18 +244,14 @@ class Simulator(Node):
                 f"  - {group}/{state}: {len(config['joints'])} joints"
             )
 
-        # Use hard-coded construct structures from imetro_xtce_construct_generator module
         self.tm_packet_struct = TM_PACKET_STRUCT
 
-        # Log available command structures
         self.get_logger().info(
             "Using hard-coded command structures: {}".format(list(COMMAND_STRUCTS.keys()))
         )
 
-        # Subscribe to /joint_states
         self.js_sub = self.create_subscription(JointState, "/joint_states", self.js_cb, 10)
 
-        # Send motion commands
         self.arm_pub = self.create_publisher(
             JointTrajectory, "/joint_trajectory_controller/joint_trajectory", 10
         )
@@ -303,13 +264,11 @@ class Simulator(Node):
             JointTrajectory, "/rail_position_trajectory_controller/joint_trajectory", 10
         )
 
-        # Create action client for gripper control
         self.gripper_action_client = ActionClient(
             self, ParallelGripperCommand, "/robotiq_gripper_hande_controller/gripper_cmd"
         )
 
     def start(self):
-        """Start telemetry and telecommand threads"""
         tm_thread = Thread(target=send_tm, args=(self,), daemon=True)
         tm_thread.start()
 
@@ -321,17 +280,14 @@ class Simulator(Node):
         self.get_logger().info(f"TC host={self.TC_RECEIVE_ADDRESS}, TC port={self.TC_RECEIVE_PORT}")
 
     def print_status(self):
-        """Generate status string for logging"""
         cmdhex = binascii.hexlify(self.last_tc).decode("ascii") if self.last_tc else None
         return f"Sent: {self.tm_counter} packets. Received: {self.tc_counter} commands. Last command: {cmdhex}"
 
     def timer_cb(self):
-        """Periodic status logging callback"""
         status = self.print_status()
         self.get_logger().info(status)
 
     def js_cb(self, msg):
-        """Joint state callback - stores current joint positions"""
         self.js = msg.position
 
 

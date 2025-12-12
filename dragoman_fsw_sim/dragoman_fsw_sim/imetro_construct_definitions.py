@@ -32,9 +32,6 @@ TM_PACKET_STRUCT = Struct(
     "joint_state" / Array(9, Float32b)
 )
 
-# Command structures based on XTCE definitions
-
-# arm_joint_state_goal: header + command_id + 6 floats
 TC_ARM_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
     "sec_header" / CommandSecondaryHeader,
@@ -42,7 +39,6 @@ TC_ARM_JOINT_STRUCT = Struct(
     "arm_joint_values" / Array(6, Float32b)
 )
 
-# rail_joint_state_goal: header + command_id + 1 float
 TC_RAIL_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
     "sec_header" / CommandSecondaryHeader,
@@ -50,7 +46,6 @@ TC_RAIL_JOINT_STRUCT = Struct(
     "rail_joint_value" / Float32b
 )
 
-# lift_joint_state_goal: header + command_id + 1 float
 TC_LIFT_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
     "sec_header" / CommandSecondaryHeader,
@@ -58,16 +53,14 @@ TC_LIFT_JOINT_STRUCT = Struct(
     "lift_joint_value" / Float32b
 )
 
-# send_canned_pose: header + command_id + two null-terminated strings
 TC_CANNED_POSE_STRUCT = Struct(
     "header" / CCSDSHeader,
-    "sec_header" / CommandSecondaryHeader,    
+    "sec_header" / CommandSecondaryHeader,
     "command_id" / Int16ub,
     "group_name" / CString("utf8"),
     "group_state" / CString("utf8")
 )
 
-# Command ID to struct mapping
 COMMAND_STRUCTS = {
     0: TC_CANNED_POSE_STRUCT,
     1: TC_ARM_JOINT_STRUCT,

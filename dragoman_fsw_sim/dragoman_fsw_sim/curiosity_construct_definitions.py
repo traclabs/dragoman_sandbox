@@ -14,30 +14,23 @@ from construct import (
 )
 from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 
-# Telemetry packet structure (CuriosityTelemetryPacket)
-# CCSDS Header + 24 floats for joint_state (all rover joints)
 TM_PACKET_STRUCT = Struct(
     "header" / CCSDSHeader,
     "joint_state" / Array(24, Float32b)
 )
 
-# Command structures based on XTCE definitions
-
-# arm_joint_state_goal: header + command_id + 5 floats
 TC_ARM_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
     "command_id" / Int16ub,
     "arm_joint_values" / Array(5, Float32b)
 )
 
-# mast_joint_state_goal: header + command_id + 3 floats
 TC_MAST_JOINT_STRUCT = Struct(
     "header" / CCSDSHeader,
     "command_id" / Int16ub,
     "mast_joint_values" / Array(3, Float32b)
 )
 
-# send_canned_pose: header + command_id + two null-terminated strings
 TC_CANNED_POSE_STRUCT = Struct(
     "header" / CCSDSHeader,
     "command_id" / Int16ub,
@@ -45,7 +38,6 @@ TC_CANNED_POSE_STRUCT = Struct(
     "group_state" / CString("utf8")
 )
 
-# Command ID to struct mapping
 COMMAND_STRUCTS = {
     0: TC_CANNED_POSE_STRUCT,
     1: TC_ARM_JOINT_STRUCT,

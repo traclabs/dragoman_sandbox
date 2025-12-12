@@ -32,39 +32,26 @@ from dragoman_fsw_sim.all_types_construct_definitions import (
     TM_PACKET_STRUCT,
     TC_CONFIGURE_STRUCT
 )
+from dragoman_fsw_sim.ccsds_header import CCSDSHeader
 
 
 class AllTypesSimulator:
     """Simulator that generates and sends AllTypes telemetry packets"""
 
     def __init__(self, tm_host='127.0.0.1', tm_port=10015, tc_host='127.0.0.1', tc_port=10025, rate=1):
-        """
-        Initialize the simulator
-
-        Args:
-            tm_host: Telemetry destination host
-            tm_port: Telemetry destination port
-            tc_host: Telecommand receive host
-            tc_port: Telecommand receive port
-            rate: Telemetry rate in Hz
-        """
         self.tm_host = tm_host
         self.tm_port = tm_port
         self.tc_host = tc_host
         self.tc_port = tc_port
         self.rate = rate
 
-        # Counters
         self.tm_counter = 0
         self.tc_counter = 0
         self.sequence_count = 0
         self.last_tc = None
-
-        # Start time for relative time calculations
         self.start_time = time.time()
 
-        # State for mock data generation
-        self.enum_state = 0  # Cycles through 0, 1, 2
+        self.enum_state = 0
         self.boolean_state = False
         self.string_index = 0
         self.status_messages = [
@@ -75,8 +62,7 @@ class AllTypesSimulator:
             "IDLE"
         ]
 
-        # Command APID for filtering
-        self.COMMAND_APID = 120  # AllTypes command APID
+        self.COMMAND_APID = 120
 
         print(f"AllTypes Simulator initialized")
         print(f"  TM Host: {self.tm_host}")
@@ -86,51 +72,34 @@ class AllTypesSimulator:
         print(f"  Rate: {self.rate} Hz")
 
     def generate_mock_data(self):
-        """
-        Generate mock values for all telemetry parameters
-
-        Returns:
-            dict: Dictionary containing all parameter values
-        """
+        """Generate mock values for all telemetry parameters"""
         elapsed = time.time() - self.start_time
 
-        # T_IntegerSigned: Counter that increments (can go negative)
         integer_signed = int((self.tm_counter % 200) - 100)
-
-        # T_FloatRaw64: Sine wave pattern
         float_raw64 = 50.0 + 25.0 * math.sin(elapsed * 0.5)
 
-        # T_EnumeratedAlarm: Cycles through states every 10 packets
         if self.tm_counter % 10 == 0:
             self.enum_state = (self.enum_state + 1) % 3
         enum_alarm = self.enum_state
 
-        # T_StringUTF8: Rotating status messages
         if self.tm_counter % 5 == 0:
             self.string_index = (self.string_index + 1) % len(self.status_messages)
         string_utf8 = self.status_messages[self.string_index]
 
-        # T_BooleanFlag: Toggles every 3 packets
         if self.tm_counter % 3 == 0:
             self.boolean_state = not self.boolean_state
         boolean_flag = self.boolean_state
 
-        # T_AbsoluteTime: Current UNIX timestamp in seconds
         absolute_time = int(time.time())
-
-        # T_RelativeTimeRaw: Seconds since simulator start
         relative_time = int(elapsed)
 
-        # T_BinaryBlob: 16 bytes of pseudo-random data (deterministic pattern)
         random.seed(self.tm_counter)
         binary_blob = bytes([random.randint(0, 255) for _ in range(16)])
 
-        # T_IntegerArray: Array of 10 unsigned 16-bit integers
         integer_array = [(self.tm_counter + i * 100) % 65536 for i in range(10)]
 
-        # T_StatusAggregate: Struct with CurrentDraw, HeaterEnabled, RawStatusFlags
-        current_draw = 2.5 + 0.5 * math.sin(elapsed * 0.3)  # 32-bit float
-        heater_enabled = (self.tm_counter % 20) < 10  # Boolean
+        current_draw = 2.5 + 0.5 * math.sin(elapsed * 0.3)
+        heater_enabled = (self.tm_counter % 20) < 10
         raw_status_flags = bytes([
             (self.tm_counter >> 24) & 0xFF,
             (self.tm_counter >> 16) & 0xFF,
@@ -156,33 +125,10 @@ class AllTypesSimulator:
         }
 
     def build_telemetry_packet(self):
-        """
-        Build complete telemetry packet with CCSDS header and all parameters
-
-        Returns:
-            bytes: Complete telemetry packet
-        """
-        # Generate mock data
+        """Build complete telemetry packet with CCSDS header and all parameters"""
         data = self.generate_mock_data()
 
-        # Calculate packet data length (excluding header)
-        # This will be computed by construct, but we need it for the header
-        packet_data = TM_PACKET_STRUCT.build({
-            'header': {
-                'version': 0,
-                'type': False,  # 0 = telemetry
-                'secondary_header_flag': False,
-                'apid': 120,
-                'sequence_flags': 3,  # unsegmented
-                'sequence_count': self.sequence_count,
-                'packet_length': 0  # Will be recalculated
-            },
-            **data
-        })
-
-        # Rebuild with correct packet_length (data length - 1, excluding 6-byte header)
-        data_length = len(packet_data) - 6
-        packet = TM_PACKET_STRUCT.build({
+        packet_dict = {
             'header': {
                 'version': 0,
                 'type': False,
@@ -190,10 +136,20 @@ class AllTypesSimulator:
                 'apid': 120,
                 'sequence_flags': 3,
                 'sequence_count': self.sequence_count,
-                'packet_length': data_length - 1
+                'packet_length': 0  # Placeholder, will be calculated
             },
             **data
-        })
+        }
+
+        # Calculate size with the actual data (handles variable-length string)
+        total_size = TM_PACKET_STRUCT.sizeof(**packet_dict)
+        data_length = total_size - CCSDSHeader.sizeof()  # Exclude CCSDS header
+
+        # Update packet_length field (data length - 1 per CCSDS spec)
+        packet_dict['header']['packet_length'] = data_length - 1
+
+        # Build the final packet
+        packet = TM_PACKET_STRUCT.build(packet_dict)
 
         return packet
 

@@ -12,17 +12,13 @@ from construct import Struct, Float32b
 from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 
 
-# Temperature packet structure (TemperaturePacket, APID 130)
-# CCSDS Header + single 32-bit float for temperature in degrees Celsius
 TEMPERATURE_PACKET_STRUCT = Struct(
     "header" / CCSDSHeader,
-    "temperature" / Float32b  # Temperature in degrees Celsius
+    "temperature" / Float32b
 )
 
 
-# Voltage packet structure (VoltagePacket, APID 131)
-# CCSDS Header + single 32-bit float for voltage in Volts
 VOLTAGE_PACKET_STRUCT = Struct(
     "header" / CCSDSHeader,
-    "voltage" / Float32b  # Voltage in Volts
+    "voltage" / Float32b
 )

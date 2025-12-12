@@ -152,9 +152,6 @@ def main(args=None):
     robot_node = MoveRobot()
 
     rclpy.spin(robot_node)
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     robot_node.destroy_node()
     rclpy.shutdown()
 
