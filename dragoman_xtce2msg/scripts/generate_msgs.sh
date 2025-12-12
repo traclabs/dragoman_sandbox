@@ -16,6 +16,10 @@ echo "→ Processing Curiosity.xtce..."
 ros2 run dragoman_xtce2msg xtce2msg ${XTCE_DIR}/Curiosity.xtce ${MSG_DIR}
 echo ""
 
+echo "→ Processing Gateway.xtce..."
+ros2 run dragoman_xtce2msg xtce2msg ${XTCE_DIR}/Gateway.xtce ${MSG_DIR}
+echo ""
+
 echo "→ Processing AllTypes.xtce..."
 ros2 run dragoman_xtce2msg xtce2msg ${XTCE_DIR}/AllTypes.xtce ${MSG_DIR}
 echo ""
