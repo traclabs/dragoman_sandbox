@@ -16,6 +16,7 @@ from builtin_interfaces.msg import Duration
 from construct import Int16ub
 from dragoman_fsw_sim.curiosity_construct_definitions import TM_PACKET_STRUCT, COMMAND_STRUCTS
 from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
+from dragoman_fsw_sim.ccsds_secondary_header_definitions import CommandSecondaryHeader
 from dragoman_fsw_sim.srdf_parser import parse_srdf_group_states
 from dragoman_fsw_sim.clr_trajectory_router import send_trajectory
 
@@ -80,8 +81,9 @@ def parse_tc_data(data, simulator):
     logger = simulator.get_logger()
 
     try:
-        # Parse command_id (2 bytes after 6-byte CCSDS header)
-        command_id = Int16ub.parse(data[6:8])
+        # Calculate offset and parse command_id
+        offset = CCSDSHeader.sizeof()
+        command_id = Int16ub.parse(data[offset:offset+2])
 
         # Get the appropriate command structure and parse
         command_struct = COMMAND_STRUCTS.get(command_id)

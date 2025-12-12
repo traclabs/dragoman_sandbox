@@ -11,7 +11,7 @@ find_package(rosidl_default_generators REQUIRED)
 # Automatically find all .msg files in the msg directory
 file(GLOB MSG_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "msg/*.msg")
 
-if(EXISTS ${MSG_FILES})
+if(MSG_FILES)
   rosidl_generate_interfaces(${PROJECT_NAME}
     ${MSG_FILES}
     DEPENDENCIES builtin_interfaces

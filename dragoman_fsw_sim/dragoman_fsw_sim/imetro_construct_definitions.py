@@ -13,15 +13,9 @@ from construct import (
     Array, CString
 )
 from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
-
-CommandSecondaryHeader = BitStruct(
-  "fcn_code" / BitsInteger(8),
-  "checksum" / BitsInteger(8)
-)
-
-TelemetrySecondaryHeader = BitStruct(
-  "sec" / BitsInteger(48),
-  "spare" / BitsInteger(32)
+from dragoman_fsw_sim.ccsds_secondary_header_definitions import (
+    CommandSecondaryHeader,
+    TelemetrySecondaryHeader
 )
 
 # Telemetry packet structure (IMetroTelemetryPacket)

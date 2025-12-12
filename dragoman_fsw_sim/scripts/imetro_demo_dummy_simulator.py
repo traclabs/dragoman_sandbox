@@ -10,6 +10,7 @@ from construct import Int16ub
 
 from dragoman_fsw_sim.imetro_construct_definitions import TM_PACKET_STRUCT, COMMAND_STRUCTS
 from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
+from dragoman_fsw_sim.ccsds_secondary_header_definitions import CommandSecondaryHeader
 
 def send_tm(simulator):
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -25,11 +26,15 @@ def send_tm(simulator):
             'header': {
                 'version': 0,
                 'type': 0,  # 0 = Telemetry
-                'secondary_header_flag': False,
+                'secondary_header_flag': True,
                 'apid': 100,  # APID for IMetro TM
                 'sequence_flags': 3,  # 3 = Unsegmented
                 'sequence_count': tm_count,
                 'packet_length': TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
+            },
+            'sec_header': {
+                'sec': 0,
+                'spare': 0
             },
             'joint_state': jsi_vals
         })
@@ -54,7 +59,10 @@ def receive_tc(simulator):
 
 def parse_tc_data(data):
     try:
-        command_id = Int16ub.parse(data[6:8])
+        # Calculate offset dynamically based on secondary header presence
+        offset = CCSDSHeader.sizeof() + CommandSecondaryHeader.sizeof()
+
+        command_id = Int16ub.parse(data[offset:offset+2])
 
         packet_length = int.from_bytes(data[4:6], 'big')
 

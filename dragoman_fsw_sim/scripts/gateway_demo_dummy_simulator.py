@@ -13,7 +13,7 @@ from rclpy.action import ActionClient
 from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
-from dragoman_fsw_sim.gateway_xtce_construct_generator import TM_PACKET_STRUCT, TC_GOAL_POSE_STRUCT
+from dragoman_fsw_sim.gateway_construct_definitions import TM_PACKET_STRUCT, TC_GOAL_POSE_STRUCT
 from dragoman_fsw_sim.srdf_parser import parse_srdf_group_states
 
 # Constant
@@ -38,7 +38,7 @@ def send_tm(simulator):
                 "header": {
                     "version": 0,
                     "type": 0,  # 0 = Telemetry
-                    "secondary_header_flag": 1,
+                    "secondary_header_flag": True,
                     "apid": 39, #0x0827 - 0x0800,  # APID for telemetry
                     "sequence_flags": 3,  # 3 = Unsegmented
                     "sequence_count": tm_count,
@@ -48,7 +48,7 @@ def send_tm(simulator):
                     "sec": 0,
                     "spare": 0,
                 },
-                "joint_state": js #list(js),
+                "joint_state": js
             }
         )
         simulator.get_logger().info(f"Sending telemetry to {simulator.TM_SEND_ADDRESS} port: {simulator.TM_SEND_PORT}")
@@ -80,10 +80,6 @@ def parse_tc_data(data, simulator):
     logger = simulator.get_logger()
 
     try:
-        # Parse command_id (2 bytes after full CCSDS header)
-        offset = 6 + 10 # 6 bytes for primary header + 10 bytes (6+4) for secondary header
-#        command_id = Int16ub.parse(data[offset:offset+2])
-
         # Parse the full packet
         parsed_packet = TC_GOAL_POSE_STRUCT.parse(data)
         debug_mid_print(parsed_packet, logger)
@@ -95,16 +91,16 @@ def parse_tc_data(data, simulator):
         logger.error(traceback.format_exc())
 
 def debug_mid_print(parsed_packet, logger):
-  
-  # Verifying that mid and fcn_code are correctly being sent 
-  version = parsed_packet.header.version 
+
+  # Verifying that mid and fcn_code are correctly being sent
+  version = parsed_packet.header.version
   msg_type = parsed_packet.header.type
   sec_flag = parsed_packet.header.secondary_header_flag
-  apid = parsed_packet.header.apid      
-        
-  mid = (version << 13) | (msg_type << 12) | (sec_flag << 11) | apid                
+  apid = parsed_packet.header.apid
+
+  mid = (version << 13) | (msg_type << 12) | (sec_flag << 11) | apid
   fcn_code = parsed_packet.sec_header.fcn_code
-        
+
   logger.info(f"MID of received command: {hex(mid)} and fcn code: {fcn_code}")
 
 
@@ -158,7 +154,7 @@ class Simulator(Node):
         #        f"  - {group}/{state}: {len(config['joints'])} joints"
         #    )
 
-        # Use hard-coded construct structures from gateway_xtce_construct_generator module
+        # Use hard-coded construct structures from gateway_construct_definitions module
         self.tm_packet_struct = TM_PACKET_STRUCT
 
         # Subscribe to /joint_states
