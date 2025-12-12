@@ -42,43 +42,35 @@ class NullTerminatedUTF16BE(Adapter):
         return obj.encode('utf-16-be') + b'\x00\x00'
 
 
-# Telemetry packet structure (AllTelemetryPacket)
-# CCSDS Header + all parameter types
 TM_PACKET_STRUCT = Struct(
     "header" / CCSDSHeader,
-    "integer_signed" / Int32sb,           # T_IntegerSigned: 32-bit signed
-    "float_raw64" / Float64b,             # T_FloatRaw64: 64-bit float
-    "enum_alarm" / Int8ub,                # T_EnumeratedAlarm: 8-bit enum
-    "string_utf8" / CString("utf8"),      # T_StringUTF8: null-terminated UTF-8
-    "boolean_flag" / Flag,                # T_BooleanFlag: 8-bit boolean
-    "absolute_time" / Int64ub,            # T_AbsoluteTime: 64-bit unsigned (UNIX epoch)
-    "relative_time" / Int32ub,            # T_RelativeTimeRaw: 32-bit unsigned
-    "binary_blob" / Bytes(16),            # T_BinaryBlob: 128 bits = 16 bytes
-    "integer_array" / Array(10, Int16ub), # T_IntegerArray: 10 x 16-bit unsigned
-    "aggregate" / Struct(                 # T_StatusAggregate
-        "current_draw" / Float32b,        #   CurrentDraw: 32-bit float
-        "heater_enabled" / Flag,          #   HeaterEnabled: 8-bit boolean
-        "raw_status_flags" / Bytes(4)     #   RawStatusFlags: 32 bits = 4 bytes
+    "integer_signed" / Int32sb,
+    "float_raw64" / Float64b,
+    "enum_alarm" / Int8ub,
+    "string_utf8" / CString("utf8"),
+    "boolean_flag" / Flag,
+    "absolute_time" / Int64ub,
+    "relative_time" / Int32ub,
+    "binary_blob" / Bytes(16),
+    "integer_array" / Array(10, Int16ub),
+    "aggregate" / Struct(
+        "current_draw" / Float32b,
+        "heater_enabled" / Flag,
+        "raw_status_flags" / Bytes(4)
     )
 )
 
 
-# Command packet structure (ConfigureAllTypes)
-# CCSDS Header + command arguments
-#
-# Note: The C_ArgStringUTF16 field uses a simplified approach.
-# For production use with actual YAMCS commands, you may need to handle
-# the variable-length UTF-16BE string more carefully based on actual packet data.
 TC_CONFIGURE_STRUCT = Struct(
     "header" / CCSDSHeader,
-    "arg_int16" / Int16sb,                           # C_ArgInt16: signed 16-bit
-    "arg_float64" / Float64b,                        # C_ArgFloat64: 64-bit float
-    "arg_string_utf16" / CString("utf-16-be"),       # C_ArgStringUTF16: UTF-16BE string (simplified)
-    "arg_boolean" / Flag,                            # C_ArgBoolean: 8-bit boolean
-    "arg_array_float3" / Array(3, Float32b),         # C_ArgArrayFloat3: 3 x 32-bit float
-    "arg_config_struct" / Struct(                    # C_ArgConfigStruct
-        "id" / Int8ub,                               #   ID: 8-bit unsigned
-        "value" / Float32b,                          #   Value: 32-bit float
-        "config_data" / Bytes(8)                     #   ConfigData: 64 bits = 8 bytes
+    "arg_int16" / Int16sb,
+    "arg_float64" / Float64b,
+    "arg_string_utf16" / CString("utf-16-be"),
+    "arg_boolean" / Flag,
+    "arg_array_float3" / Array(3, Float32b),
+    "arg_config_struct" / Struct(
+        "id" / Int8ub,
+        "value" / Float32b,
+        "config_data" / Bytes(8)
     )
 )
