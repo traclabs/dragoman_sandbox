@@ -14,7 +14,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
-from dragoman_fsw_sim.curiosity_xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_fsw_sim.curiosity_construct_definitions import TM_PACKET_STRUCT, COMMAND_STRUCTS
 from dragoman_fsw_sim.srdf_parser import parse_srdf_group_states
 from dragoman_fsw_sim.clr_trajectory_router import send_trajectory
 

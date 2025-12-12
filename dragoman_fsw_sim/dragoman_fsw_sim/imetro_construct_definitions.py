@@ -1,29 +1,18 @@
 """
-XTCE Construct Structure Library
+Construct Structure Library for IMetro Demo Robot
 
-This module provides hard-coded construct structures for encoding and decoding
+This module provides construct structures for encoding and decoding
 CCSDS packets for the IMetro demo robot. The structures are based on the XTCE
-definitions but are now hard-coded for simplicity and performance.
+definitions for the robot's 9-joint configuration.
 
 All structures are available as module-level constants for direct use.
 """
 
 from construct import (
     Struct, Int16ub, Float32b,
-    Array, BitStruct, BitsInteger, CString
+    Array, CString
 )
-
-
-# CCSDS Primary Header structure (6 bytes)
-CCSDSHeader = BitStruct(
-    "version" / BitsInteger(3),
-    "type" / BitsInteger(1),
-    "secondary_header_flag" / BitsInteger(1),
-    "apid" / BitsInteger(11),
-    "sequence_flags" / BitsInteger(2),
-    "sequence_count" / BitsInteger(14),
-    "packet_length" / BitsInteger(16)
-)
+from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 
 CommandSecondaryHeader = BitStruct(
   "fcn_code" / BitsInteger(8),
