@@ -139,10 +139,10 @@ class MultiPacketSimulator:
         packet = TEMPERATURE_PACKET_STRUCT.build({
             'header': {
                 'version': 0,
-                'type': False,
+                'type': 0,  # 0 = Telemetry
                 'secondary_header_flag': False,
-                'apid': self.temp_apid,
-                'sequence_flags': 3,
+                'apid': self.temp_apid,  # APID for TemperaturePacket
+                'sequence_flags': 3,  # 3 = Unsegmented
                 'sequence_count': self.temp_sequence_count,
                 'packet_length': TEMPERATURE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
             },
@@ -164,10 +164,10 @@ class MultiPacketSimulator:
         packet = VOLTAGE_PACKET_STRUCT.build({
             'header': {
                 'version': 0,
-                'type': False,
+                'type': 0,  # 0 = Telemetry
                 'secondary_header_flag': False,
-                'apid': self.voltage_apid,
-                'sequence_flags': 3,
+                'apid': self.voltage_apid,  # APID for VoltagePacket
+                'sequence_flags': 3,  # 3 = Unsegmented
                 'sequence_count': self.voltage_sequence_count,
                 'packet_length': VOLTAGE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
             },

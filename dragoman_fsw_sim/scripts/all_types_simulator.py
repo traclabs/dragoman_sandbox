@@ -39,6 +39,16 @@ class AllTypesSimulator:
     """Simulator that generates and sends AllTypes telemetry packets"""
 
     def __init__(self, tm_host='127.0.0.1', tm_port=10015, tc_host='127.0.0.1', tc_port=10025, rate=1):
+        """
+        Initialize the simulator
+
+        Args:
+            tm_host: Telemetry destination host
+            tm_port: Telemetry destination port
+            tc_host: Telecommand receive host
+            tc_port: Telecommand receive port
+            rate: Telemetry rate in Hz
+        """
         self.tm_host = tm_host
         self.tm_port = tm_port
         self.tc_host = tc_host
@@ -49,9 +59,12 @@ class AllTypesSimulator:
         self.tc_counter = 0
         self.sequence_count = 0
         self.last_tc = None
+
+        # Start time for relative time calculations
         self.start_time = time.time()
 
-        self.enum_state = 0
+        # State for mock data generation
+        self.enum_state = 0  # Cycles through 0, 1, 2
         self.boolean_state = False
         self.string_index = 0
         self.status_messages = [
