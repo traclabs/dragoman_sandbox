@@ -14,7 +14,7 @@ import os
 
 def generate_xtce_imetro_demo(filename):
 
-  spacecraft = yp.System("IMetro")
+  spacecraft = yp.System("Spacecraft")
 
   # CMD: 0x1800 TLM: 0x8000
   #define EDORAS_APP_CMD_MID     (CFE_PLATFORM_CMD_MID_BASE + 0x27)
