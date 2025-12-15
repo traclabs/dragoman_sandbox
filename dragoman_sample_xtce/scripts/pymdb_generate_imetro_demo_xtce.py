@@ -22,6 +22,9 @@ def generate_xtce_imetro_demo(filename):
   CMD_MID=0x1827
   TLM_MID=0x0827
 
+  APID_CMD = CMD_MID - 0x1800
+  APID_TLM = TLM_MID - 0x0800
+
   # ********************************
   # Generic iMetro command
   # ********************************
@@ -39,7 +42,7 @@ def generate_xtce_imetro_demo(filename):
      abstract = True,
      base = "/Cfs/cfs_command_packet",
      assignments = {
-       "ccsds_apid": 39,
+       "ccsds_apid": APID_CMD,
        "scr_header": {
          "fcn_code": 0x01,
          "checksum": 0
@@ -182,7 +185,7 @@ def generate_xtce_imetro_demo(filename):
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter)
     ],
-    condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", 100)
+    condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", APID_TLM)
   )
 
 
