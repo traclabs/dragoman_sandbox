@@ -26,7 +26,6 @@ def generate_xtce_gateway_demo(filename):
   CMD_MID=(0x1827 - 0x1800)
   TLM_MID= (0x0827 - 0x0800)
 
-
   # ********************************
   # TO Lab Enable command
   # ********************************
@@ -43,7 +42,7 @@ def generate_xtce_gateway_demo(filename):
      abstract=False,
      base="/Cfs/cfs_command_packet",
      assignments={
-       "ccsds_apid": 0x1880,
+       "ccsds_apid": CMD_MID,
        "scr_header": {
          "fcn_code": 0x06,
          "checksum": 0
@@ -121,13 +120,34 @@ def generate_xtce_gateway_demo(filename):
     short_description="big_arm_joint_ [2..8]"
   )
 
+  # Timestamp parameters (matching ROS 2 builtin_interfaces/Time)
+  timestamp_sec_parameter = yp.IntegerParameter(
+    system=spacecraft,
+    name="timestamp_sec",
+    signed=True,
+    bits=32,
+    encoding=yp.int32le_t,
+    short_description="Timestamp seconds (int32)"
+  )
+
+  timestamp_nanosec_parameter = yp.IntegerParameter(
+    system=spacecraft,
+    name="timestamp_nanosec",
+    signed=False,
+    bits=32,
+    encoding=yp.uint32le_t,
+    short_description="Timestamp nanoseconds (uint32)"
+  )
+
   # Telemetry container - references external cFS telemetry container with secondary header
   telemetry_container = yp.Container(
     system=spacecraft,
     name="GatewayTelemetryPacket",
     base="/Cfs/cfs_telemetry_packet",
     entries=[
-      yp.ParameterEntry(parameter=joint_state_parameter)
+      yp.ParameterEntry(parameter=joint_state_parameter),
+      yp.ParameterEntry(parameter=timestamp_sec_parameter),
+      yp.ParameterEntry(parameter=timestamp_nanosec_parameter)
     ],
     condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", TLM_MID)
   )
