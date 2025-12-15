@@ -1,10 +1,15 @@
 #!/bin/bash
 
-XTCE_DIR=$(ros2 pkg prefix --share dragoman_sample_xtce)/xtce
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+XTCE_DIR=${SCRIPT_DIR}/../xtce
 
 echo "========================================"
 echo "  XTCE Generator"
 echo "========================================"
+echo ""
+
+echo "→ Generating CCSDSHeader.xtce..."
+ros2 run dragoman_sample_xtce pymdb_generate_ccsds_header.py ${XTCE_DIR}/CCSDSHeader.xtce
 echo ""
 
 echo "→ Generating IMetro.xtce..."

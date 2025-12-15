@@ -1,7 +1,8 @@
 #!/bin/bash
 
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 XTCE_DIR=$(ros2 pkg prefix --share dragoman_sample_xtce)/xtce
-MSG_DIR=$(ros2 pkg prefix --share dragoman_generated_msgs)/msg
+MSG_DIR=${SCRIPT_DIR}/../../dragoman_generated_msgs/msg
 
 echo "========================================"
 echo "  XTCE to ROS2 Message Generator"

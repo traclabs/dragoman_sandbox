@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-Generate an XTCE file with multiple packet types.
+Generate XTCE file with multiple packet types.
 
-This script demonstrates that a single XTCE file can define multiple packet layouts.
-Each packet type is represented as a separate SequenceContainer that inherits from
-a common base container (ccsds_space_packet). This allows you to define all telemetry
-formats for a spacecraft in one organized XTCE file.
+Demonstrates that a single XTCE file can define multiple packet layouts. Each packet type
+is represented as a separate SequenceContainer that inherits from a common base container
+(ccsds_space_packet). This allows you to define all telemetry formats for a spacecraft in
+one organized XTCE file.
 
 In this example:
-- TemperaturePacket: Contains temperature telemetry
-- VoltagePacket: Contains voltage telemetry
+- TemperaturePacket: Contains temperature telemetry (APID 130)
+- VoltagePacket: Contains voltage telemetry (APID 131)
 
 Both packets share the same CCSDS header structure but have different payload data.
+
+References CCSDSHeader.xtce for packet structure.
 """
 
 import sys
@@ -19,10 +21,8 @@ import os
 import yamcs.pymdb as yp
 
 def generate_xtce_multi_packet(filename):
-    """Generate XTCE with multiple packet types"""
 
     spacecraft = yp.System("MultiPacket")
-    ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
 
     # =========================================================================
     # PACKET 1: Temperature data (APID 130)
@@ -39,9 +39,9 @@ def generate_xtce_multi_packet(filename):
     yp.Container(
         system=spacecraft,
         name="TemperaturePacket",
-        base=ccsds_header.tm_container,
+        base="/CCSDSHeader/ccsds_space_packet",
         entries=[yp.ParameterEntry(parameter=temp_param)],
-        condition=yp.eq(ccsds_header.tm_apid, 130)
+        condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", 130)
     )
 
     # =========================================================================
@@ -59,9 +59,9 @@ def generate_xtce_multi_packet(filename):
     yp.Container(
         system=spacecraft,
         name="VoltagePacket",
-        base=ccsds_header.tm_container,
+        base="/CCSDSHeader/ccsds_space_packet",
         entries=[yp.ParameterEntry(parameter=voltage_param)],
-        condition=yp.eq(ccsds_header.tm_apid, 131)
+        condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", 131)
     )
 
     # =========================================================================

@@ -25,7 +25,6 @@ ament_export_dependencies(
 #############
 ## Install ##
 #############
-ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
   scripts/pymdb_generate_all_types.py
@@ -33,6 +32,7 @@ install(PROGRAMS
   scripts/pymdb_generate_imetro_demo_xtce.py
   scripts/pymdb_generate_gateway_demo_xtce.py
   scripts/pymdb_generate_multi_packet.py
+  scripts/pymdb_generate_ccsds_header.py
   scripts/generate_xtces.sh
   DESTINATION lib/${PROJECT_NAME}
 )

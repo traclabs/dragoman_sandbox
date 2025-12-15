@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
+"""
+Generate XTCE demonstrating all supported parameter and argument types.
+
+Telemetry: Integer, Float, Enumerated, String, Boolean, AbsoluteTime, RelativeTime,
+           Binary, Array, Aggregate
+Commands: Integer, Float, String, Boolean, Array, Aggregate arguments
+
+References CCSDSHeader.xtce for packet structure.
+"""
 
 import sys
 import os
 import yamcs.pymdb as yp
 from datetime import datetime
 
-# This function will create the XTCE structure with a representative example
 def generate_xtce_all_types(filename):
 
     # 1. Setup & Boilerplate
     spacecraft = yp.System("AllTypes")
-
-    # Add a base CCSDS header for containers and commands to inherit from
-    ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
 
     # =========================================================================
     # PARAMETER TYPES (TELEMETRY) - Scalar
@@ -129,10 +134,11 @@ def generate_xtce_all_types(filename):
     # TELEMETRY CONTAINER (All Parameters)
     # =========================================================================
 
+    # Telemetry container - references external CCSDS container
     tm_container = yp.Container(
         system=spacecraft,
         name="AllTelemetryPacket",
-        base=ccsds_header.tm_container,
+        base="/CCSDSHeader/ccsds_space_packet",
         entries=[
             yp.ParameterEntry(parameter=integer_param),
             yp.ParameterEntry(parameter=float_param),
@@ -145,7 +151,7 @@ def generate_xtce_all_types(filename):
             yp.ParameterEntry(parameter=array_param_instance),
             yp.ParameterEntry(parameter=aggregate_param_instance),
         ],
-        condition=yp.eq(ccsds_header.tm_apid, 120)
+        condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", 120)
     )
 
     # =========================================================================
@@ -199,13 +205,15 @@ def generate_xtce_all_types(filename):
     # COMMAND (All Arguments)
     # =========================================================================
 
+    # Command - references external CCSDS command
     all_args_command = yp.Command(
         system=spacecraft,
         name="ConfigureAllTypes",
         short_description="Command with arguments for all major types",
-        base=ccsds_header.tc_command,
+        base="/CCSDSHeader/ccsds_space_packet",
         assignments = {
-            ccsds_header.tc_apid.name: 200,
+            "ccsds_secondary_header": "Not Present",
+            "ccsds_apid": 200,
         },
         arguments=[
             arg_int,

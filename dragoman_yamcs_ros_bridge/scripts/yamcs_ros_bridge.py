@@ -12,12 +12,406 @@ import argparse
 import sys
 import traceback
 from pathlib import Path
+import re
+from typing import Any, Dict, List, Optional, Type
+from datetime import datetime
 
 import yaml
 import rclpy
 from rclpy.node import Node
+from rclpy.publisher import Publisher
 from yamcs.client import YamcsClient
 import importlib
+import numpy as np
+from builtin_interfaces.msg import Time
+
+
+class MessageIntrospector:
+    """Automatically discovers ROS message fields and creates YAMCS mappings."""
+
+    @staticmethod
+    def get_message_fields(MessageType):
+        """
+        Extract all field names from a ROS message class.
+
+        Args:
+            MessageType: ROS message class
+
+        Returns:
+            dict: {field_name: field_type}
+
+        Example:
+            {'joint_state': 'float[24]'}
+        """
+        return MessageType._fields_and_field_types
+
+    @staticmethod
+    def to_ros_field_name(name):
+        """
+        Convert a parameter name to ROS 2 compliant field name.
+        Uses the same logic as xtce2msg.py for consistency.
+
+        Args:
+            name: Parameter name (e.g., "T_IntegerSigned")
+
+        Returns:
+            str: ROS field name (e.g., "t_integer_signed")
+        """
+        # Insert underscores before uppercase letters that follow lowercase letters or digits
+        name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name)
+
+        # Convert to lowercase
+        name = name.lower()
+
+        # Replace any non-alphanumeric characters (except underscore) with underscore
+        name = re.sub(r'[^a-z0-9_]', '_', name)
+
+        # Remove double underscores
+        while '__' in name:
+            name = name.replace('__', '_')
+
+        # Remove leading underscores and ensure it starts with a letter
+        name = name.lstrip('_')
+        if name and not name[0].isalpha():
+            name = 'field_' + name
+
+        # Remove trailing underscores
+        name = name.rstrip('_')
+
+        return name
+
+    @staticmethod
+    def create_field_mapping(MessageType, yamcs_parameters, logger=None, strict=False):
+        """
+        Automatically map YAMCS parameters to ROS message fields.
+
+        Strategy:
+        1. Get all ROS message field names
+        2. For each YAMCS parameter, extract the parameter name (last part of path)
+        3. Convert YAMCS name to ROS snake_case format
+        4. Match against available ROS fields
+        5. Handle aggregate types (parameters that map to multiple fields)
+
+        Args:
+            MessageType: ROS message class
+            yamcs_parameters: List of YAMCS parameter paths
+            logger: Optional ROS logger for debug output
+            strict: If True, only include parameters that can be mapped (filters out unmappable ones)
+
+        Returns:
+            tuple: (field_mapping dict, filtered_parameters list) if strict=True
+                   field_mapping dict only if strict=False
+        """
+        ros_fields = set(MessageType._fields_and_field_types.keys())
+        field_mapping = {}
+        filtered_parameters = []
+
+        for yamcs_path in yamcs_parameters:
+            # Extract parameter name from path: "/Curiosity/joint_state" -> "joint_state"
+            param_name = yamcs_path.split('/')[-1]
+
+            # Convert to ROS format: "T_IntegerSigned" -> "t_integer_signed"
+            ros_field_name = MessageIntrospector.to_ros_field_name(param_name)
+
+            # Check if this is an aggregate type (maps to multiple fields)
+            aggregate_fields = [f for f in ros_fields if f.startswith(ros_field_name + '_')]
+
+            if aggregate_fields:
+                # This is an aggregate type - create mappings for each member
+                if logger:
+                    logger.debug(f"Detected aggregate type '{param_name}' with {len(aggregate_fields)} members")
+
+                for agg_field in aggregate_fields:
+                    # Extract member name: "t_status_aggregate_current_draw" -> "CurrentDraw"
+                    member_suffix = agg_field[len(ros_field_name)+1:]
+                    # Convert to PascalCase: "current_draw" -> "CurrentDraw"
+                    yamcs_member = ''.join(word.capitalize() for word in member_suffix.split('_'))
+
+                    # Create aggregate member mapping: "T_StatusAggregate.CurrentDraw" -> "t_status_aggregate_current_draw"
+                    aggregate_key = f"{param_name}.{yamcs_member}"
+                    field_mapping[aggregate_key] = agg_field
+
+                    if logger:
+                        logger.debug(f"  Aggregate member: {aggregate_key} → {agg_field}")
+
+                filtered_parameters.append(yamcs_path)
+
+            elif ros_field_name in ros_fields:
+                # Direct mapping found
+                field_mapping[param_name] = ros_field_name
+                if logger:
+                    logger.debug(f"Mapped: {param_name} → {ros_field_name}")
+                filtered_parameters.append(yamcs_path)
+
+            elif param_name in ros_fields:
+                # Try exact match without conversion
+                field_mapping[param_name] = param_name
+                if logger:
+                    logger.debug(f"Exact match: {param_name} → {param_name}")
+                filtered_parameters.append(yamcs_path)
+
+            else:
+                # No mapping found
+                if logger and not strict:
+                    logger.warning(
+                        f"Cannot auto-map YAMCS parameter '{param_name}' (from {yamcs_path}). "
+                        f"Available ROS fields: {sorted(ros_fields)}"
+                    )
+                elif logger and strict:
+                    logger.debug(
+                        f"Skipping unmappable parameter '{param_name}' (from {yamcs_path})"
+                    )
+
+        if strict:
+            return field_mapping, filtered_parameters
+        return field_mapping
+
+
+class TypeConverter:
+    """Handles type conversion from YAMCS parameter values to ROS message field types."""
+
+    # Enum mapping for enumerated types
+    ENUM_MAPPINGS = {
+        'T_EnumeratedAlarm': {
+            'STATE_OFF': 0,
+            'STATE_NOMINAL': 1,
+            'STATE_FAULT': 2
+        }
+    }
+
+    @staticmethod
+    def convert_value(param_name: str, ros_field: str, value: Any, logger: Optional[Any] = None) -> Any:
+        """
+        Convert a YAMCS parameter value to the appropriate ROS message field type.
+
+        Args:
+            param_name: YAMCS parameter name
+            ros_field: ROS message field name
+            value: Raw value from YAMCS
+            logger: Optional logger for debug output
+
+        Returns:
+            Converted value suitable for ROS message field
+        """
+        # Handle bytes/binary data
+        if isinstance(value, bytes):
+            return TypeConverter._convert_bytes(ros_field, value)
+
+        # Handle absolute time
+        if param_name == 'T_AbsoluteTime':
+            return TypeConverter._convert_absolute_time(value)
+
+        # Handle enumerated types
+        if param_name == 'T_EnumeratedAlarm':
+            return TypeConverter._convert_enum(param_name, value, logger)
+
+        # Handle numpy arrays
+        if isinstance(value, np.ndarray):
+            return value.tolist()
+
+        # Handle other iterables (but not strings or bytes)
+        if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+            return list(value)
+
+        # Field-specific conversions
+        return TypeConverter._convert_by_field(ros_field, value)
+
+    @staticmethod
+    def _convert_bytes(ros_field: str, value: bytes) -> Any:
+        """Convert bytes to appropriate format based on ROS field."""
+        if ros_field in ('t_binary_blob', 't_status_aggregate_raw_status_flags'):
+            return np.frombuffer(value, dtype=np.uint8)
+        return list(value)
+
+    @staticmethod
+    def _convert_absolute_time(value: Any) -> Time:
+        """Convert datetime or timestamp to ROS Time message."""
+        if isinstance(value, datetime):
+            timestamp = value.timestamp()
+        else:
+            timestamp = float(value)
+
+        time_msg = Time()
+        time_msg.sec = int(timestamp)
+        time_msg.nanosec = int((timestamp - int(timestamp)) * 1e9)
+        return time_msg
+
+    @staticmethod
+    def _convert_enum(param_name: str, value: Any, logger: Optional[Any] = None) -> Any:
+        """Convert enumerated string to numeric value."""
+        if isinstance(value, str) and param_name in TypeConverter.ENUM_MAPPINGS:
+            enum_map = TypeConverter.ENUM_MAPPINGS[param_name]
+            if value in enum_map:
+                converted = enum_map[value]
+                if logger:
+                    logger.debug(f'Converted enum to numeric: {converted}')
+                return converted
+        return value
+
+    @staticmethod
+    def _convert_by_field(ros_field: str, value: Any) -> Any:
+        """Convert value based on ROS field name."""
+        # Boolean fields
+        if ros_field in ('t_boolean_flag', 't_status_aggregate_heater_enabled'):
+            return bool(value)
+
+        # Integer fields
+        if ros_field in ('t_enumerated_alarm', 't_integer_signed', 't_relative_time_raw'):
+            return int(value)
+
+        # Float fields
+        if ros_field in ('t_float_raw64', 't_status_aggregate_current_draw'):
+            return float(value)
+
+        # Array fields
+        if ros_field == 't_integer_array':
+            if not isinstance(value, np.ndarray):
+                return np.array(value, dtype=np.uint16)
+            return value
+
+        if ros_field in ('t_binary_blob', 't_status_aggregate_raw_status_flags'):
+            if isinstance(value, bytes):
+                return np.frombuffer(value, dtype=np.uint8)
+            if not isinstance(value, np.ndarray):
+                return np.array(value, dtype=np.uint8)
+            return value
+
+        # String fields
+        if ros_field == 't_string_utf8':
+            return str(value)
+
+        # Return as-is for other types
+        return value
+
+
+class MessageTypeLoader:
+    """Handles dynamic loading of ROS message types."""
+
+    @staticmethod
+    def load_message_type(message_type_str: str) -> Type:
+        """
+        Dynamically load a ROS message type from a string specification.
+
+        Args:
+            message_type_str: Message type in format "package/MessageType" or "package/msg/MessageType"
+
+        Returns:
+            The loaded message class
+
+        Raises:
+            ValueError: If message type format is invalid or loading fails
+        """
+        msg_type_parts = message_type_str.split('/')
+
+        if len(msg_type_parts) == 3:
+            # Format: "package/msg/MessageType"
+            msg_module = msg_type_parts[0]
+            msg_class = msg_type_parts[2]
+        elif len(msg_type_parts) == 2:
+            # Format: "package/MessageType"
+            msg_module = msg_type_parts[0]
+            msg_class = msg_type_parts[1]
+        else:
+            raise ValueError(
+                f'Invalid message type format: {message_type_str}. '
+                f'Expected "package/MessageType" or "package/msg/MessageType"'
+            )
+
+        try:
+            module = importlib.import_module(f'{msg_module}.msg')
+            return getattr(module, msg_class)
+        except (ImportError, AttributeError) as e:
+            raise ValueError(
+                f'Failed to load message type {message_type_str}: {e}'
+            )
+
+
+class YamcsParameterDiscovery:
+    """Discovers available parameters from YAMCS server."""
+
+    def __init__(self, yamcs_client: YamcsClient, instance: str, logger: Optional[Any] = None):
+        """
+        Initialize parameter discovery service.
+
+        Args:
+            yamcs_client: YamcsClient instance
+            instance: YAMCS instance name
+            logger: Optional ROS logger
+        """
+        self.client = yamcs_client
+        self.instance = instance
+        self.logger = logger
+
+    def discover_parameters_in_namespace(self, namespace: str) -> List[str]:
+        """
+        Query YAMCS for all parameters in a namespace.
+
+        Uses YAMCS Python Client API:
+            mdb = client.get_mdb(instance)
+            parameters = mdb.list_parameters()
+
+        Args:
+            namespace: YAMCS namespace (e.g., "/Curiosity")
+
+        Returns:
+            list: Full parameter paths (e.g., ["/Curiosity/joint_state"])
+        """
+        try:
+            mdb = self.client.get_mdb(self.instance)
+            all_params = mdb.list_parameters()
+
+            # Filter by namespace
+            if namespace:
+                filtered = [p.qualified_name for p in all_params
+                           if p.qualified_name.startswith(namespace)]
+                if self.logger:
+                    self.logger.debug(
+                        f"Discovered {len(filtered)} parameters in namespace '{namespace}'"
+                    )
+                return filtered
+
+            if self.logger:
+                self.logger.info(f"Discovered {len(all_params)} total parameters")
+            return [p.qualified_name for p in all_params]
+
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Failed to discover parameters: {e}")
+            raise
+
+    def discover_parameters_in_packet(self, packet_name: str) -> List[str]:
+        """
+        Query YAMCS for all parameters in a specific packet/container.
+
+        Since the YAMCS Python Client doesn't expose container introspection directly,
+        we use the packet name as a namespace prefix to filter parameters.
+
+        Args:
+            packet_name: YAMCS packet/container name (e.g., "IMetro/IMetroTelemetryPacket")
+                        This is converted to a namespace by extracting the path prefix.
+                        Example: "IMetro/IMetroTelemetryPacket" -> "/IMetro"
+
+        Returns:
+            list: Full parameter paths for all parameters in the packet's namespace
+        """
+        try:
+            # Extract namespace from packet name
+            # "IMetro/IMetroTelemetryPacket" -> "/IMetro"
+            # "AllTypes/AllTelemetryPacket" -> "/AllTypes"
+            namespace = '/' + packet_name.split('/')[0]
+
+            if self.logger:
+                self.logger.debug(
+                    f"Converting packet name '{packet_name}' to namespace '{namespace}'"
+                )
+
+            # Use namespace-based discovery
+            return self.discover_parameters_in_namespace(namespace)
+
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"Failed to discover parameters for packet '{packet_name}': {e}")
+            raise
 
 
 class YamcsRosBridge(Node):
@@ -28,7 +422,7 @@ class YamcsRosBridge(Node):
     to subscribe to and which ROS2 messages to publish.
     """
 
-    def __init__(self, config_file, yamcs_url_override=None):
+    def __init__(self, config_file: str, yamcs_url_override: Optional[str] = None):
         """
         Initialize the YAMCS-ROS bridge.
 
@@ -38,7 +432,7 @@ class YamcsRosBridge(Node):
         """
         super().__init__('yamcs_ros_bridge')
 
-        self.get_logger().info(f'Loading configuration from: {config_file}')
+        self.get_logger().debug(f'Loading configuration from: {config_file}')
 
         # Load and validate configuration
         try:
@@ -50,7 +444,7 @@ class YamcsRosBridge(Node):
         # Override YAMCS URL if provided
         if yamcs_url_override:
             self.config['yamcs']['url'] = yamcs_url_override
-            self.get_logger().info(f'Overriding YAMCS URL: {yamcs_url_override}')
+            self.get_logger().debug(f'Overriding YAMCS URL: {yamcs_url_override}')
 
         # Connect to YAMCS
         try:
@@ -66,11 +460,29 @@ class YamcsRosBridge(Node):
             self.get_logger().error(f'Failed to setup bridges: {e}')
             raise
 
-        self.get_logger().info('YAMCS-ROS Bridge initialized successfully')
+        # Log summary of created bridges
+        self.get_logger().info(f'YAMCS-ROS Bridge initialized with {len(self.bridges)} bridge(s):')
+        for bridge in self.bridges:
+            config = bridge['config']
+            self.get_logger().info(f"  • {config['name']}: {config['ros_topic']}")
 
-    def load_config(self, config_file):
+    def load_config(self, config_file: str) -> Dict[str, Any]:
         """
         Load and validate YAML configuration file.
+
+        Supports both old (manual) and new (auto-discovery) configuration formats:
+
+        Old format (manual):
+            - name: "bridge_name"
+              yamcs_parameter: ["/path/to/param"]
+              ros_topic: "/topic"
+              ros_message_type: "package/msg/Type"
+              field_mapping: {param: field}
+
+        New format (auto-discovery):
+            - ros_message_type: "package/msg/Type"
+              ros_topic: "/topic"
+              yamcs_namespace: "/Namespace"  # Optional
 
         Args:
             config_file: Path to YAML configuration file
@@ -105,14 +517,25 @@ class YamcsRosBridge(Node):
 
         # Validate each bridge configuration
         for i, bridge in enumerate(config['bridges']):
-            required_bridge_fields = ['name', 'yamcs_parameter', 'ros_topic', 'ros_message_type', 'field_mapping']
-            for field in required_bridge_fields:
-                if field not in bridge:
-                    raise ValueError(f'Bridge {i} missing required field: {field}')
+            # ros_message_type and ros_topic are always required
+            if 'ros_message_type' not in bridge:
+                raise ValueError(f'Bridge {i} missing required field: ros_message_type')
+            if 'ros_topic' not in bridge:
+                raise ValueError(f'Bridge {i} missing required field: ros_topic')
+
+            # Check if this is old format (has all manual fields) or new format (auto-discovery)
+            has_manual_fields = all(field in bridge for field in ['name', 'yamcs_parameter', 'field_mapping'])
+            has_auto_fields = 'yamcs_namespace' in bridge or ('yamcs_parameter' not in bridge and 'field_mapping' not in bridge)
+
+            if not has_manual_fields and not has_auto_fields:
+                # Partial configuration - need either all manual fields or use auto-discovery
+                self.get_logger().info(
+                    f'Bridge {i} will use auto-discovery mode (missing manual configuration fields)'
+                )
 
         return config
 
-    def connect_yamcs(self):
+    def connect_yamcs(self) -> None:
         """
         Connect to YAMCS server and get processor instance.
 
@@ -121,7 +544,7 @@ class YamcsRosBridge(Node):
         """
         yamcs_config = self.config['yamcs']
 
-        self.get_logger().info(f'Connecting to YAMCS at {yamcs_config["url"]}...')
+        self.get_logger().debug(f'Connecting to YAMCS at {yamcs_config["url"]}...')
 
         self.client = YamcsClient(yamcs_config['url'])
         self.processor = self.client.get_processor(
@@ -129,12 +552,12 @@ class YamcsRosBridge(Node):
             yamcs_config['processor']
         )
 
-        self.get_logger().info(
+        self.get_logger().debug(
             f'Connected to YAMCS instance: {yamcs_config["instance"]}, '
             f'processor: {yamcs_config["processor"]}'
         )
 
-    def setup_bridges(self):
+    def setup_bridges(self) -> None:
         """
         Create publishers and YAMCS subscriptions for all configured bridges.
         """
@@ -144,20 +567,27 @@ class YamcsRosBridge(Node):
             try:
                 bridge = self.create_bridge(bridge_config)
                 self.bridges.append(bridge)
-                self.get_logger().info(
-                    f'Created bridge "{bridge_config["name"]}": '
+                bridge_name = bridge_config.get('name', 'unknown')
+                self.get_logger().debug(
+                    f'Created bridge "{bridge_name}": '
                     f'{bridge_config["yamcs_parameter"]} → {bridge_config["ros_topic"]}'
                 )
             except Exception as e:
+                # Get bridge name safely (might not be set yet)
+                bridge_name = bridge_config.get('name', bridge_config.get('ros_message_type', 'unknown'))
                 self.get_logger().error(
-                    f'Failed to create bridge "{bridge_config["name"]}": {e}'
+                    f'Failed to create bridge "{bridge_name}": {e}'
                 )
                 self.get_logger().error(traceback.format_exc())
                 raise
 
-    def create_bridge(self, config):
+    def create_bridge(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create a single bridge (ROS publisher + YAMCS subscription).
+
+        Supports both manual and auto-discovery modes:
+        - Manual: Uses provided yamcs_parameter and field_mapping
+        - Auto: Discovers parameters from YAMCS and generates field mapping
 
         Args:
             config: Bridge configuration dictionary
@@ -166,29 +596,72 @@ class YamcsRosBridge(Node):
             dict: Bridge information including publisher and subscription
         """
         # Load ROS message type dynamically
-        msg_type_parts = config['ros_message_type'].split('/')
+        MessageType = MessageTypeLoader.load_message_type(config['ros_message_type'])
+        msg_class = config['ros_message_type'].split('/')[-1]
 
-        if len(msg_type_parts) == 3:
-            # Format: "package/msg/MessageType"
-            msg_module = msg_type_parts[0]
-            msg_class = msg_type_parts[2]
-        elif len(msg_type_parts) == 2:
-            # Format: "package/MessageType"
-            msg_module = msg_type_parts[0]
-            msg_class = msg_type_parts[1]
-        else:
-            raise ValueError(
-                f'Invalid message type format: {config["ros_message_type"]}. '
-                f'Expected "package/MessageType" or "package/msg/MessageType"'
+        # Auto-discover YAMCS parameters if not explicitly provided
+        if 'yamcs_parameter' not in config:
+            discovery = YamcsParameterDiscovery(
+                self.client,
+                self.config['yamcs']['instance'],
+                self.get_logger()
             )
 
-        try:
-            module = importlib.import_module(f'{msg_module}.msg')
-            MessageType = getattr(module, msg_class)
-        except (ImportError, AttributeError) as e:
-            raise ValueError(
-                f'Failed to load message type {config["ros_message_type"]}: {e}'
+            # Try packet name first (most specific), then namespace
+            if 'yamcs_packet_name' in config:
+                packet_name = config['yamcs_packet_name']
+                self.get_logger().debug(
+                    f"Auto-discovering YAMCS parameters for {config['ros_message_type']} "
+                    f"from packet '{packet_name}'"
+                )
+                yamcs_parameters = discovery.discover_parameters_in_packet(packet_name)
+            else:
+                namespace = config.get('yamcs_namespace', '')
+                self.get_logger().debug(
+                    f"Auto-discovering YAMCS parameters for {config['ros_message_type']} "
+                    f"in namespace '{namespace}'"
+                )
+                yamcs_parameters = discovery.discover_parameters_in_namespace(namespace)
+
+            config['yamcs_parameter'] = yamcs_parameters
+
+            self.get_logger().debug(
+                f"Discovered {len(yamcs_parameters)} parameters"
             )
+
+        # Auto-generate field mapping using introspection if not provided
+        if 'field_mapping' not in config:
+            self.get_logger().debug(
+                f"Auto-generating field mapping for {config['ros_message_type']}"
+            )
+
+            introspector = MessageIntrospector()
+
+            # Use strict mode to filter out unmappable parameters
+            field_mapping, filtered_parameters = introspector.create_field_mapping(
+                MessageType,
+                config['yamcs_parameter'],
+                self.get_logger(),
+                strict=True
+            )
+
+            # Update config with only mappable parameters
+            config['yamcs_parameter'] = filtered_parameters
+            config['field_mapping'] = field_mapping
+
+            if len(filtered_parameters) == 0:
+                raise ValueError(
+                    f"No mappable parameters found for {config['ros_message_type']}. "
+                    f"ROS message fields: {list(MessageType._fields_and_field_types.keys())}"
+                )
+
+            self.get_logger().debug(
+                f"Generated {len(field_mapping)} field mappings from {len(filtered_parameters)} parameters"
+            )
+
+        # Generate bridge name if not provided
+        if 'name' not in config:
+            config['name'] = f"{msg_class}_bridge"
 
         # Create ROS publisher
         publisher = self.create_publisher(
@@ -212,7 +685,7 @@ class YamcsRosBridge(Node):
             'message_type': MessageType
         }
 
-    def yamcs_callback(self, data, config, publisher, MessageType):
+    def yamcs_callback(self, data: Any, config: Dict[str, Any], publisher: Publisher, MessageType: Type) -> None:
         """
         Handle YAMCS parameter updates and publish to ROS.
 
@@ -223,33 +696,20 @@ class YamcsRosBridge(Node):
             MessageType: ROS message class
         """
         try:
-            import numpy as np
-
             # Create a single message to accumulate all parameter values
             msg = MessageType()
 
-            # Log message fields for debugging
-            self.get_logger().debug(f'Message type: {MessageType.__name__}')
-            self.get_logger().debug(f'Message fields: {[f for f in dir(msg) if not f.startswith("_")]}')
+            self.get_logger().debug(
+                f'Processing {len(data.parameters)} parameters for {MessageType.__name__}'
+            )
 
             # Map all parameters to the message
             for parameter in data.parameters:
-                param_name = parameter.name.split('/')[-1]
-                self.get_logger().debug(f'Processing parameter: {param_name}, value type: {type(parameter.eng_value).__name__}')
                 self.map_fields(parameter, msg, config['field_mapping'])
-
-            # NOTE: Do NOT convert numpy arrays to lists!
-            # ROS2 messages expect numpy arrays for fixed-size array fields
 
             # Set timestamp if message has a header
             if hasattr(msg, 'header'):
                 msg.header.stamp = self.get_clock().now().to_msg()
-
-            # Log before publishing
-            self.get_logger().debug(f'Publishing message with {len(data.parameters)} parameters')
-
-            # Log message state for debugging
-            self.get_logger().debug(f'Message before publish: {msg}')
 
             # Publish the complete message
             publisher.publish(msg)
@@ -260,13 +720,10 @@ class YamcsRosBridge(Node):
 
         except Exception as e:
             self.get_logger().error(
-                f'Error in callback for {config["name"]}: {e}'
+                f'Error in callback for {config["name"]}: {e}\n{traceback.format_exc()}'
             )
-            self.get_logger().error(traceback.format_exc())
-            # Log the message state for debugging
-            self.get_logger().error(f'Message state: {msg}')
 
-    def map_fields(self, parameter, msg, field_mapping):
+    def map_fields(self, parameter: Any, msg: Any, field_mapping: Dict[str, str]) -> None:
         """
         Map fields from YAMCS parameter to ROS message.
 
@@ -278,142 +735,63 @@ class YamcsRosBridge(Node):
         # Get the parameter name (e.g., "T_IntegerSigned" from "/AllTypes/T_IntegerSigned")
         param_name = parameter.name.split('/')[-1]
 
-        self.get_logger().debug(f'Processing parameter: {param_name}')
-        self.get_logger().debug(f'  Full name: {parameter.name}')
-        self.get_logger().debug(f'  Value: {parameter.eng_value}')
-        self.get_logger().debug(f'  Field mapping keys: {list(field_mapping.keys())}')
+        self.get_logger().debug(
+            f'Mapping parameter: {param_name} (value type: {type(parameter.eng_value).__name__})'
+        )
 
         # Check if this parameter is in our field mapping
         if param_name not in field_mapping:
-            self.get_logger().debug(f'Parameter {param_name} not directly mapped (checking for aggregate members)')
             # Check for aggregate member access (e.g., "T_StatusAggregate.CurrentDraw")
-            for yamcs_field, ros_field in field_mapping.items():
-                if yamcs_field.startswith(param_name + '.'):
-                    # This is an aggregate type, extract the member
-                    member_name = yamcs_field.split('.')[1]
-                    try:
-                        if hasattr(parameter.eng_value, member_name):
-                            value = getattr(parameter.eng_value, member_name)
-                            # Handle binary data for aggregate members
-                            if isinstance(value, bytes):
-                                value = list(value)
-                            setattr(msg, ros_field, value)
-                    except Exception as e:
-                        self.get_logger().error(
-                            f'Error mapping aggregate field {yamcs_field} → {ros_field}: {e}'
-                        )
+            self._map_aggregate_fields(parameter, param_name, msg, field_mapping)
             return
 
         # Map the parameter's engineering value to the ROS message field
         ros_field = field_mapping[param_name]
         try:
-            value = parameter.eng_value
-
-            # Special handling for different data types
-            import numpy as np
-
-            if isinstance(value, bytes):
-                # Binary data: convert bytes to list of uint8
-                value = list(value)
-            elif param_name == 'T_AbsoluteTime':
-                # Absolute time: YAMCS returns datetime object, convert to ROS Time
-                from builtin_interfaces.msg import Time
-                import datetime
-
-                if isinstance(value, datetime.datetime):
-                    # Convert datetime to Unix timestamp
-                    timestamp = value.timestamp()
-                else:
-                    # Already a timestamp
-                    timestamp = float(value)
-
-                time_msg = Time()
-                time_msg.sec = int(timestamp)
-                time_msg.nanosec = int((timestamp - int(timestamp)) * 1e9)
-                value = time_msg
-            elif param_name == 'T_EnumeratedAlarm':
-                # Enumerated type: YAMCS returns string label, but ROS expects uint8 value
-                # Map the enum labels to their numeric values
-                enum_map = {
-                    'STATE_OFF': 0,
-                    'STATE_NOMINAL': 1,
-                    'STATE_FAULT': 2
-                }
-                if isinstance(value, str) and value in enum_map:
-                    value = enum_map[value]
-                    self.get_logger().debug(f'Converted enum to numeric: {value}')
-            elif isinstance(value, np.ndarray):
-                # Numpy arrays: convert to Python list
-                value = value.tolist()
-            elif hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
-                # Other iterables: ensure they're lists
-                value = list(value)
-
-            # builtin_interfaces/Time - already handled above
-            if ros_field == 't_absolute_time':
-                pass  # Already converted to Time message
-
-            # uint8[16] array - keep as numpy array
-            elif ros_field == 't_binary_blob':
-                if isinstance(value, bytes):
-                    value = np.frombuffer(value, dtype=np.uint8)
-                elif not isinstance(value, np.ndarray):
-                    value = np.array(value, dtype=np.uint8)
-
-            # bool
-            elif ros_field == 't_boolean_flag':
-                value = bool(value)
-
-            # uint8
-            elif ros_field == 't_enumerated_alarm':
-                value = int(value)
-
-            # float64
-            elif ros_field == 't_float_raw64':
-                value = float(value)
-
-            # uint16[10] array - keep as numpy array
-            elif ros_field == 't_integer_array':
-                if not isinstance(value, np.ndarray):
-                    value = np.array(value, dtype=np.uint16)
-
-            # int32
-            elif ros_field == 't_integer_signed':
-                value = int(value)
-
-            # uint32
-            elif ros_field == 't_relative_time_raw':
-                value = int(value)
-
-            # float32
-            elif ros_field == 't_status_aggregate_current_draw':
-                value = float(value)
-
-            # bool
-            elif ros_field == 't_status_aggregate_heater_enabled':
-                value = bool(value)
-
-            # uint8[4] array - keep as numpy array
-            elif ros_field == 't_status_aggregate_raw_status_flags':
-                if isinstance(value, bytes):
-                    value = np.frombuffer(value, dtype=np.uint8)
-                elif not isinstance(value, np.ndarray):
-                    value = np.array(value, dtype=np.uint8)
-
-            # string
-            elif ros_field == 't_string_utf8':
-                value = str(value)
-
+            value = TypeConverter.convert_value(
+                param_name, ros_field, parameter.eng_value, self.get_logger()
+            )
             setattr(msg, ros_field, value)
-            self.get_logger().debug(f'Set {ros_field} = {value} (type: {type(value).__name__})')
-            self.get_logger().debug(f'Mapped {param_name} → {ros_field}: {type(value).__name__}')
+            self.get_logger().debug(
+                f'Mapped {param_name} → {ros_field}: {type(value).__name__}'
+            )
         except Exception as e:
             self.get_logger().error(
-                f'Error mapping parameter {param_name} → {ros_field}: {e}'
+                f'Error mapping parameter {param_name} → {ros_field}: {e}\n{traceback.format_exc()}'
             )
-            self.get_logger().error(traceback.format_exc())
 
-    def destroy_node(self):
+    def _map_aggregate_fields(
+        self, parameter: Any, param_name: str, msg: Any, field_mapping: Dict[str, str]
+    ) -> None:
+        """
+        Map aggregate type fields from YAMCS parameter to ROS message.
+
+        Args:
+            parameter: YAMCS parameter object
+            param_name: Parameter name
+            msg: ROS message object to populate
+            field_mapping: Dictionary mapping YAMCS parameter names to ROS fields
+        """
+        for yamcs_field, ros_field in field_mapping.items():
+            if yamcs_field.startswith(param_name + '.'):
+                # This is an aggregate type, extract the member
+                member_name = yamcs_field.split('.')[1]
+                try:
+                    if hasattr(parameter.eng_value, member_name):
+                        value = getattr(parameter.eng_value, member_name)
+                        # Handle binary data for aggregate members
+                        if isinstance(value, bytes):
+                            value = list(value)
+                        setattr(msg, ros_field, value)
+                        self.get_logger().debug(
+                            f'Mapped aggregate {yamcs_field} → {ros_field}'
+                        )
+                except Exception as e:
+                    self.get_logger().error(
+                        f'Error mapping aggregate field {yamcs_field} → {ros_field}: {e}'
+                    )
+
+    def destroy_node(self) -> None:
         """Clean up resources."""
         self.get_logger().info('Shutting down YAMCS-ROS Bridge...')
 
