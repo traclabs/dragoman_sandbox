@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
+"""
+Generate XTCE for Gateway demo.
+
+Telemetry: Joint state (float[7]: 7 arm joints)
+Command: ee_goal_pose (float[7]: xyz position + xyzw quaternion)
+
+References CCSDSHeader.xtce and Cfs.xtce for packet structure.
+"""
 
 import sys
 import yamcs.pymdb as yp
 import os
-
-from dragoman_sample_xtce.cfs_msg_hdr import (
-    add_cfs_command_header,
-    add_cfs_telemetry_header
-)
 
 # ===============================================================================
 # Telemetry: Joint state (float[6]: 6 arm
@@ -17,22 +20,16 @@ def generate_xtce_gateway_demo(filename):
 
   spacecraft = yp.System("Gateway")
 
-  # Set CCSDS header
-  ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
-
   # CMD: 0x1800 TLM: 0x8000
   #define EDORAS_APP_CMD_MID     (CFE_PLATFORM_CMD_MID_BASE + 0x27)
   #define EDORAS_APP_TLM_MID   (CFE_PLATFORM_TLM_MID_BASE + 0x27)
   CMD_MID=(0x1827 - 0x1800)
   TLM_MID= (0x0827 - 0x0800)
-  
-
-  cFS_command = add_cfs_command_header(spacecraft, ccsds_header, name="CfsPacket")  
 
 
   # ********************************
   # TO Lab Enable command
-  # ********************************  
+  # ********************************
   dest_ip = yp.StringArgument(
     name="dest_ip",
     min_length=7,
@@ -43,14 +40,14 @@ def generate_xtce_gateway_demo(filename):
   to_lab_enable_command = yp.Command(
      system=spacecraft,
      name="TOLabEnablePacket",
-     abstract = False,
-     base = cFS_command,
-     assignments = {
-       ccsds_header.tc_apid.name: 0x1880,
+     abstract=False,
+     base="/Cfs/cfs_command_packet",
+     assignments={
+       "ccsds_apid": 0x1880,
        "scr_header": {
-         "fcn_code":  0x06,
+         "fcn_code": 0x06,
          "checksum": 0
-        } 
+       }
      },
     arguments=[
       dest_ip
@@ -58,25 +55,24 @@ def generate_xtce_gateway_demo(filename):
     entries=[
       yp.ArgumentEntry(dest_ip)
     ]
-     
   )
 
   # ********************************
   # Generic Gateway command
   # ********************************
 
-  # Gateway abstract Command
+  # Gateway abstract Command - references external cFS command with secondary header
   gateway_command = yp.Command(
      system=spacecraft,
      name="GatewayPacket",
-     abstract = True,
-     base = cFS_command,
-     assignments = {
-       ccsds_header.tc_apid.name: CMD_MID,
+     abstract=True,
+     base="/Cfs/cfs_command_packet",
+     assignments={
+       "ccsds_apid": CMD_MID,
        "scr_header": {
-         "fcn_code":  0x01,
+         "fcn_code": 0x01,
          "checksum": 0
-        } 
+       }
      },
   )
 
@@ -114,8 +110,6 @@ def generate_xtce_gateway_demo(filename):
   # TELEMETRY
   #############################################
 
-  cFS_telemetry_container = add_cfs_telemetry_header(spacecraft, ccsds_header)  
-
   # ***********************************************
   # Telemetry packet containing joint state data
   # ***********************************************
@@ -127,17 +121,18 @@ def generate_xtce_gateway_demo(filename):
     short_description="big_arm_joint_ [2..8]"
   )
 
+  # Telemetry container - references external cFS telemetry container with secondary header
   telemetry_container = yp.Container(
     system=spacecraft,
     name="GatewayTelemetryPacket",
-    base=cFS_telemetry_container,
+    base="/Cfs/cfs_telemetry_packet",
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter)
     ],
-    condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
+    condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", TLM_MID)
   )
 
-  # Create an XML that conformst to XTCE
+  # Create an XML that conforms to XTCE
   xtce_file = open(filename, 'w')
   xtce_file.write(spacecraft.dumps())
 

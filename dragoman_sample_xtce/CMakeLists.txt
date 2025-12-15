@@ -33,6 +33,7 @@ install(PROGRAMS
   scripts/pymdb_generate_gateway_demo_xtce.py
   scripts/pymdb_generate_multi_packet.py
   scripts/pymdb_generate_ccsds_header.py
+  scripts/pymdb_generate_cfs.py
   scripts/generate_xtces.sh
   DESTINATION lib/${PROJECT_NAME}
 )

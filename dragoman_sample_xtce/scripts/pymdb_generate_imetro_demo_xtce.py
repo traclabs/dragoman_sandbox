@@ -5,7 +5,7 @@ Generate XTCE for IMetro robotic system.
 Telemetry: Joint state (float[9]: 6 arm + 1 finger + 1 rail + 1 lift joints)
 Commands: arm_joint_goal (float[6]), rail_joint_goal (float), lift_joint_goal (float)
 
-References CCSDSHeader.xtce for packet structure.
+References CCSDSHeader.xtce and Cfs.xtce for packet structure.
 """
 
 import sys
@@ -16,6 +16,11 @@ def generate_xtce_imetro_demo(filename):
 
   spacecraft = yp.System("IMetro")
 
+  # CMD: 0x1800 TLM: 0x8000
+  #define EDORAS_APP_CMD_MID     (CFE_PLATFORM_CMD_MID_BASE + 0x27)
+  #define EDORAS_APP_TLM_MID   (CFE_PLATFORM_TLM_MID_BASE + 0x27)
+  CMD_MID=0x1827
+  TLM_MID=0x0827
 
   # ********************************
   # Generic iMetro command
@@ -27,15 +32,18 @@ def generate_xtce_imetro_demo(filename):
     bits = 16
   )
 
-  # IMetro abstract Command - references external CCSDS command
+  # IMetro abstract Command - references external cFS command
   imetro_command = yp.Command(
      system=spacecraft,
      name="IMetroPacket",
      abstract = True,
-     base = "/CCSDSHeader/ccsds_space_packet",
+     base = "/Cfs/cfs_command_packet",
      assignments = {
-       "ccsds_secondary_header": "Not Present",
        "ccsds_apid": 39,
+       "scr_header": {
+         "fcn_code": 0x01,
+         "checksum": 0
+       }
      },
      arguments=[command_id],
      entries=[
@@ -166,11 +174,11 @@ def generate_xtce_imetro_demo(filename):
     short_description="elbow, lift, finger_1, shoulder_lift, shoulder_pan, rail, wrist_1, wrist_2, wrist_3"
   )
 
-  # Telemetry container - references external CCSDS container
+  # Telemetry container - references external cFS telemetry container
   telemetry_container = yp.Container(
     system=spacecraft,
     name="IMetroTelemetryPacket",
-    base="/CCSDSHeader/ccsds_space_packet",
+    base="/Cfs/cfs_telemetry_packet",
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter)
     ],
