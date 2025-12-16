@@ -30,13 +30,9 @@ This project demonstrates the integration between YAMCS (Yet Another Mission Con
    colcon build --packages-select dragoman_sample_xtce
    ```
 
-2. Generate ROS messages from XTCE
+2. Generate and build ROS messages from XTCE
    ```bash
    ros2 run dragoman_xtce2msg generate_msgs.sh
-   ```
-
-3. Build generated messages
-   ```bash
    colcon build --packages-select dragoman_generated_msgs
    ```
 
@@ -47,8 +43,6 @@ This project demonstrates the integration between YAMCS (Yet Another Mission Con
 ros2 run dragoman_yamcs_project dragoman_yamcs
 ```
 Open web interface at `http://localhost:8090/`.
-
-**Note:** Before starting YAMCS, ensure the appropriate XTCE file is uncommented in [`yamcs.dragoman.yaml`](dragoman_yamcs_project/src/main/yamcs/etc/yamcs.dragoman.yaml:38) (lines 38-50) to match your chosen demo.
 
 ### 2. Launch Spacecraft-Side Simulation
 Choose one:
