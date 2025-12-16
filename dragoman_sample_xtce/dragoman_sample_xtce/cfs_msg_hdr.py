@@ -87,6 +87,7 @@ def add_cfs_telemetry_header(system: yp.System, ccsds_header: yp.ccsds.CcsdsHead
   return yp.Container(
     system=system,
     name=name,
+    abstract=True,
     base=ccsds_header.tm_container,
     entries=[
       yp.ParameterEntry(parameter=secondary_header_parameter)
