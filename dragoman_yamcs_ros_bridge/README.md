@@ -14,11 +14,19 @@ Example YAML config:
 ```yaml
 yamcs:
   url: "localhost:8090"
-  instance: "dragoman"
+  instance: "curiosity"
   processor: "realtime"
 
 bridges:
-  - ros_message_type: "dragoman_generated_msgs/msg/IMetroTelemetryPacket"
-    ros_topic: "/yamcs/imetro"
-    yamcs_packet_name: "IMetro/IMetroTelemetryPacket"
+  - name: "telemetry_bridge"
+    yamcs_parameter:
+      - "/Spacecraft/Parameter1"
+    ros_topic: "/telemetry"
+    ros_message_type: "dragoman_generated_msgs/msg/TelemetryPacket"
+    field_mapping:
+      Parameter1: field1
 ```
+
+## Dependencies
+
+- `rclpy`, `sensor_msgs`, `yamcs-client`, `dragoman_generated_msgs`
