@@ -16,7 +16,7 @@ from dragoman_sample_xtce.cfs_msg_hdr import (
 
 def generate_xtce_imetro_demo(filename):
 
-  spacecraft = yp.System("Spacecraft")
+  spacecraft = yp.System("IMetro")
 
   # Set CCSDS header
   ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
