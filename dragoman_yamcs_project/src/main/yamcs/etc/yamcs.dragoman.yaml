@@ -116,18 +116,18 @@ mdb:
 # Configuration for streams created at server startup
 streamConfig:
   tm:
-    - name: "tm_realtime_all_types"
-      processor: "realtime"
-      rootContainer: "/AllTypes/ccsds_space_packet"
-    - name: "tm_realtime_curiosity"
-      processor: "realtime"
-      rootContainer: "/Curiosity/ccsds_space_packet"
-    - name: "tm_realtime_imetro"
-      processor: "realtime"
-      rootContainer: "/IMetro/ccsds_space_packet"
-    - name: "tm_realtime_multi_packet"
-      processor: "realtime"
-      rootContainer: "/MultiPacket/ccsds_space_packet"
+    # - name: "tm_realtime_all_types"
+    #   processor: "realtime"
+    #   rootContainer: "/AllTypes/ccsds_space_packet"
+    # - name: "tm_realtime_curiosity"
+    #   processor: "realtime"
+    #   rootContainer: "/Curiosity/ccsds_space_packet"
+    # - name: "tm_realtime_imetro"
+    #   processor: "realtime"
+    #   rootContainer: "/IMetro/ccsds_space_packet"
+    # - name: "tm_realtime_multi_packet"
+    #   processor: "realtime"
+    #   rootContainer: "/MultiPacket/ccsds_space_packet"
     - name: "tm_realtime_gateway"
       processor: "realtime"
       rootContainer: "/Gateway/ccsds_space_packet"
@@ -137,18 +137,18 @@ streamConfig:
   param: ["pp_realtime", "pp_dump", "sys_param", "proc_param"]
   parameterAlarm: ["alarms_realtime"]
   tc:
-    - name: "tc_realtime_all_types"
-      processor: "realtime"
-      tcPatterns: ["/AllTypes/.*"]
-    - name: "tc_realtime_curiosity"
-      processor: "realtime"
-      tcPatterns: ["/Curiosity/.*"]
-    - name: "tc_realtime_imetro"
-      processor: "realtime"
-      tcPatterns: ["/IMetro/.*"]
-    - name: "tc_realtime_multi_packet"
-      processor: "realtime"
-      tcPatterns: ["/MultiPacket/.*"]
+    # - name: "tc_realtime_all_types"
+    #   processor: "realtime"
+    #   tcPatterns: ["/AllTypes/.*"]
+    # - name: "tc_realtime_curiosity"
+    #   processor: "realtime"
+    #   tcPatterns: ["/Curiosity/.*"]
+    # - name: "tc_realtime_imetro"
+    #   processor: "realtime"
+    #   tcPatterns: ["/IMetro/.*"]
+    # - name: "tc_realtime_multi_packet"
+    #   processor: "realtime"
+    #   tcPatterns: ["/MultiPacket/.*"]
     - name: "tc_realtime_gateway"
       processor: "realtime"
       tcPatterns: ["/Gateway/.*"]
