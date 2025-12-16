@@ -1,5 +1,5 @@
 # xtce2msg.py - Main script for XTCE to ROS 2 Message Conversion
-# Updated to support container-based message generation
+# Updated to support container-based message generation with aggregate types as separate messages
 
 import sys
 import os
@@ -49,17 +49,91 @@ def to_ros_field_name(name):
 
     return name
 
-def generate_message_for_container(container_name, container_params, parameter_metadata, type_definitions, output_dir, xtce_file_path):
+def to_message_type_name(space_system_name, aggregate_type_name):
+    """
+    Convert an aggregate type name to a ROS 2 message type name.
+    Format: SpaceSystemNameAggregateTypeName (UpperCamelCase)
+
+    Examples:
+        Gateway, ccsds_packet_id -> GatewayCcsdsPacketId
+        IMetro, scr_header -> IMetroScrHeader
+    """
+    # Convert aggregate type name from snake_case to UpperCamelCase
+    parts = aggregate_type_name.split('_')
+    aggregate_camel = ''.join(word.capitalize() for word in parts)
+
+    # Combine space system name with aggregate type name
+    return f"{space_system_name}{aggregate_camel}"
+
+def generate_aggregate_message(space_system_name, aggregate_type_name, type_definitions, output_dir, xtce_file_path, generated_aggregates):
+    """
+    Generate a separate ROS message file for an aggregate type.
+
+    Args:
+        space_system_name: Name of the space system (e.g., "Gateway")
+        aggregate_type_name: Name of the aggregate type (e.g., "ccsds_packet_id")
+        type_definitions: Dictionary of all type definitions
+        output_dir: Directory to write the .msg file
+        xtce_file_path: Source XTCE file path
+        generated_aggregates: Set to track already generated aggregate messages
+
+    Returns:
+        The message type name (e.g., "GatewayCcsdsPacketId")
+    """
+    msg_type_name = to_message_type_name(space_system_name, aggregate_type_name)
+
+    # Skip if already generated
+    if msg_type_name in generated_aggregates:
+        return msg_type_name
+
+    type_elem = type_definitions.get(aggregate_type_name)
+    if type_elem is None:
+        return None
+
+    # Get the aggregate fields
+    aggregate_fields = resolve_aggregate_type(type_elem, type_definitions)
+
+    # Build ROS fields for this aggregate message
+    ros_fields = []
+    for agg_field in aggregate_fields:
+        # Check if this field is itself an aggregate that needs its own message
+        field_ros_type = agg_field['ros_type']
+
+        # If the field type is an aggregate, generate its message first
+        if field_ros_type == '__AGGREGATE__':
+            # This shouldn't happen as resolve_aggregate_type should have resolved it
+            # but handle it just in case
+            continue
+
+        ros_field_name = to_ros_field_name(agg_field['name'])
+        field_entry = {
+            'name': ros_field_name,
+            'ros_type': field_ros_type,
+            'comments': ''
+        }
+        ros_fields.append(field_entry)
+
+    # Generate the message file
+    output_file_path = os.path.join(output_dir, f"{msg_type_name}.msg")
+    print(f"  Generating aggregate message: {output_file_path}...")
+    generate_msg(msg_type_name, ros_fields, output_file_path, xtce_file_path)
+
+    generated_aggregates.add(msg_type_name)
+    return msg_type_name
+
+def generate_message_for_container(space_system_name, container_name, container_params, parameter_metadata, type_definitions, output_dir, xtce_file_path, generated_aggregates):
     """
     Generate a single ROS message file for a container.
 
     Args:
+        space_system_name: Name of the space system (e.g., "Gateway")
         container_name: Name of the container (used as-is for message name)
         container_params: List of parameter names in this container
         parameter_metadata: Dictionary of all parameter metadata
         type_definitions: Dictionary of all type definitions
         output_dir: Directory to write the .msg file
         xtce_file_path: Source XTCE file path
+        generated_aggregates: Set to track already generated aggregate messages
     """
     # Use container name exactly as-is for the message name
     msg_name = container_name
@@ -67,7 +141,6 @@ def generate_message_for_container(container_name, container_params, parameter_m
 
     # Resolve all parameters to final ROS types
     ros_fields = []
-    ccsds_fields = []  # Separate list for CCSDS header fields
 
     for param_name in container_params:
         # Skip if parameter not in metadata (shouldn't happen but be safe)
@@ -76,29 +149,30 @@ def generate_message_for_container(container_name, container_params, parameter_m
 
         param_ref = parameter_metadata[param_name]
 
-        # Skip CCSDS header fields (they're handled at protocol layer)
-        is_ccsds_header = param_name.startswith('ccsds_packet')
-
         # resolve_type_definition handles all subsequent lookups without prefixes
         ros_type, is_fixed_size = resolve_type_definition(param_ref['type_ref'], type_definitions)
 
-        # Handle aggregate types by flattening their members
+        # Handle aggregate types by creating separate messages
         if ros_type == '__AGGREGATE__':
-            type_elem = type_definitions.get(param_ref['type_ref'])
-            if type_elem is not None:
-                aggregate_fields = resolve_aggregate_type(type_elem, type_definitions)
-                for agg_field in aggregate_fields:
-                    # Prefix member names with parent parameter name and convert to ROS format
-                    ros_field_name = to_ros_field_name(f"{param_name}_{agg_field['name']}")
-                    field_entry = {
-                        'name': ros_field_name,
-                        'ros_type': agg_field['ros_type'],
-                        'comments': f"Member of {param_name}: {param_ref.get('short_desc', '')}"
-                    }
-                    if is_ccsds_header:
-                        ccsds_fields.append(field_entry)
-                    else:
-                        ros_fields.append(field_entry)
+            # Generate a separate message for this aggregate type
+            aggregate_msg_type = generate_aggregate_message(
+                space_system_name,
+                param_ref['type_ref'],
+                type_definitions,
+                output_dir,
+                xtce_file_path,
+                generated_aggregates
+            )
+
+            if aggregate_msg_type:
+                # Use the aggregate message type as a field
+                ros_field_name = to_ros_field_name(param_name)
+                field_entry = {
+                    'name': ros_field_name,
+                    'ros_type': aggregate_msg_type,
+                    'comments': param_ref.get('short_desc', '')
+                }
+                ros_fields.append(field_entry)
         else:
             # Regular field (not an aggregate) - convert to ROS format
             ros_field_name = to_ros_field_name(param_name)
@@ -107,14 +181,11 @@ def generate_message_for_container(container_name, container_params, parameter_m
                 'ros_type': ros_type,
                 'comments': param_ref.get('short_desc', '')
             }
-            if is_ccsds_header:
-                ccsds_fields.append(field_entry)
-            else:
-                ros_fields.append(field_entry)
+            ros_fields.append(field_entry)
 
     # Generate the ROS 2 message file
     print(f"  Generating ROS 2 message: {output_file_path}...")
-    generate_msg(msg_name, ros_fields, output_file_path, xtce_file_path, ccsds_fields)
+    generate_msg(msg_name, ros_fields, output_file_path, xtce_file_path)
 
     return output_file_path
 
@@ -140,6 +211,10 @@ def main():
         xtce_tree = ET.parse(xtce_file_path)
         root = xtce_tree.getroot()
 
+        # Extract space system name from the root element
+        space_system_name = root.get('name', 'Unknown')
+        print(f"Space System: {space_system_name}")
+
         # 2. Extract ParameterTypes, Parameters, and Containers
         parameter_metadata, type_definitions = parse_xtce_file(root)
         containers = parse_containers(root)
@@ -147,6 +222,9 @@ def main():
         if not parameter_metadata:
             print("Warning: No telemetered Parameters found.")
             sys.exit(0)
+
+        # Track generated aggregate messages to avoid duplicates
+        generated_aggregates = set()
 
         # 3. Generate messages based on containers
         if containers:
@@ -158,18 +236,21 @@ def main():
                 print(f"  Parameters: {container_info['parameters']}")
 
                 output_file = generate_message_for_container(
+                    space_system_name,
                     container_name,
                     container_info['parameters'],
                     parameter_metadata,
                     type_definitions,
                     output_dir,
-                    xtce_file_path
+                    xtce_file_path,
+                    generated_aggregates
                 )
                 generated_files.append(output_file)
 
             print(f"\nSuccessfully created {len(generated_files)} ROS 2 message(s):")
             for f in generated_files:
                 print(f"  - {f}")
+            print(f"Generated {len(generated_aggregates)} aggregate type message(s)")
         else:
             # Fallback: No containers found, generate single message with all parameters
             print("No containers found, generating single message with all parameters...")
@@ -178,27 +259,29 @@ def main():
 
             # Resolve all parameters to final ROS types
             ros_fields = []
-            ccsds_fields = []
 
             for param_name, param_ref in parameter_metadata.items():
-                is_ccsds_header = param_name.startswith('ccsds_packet')
                 ros_type, is_fixed_size = resolve_type_definition(param_ref['type_ref'], type_definitions)
 
                 if ros_type == '__AGGREGATE__':
-                    type_elem = type_definitions.get(param_ref['type_ref'])
-                    if type_elem is not None:
-                        aggregate_fields = resolve_aggregate_type(type_elem, type_definitions)
-                        for agg_field in aggregate_fields:
-                            ros_field_name = to_ros_field_name(f"{param_name}_{agg_field['name']}")
-                            field_entry = {
-                                'name': ros_field_name,
-                                'ros_type': agg_field['ros_type'],
-                                'comments': f"Member of {param_name}: {param_ref.get('short_desc', '')}"
-                            }
-                            if is_ccsds_header:
-                                ccsds_fields.append(field_entry)
-                            else:
-                                ros_fields.append(field_entry)
+                    # Generate separate message for aggregate
+                    aggregate_msg_type = generate_aggregate_message(
+                        space_system_name,
+                        param_ref['type_ref'],
+                        type_definitions,
+                        output_dir,
+                        xtce_file_path,
+                        generated_aggregates
+                    )
+
+                    if aggregate_msg_type:
+                        ros_field_name = to_ros_field_name(param_name)
+                        field_entry = {
+                            'name': ros_field_name,
+                            'ros_type': aggregate_msg_type,
+                            'comments': param_ref.get('short_desc', '')
+                        }
+                        ros_fields.append(field_entry)
                 else:
                     ros_field_name = to_ros_field_name(param_name)
                     field_entry = {
@@ -206,12 +289,9 @@ def main():
                         'ros_type': ros_type,
                         'comments': param_ref.get('short_desc', '')
                     }
-                    if is_ccsds_header:
-                        ccsds_fields.append(field_entry)
-                    else:
-                        ros_fields.append(field_entry)
+                    ros_fields.append(field_entry)
 
-            generate_msg(msg_name, ros_fields, output_file_path, xtce_file_path, ccsds_fields)
+            generate_msg(msg_name, ros_fields, output_file_path, xtce_file_path)
             print(f"Successfully created ROS 2 message: {output_file_path}")
 
     except Exception as e:

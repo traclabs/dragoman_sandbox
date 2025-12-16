@@ -85,12 +85,16 @@ class MessageIntrospector:
         """
         Automatically map YAMCS parameters to ROS message fields.
 
-        Strategy:
-        1. Get all ROS message field names
-        2. For each YAMCS parameter, extract the parameter name (last part of path)
-        3. Convert YAMCS name to ROS snake_case format
-        4. Match against available ROS fields
-        5. Handle aggregate types (parameters that map to multiple fields)
+        This version supports *nested* ROS messages for XTCE aggregate types.
+
+        Supported YAMCS naming patterns:
+        - Scalar/normal parameter:
+            "/AllTypes/T_IntegerSigned" -> "T_IntegerSigned" -> "t_integer_signed"
+        - Aggregate member parameter (common in some MDB exports):
+            "/AllTypes/T_StatusAggregate/CurrentDraw" -> "T_StatusAggregate.CurrentDraw"
+            "/AllTypes/T_StatusAggregate.CurrentDraw" -> "T_StatusAggregate.CurrentDraw"
+          which maps to a *nested* ROS field path like:
+            "t_status_aggregate.current_draw"
 
         Args:
             MessageType: ROS message class
@@ -102,69 +106,118 @@ class MessageIntrospector:
             tuple: (field_mapping dict, filtered_parameters list) if strict=True
                    field_mapping dict only if strict=False
         """
-        ros_fields = set(MessageType._fields_and_field_types.keys())
-        field_mapping = {}
-        filtered_parameters = []
+        ros_fields_and_types = dict(MessageType._fields_and_field_types)
+        ros_fields = set(ros_fields_and_types.keys())
+        field_mapping: Dict[str, str] = {}
+        filtered_parameters: List[str] = []
+
+        def _try_add_mapping(yamcs_key: str, ros_path: str, yamcs_path: str) -> bool:
+            # Avoid duplicate entries if the same param is encountered multiple ways
+            if yamcs_key in field_mapping:
+                return True
+            field_mapping[yamcs_key] = ros_path
+            filtered_parameters.append(yamcs_path)
+            if logger:
+                logger.debug(f"Mapped: {yamcs_key} → {ros_path}")
+            return True
 
         for yamcs_path in yamcs_parameters:
-            # Extract parameter name from path: "/Curiosity/joint_state" -> "joint_state"
-            param_name = yamcs_path.split('/')[-1]
+            # Normalize and split: "/AllTypes/T_StatusAggregate/CurrentDraw" -> ["AllTypes", "T_StatusAggregate", "CurrentDraw"]
+            parts = [p for p in yamcs_path.strip('/').split('/') if p]
+            if not parts:
+                continue
 
-            # Convert to ROS format: "T_IntegerSigned" -> "t_integer_signed"
+            leaf = parts[-1]
+
+            # Some YAMCS/MDB setups express members via "/" nesting, so attempt parent.leaf first.
+            # Example: ".../T_StatusAggregate/CurrentDraw" -> "T_StatusAggregate.CurrentDraw"
+            if len(parts) >= 2:
+                parent = parts[-2]
+                dotted_candidate = f"{parent}.{leaf}"
+                ros_path = MessageIntrospector._yamcs_member_to_ros_path(MessageType, dotted_candidate)
+                if ros_path:
+                    _try_add_mapping(dotted_candidate, ros_path, yamcs_path)
+                    continue
+
+            # Some setups express members via "." already
+            if '.' in leaf:
+                ros_path = MessageIntrospector._yamcs_member_to_ros_path(MessageType, leaf)
+                if ros_path:
+                    _try_add_mapping(leaf, ros_path, yamcs_path)
+                    continue
+
+            # Scalar / whole-aggregate parameter mapping (aggregate maps to a single nested message field)
+            param_name = leaf
             ros_field_name = MessageIntrospector.to_ros_field_name(param_name)
 
-            # Check if this is an aggregate type (maps to multiple fields)
-            aggregate_fields = [f for f in ros_fields if f.startswith(ros_field_name + '_')]
+            if ros_field_name in ros_fields:
+                _try_add_mapping(param_name, ros_field_name, yamcs_path)
+                continue
 
-            if aggregate_fields:
-                # This is an aggregate type - create mappings for each member
-                if logger:
-                    logger.debug(f"Detected aggregate type '{param_name}' with {len(aggregate_fields)} members")
+            if param_name in ros_fields:
+                _try_add_mapping(param_name, param_name, yamcs_path)
+                continue
 
-                for agg_field in aggregate_fields:
-                    # Extract member name: "t_status_aggregate_current_draw" -> "CurrentDraw"
-                    member_suffix = agg_field[len(ros_field_name)+1:]
-                    # Convert to PascalCase: "current_draw" -> "CurrentDraw"
-                    yamcs_member = ''.join(word.capitalize() for word in member_suffix.split('_'))
-
-                    # Create aggregate member mapping: "T_StatusAggregate.CurrentDraw" -> "t_status_aggregate_current_draw"
-                    aggregate_key = f"{param_name}.{yamcs_member}"
-                    field_mapping[aggregate_key] = agg_field
-
-                    if logger:
-                        logger.debug(f"  Aggregate member: {aggregate_key} → {agg_field}")
-
-                filtered_parameters.append(yamcs_path)
-
-            elif ros_field_name in ros_fields:
-                # Direct mapping found
-                field_mapping[param_name] = ros_field_name
-                if logger:
-                    logger.debug(f"Mapped: {param_name} → {ros_field_name}")
-                filtered_parameters.append(yamcs_path)
-
-            elif param_name in ros_fields:
-                # Try exact match without conversion
-                field_mapping[param_name] = param_name
-                if logger:
-                    logger.debug(f"Exact match: {param_name} → {param_name}")
-                filtered_parameters.append(yamcs_path)
-
-            else:
-                # No mapping found
-                if logger and not strict:
-                    logger.warning(
-                        f"Cannot auto-map YAMCS parameter '{param_name}' (from {yamcs_path}). "
-                        f"Available ROS fields: {sorted(ros_fields)}"
-                    )
-                elif logger and strict:
-                    logger.debug(
-                        f"Skipping unmappable parameter '{param_name}' (from {yamcs_path})"
-                    )
+            if logger and not strict:
+                logger.warning(
+                    f"Cannot auto-map YAMCS parameter '{param_name}' (from {yamcs_path}). "
+                    f"Available ROS fields: {sorted(ros_fields)}"
+                )
+            elif logger and strict:
+                logger.debug(
+                    f"Skipping unmappable parameter '{param_name}' (from {yamcs_path})"
+                )
 
         if strict:
             return field_mapping, filtered_parameters
         return field_mapping
+
+    @staticmethod
+    def _yamcs_member_to_ros_path(MessageType, yamcs_member_name: str) -> Optional[str]:
+        """
+        Convert a YAMCS aggregate member name (e.g. "T_StatusAggregate.CurrentDraw")
+        into a ROS nested field path (e.g. "t_status_aggregate.current_draw"), if valid.
+        """
+        if '.' not in yamcs_member_name:
+            return None
+
+        root_name, member_name = yamcs_member_name.split('.', 1)
+        root_field = MessageIntrospector.to_ros_field_name(root_name)
+        member_field = MessageIntrospector.to_ros_field_name(member_name)
+
+        root_types = getattr(MessageType, "_fields_and_field_types", {})
+        if root_field not in root_types:
+            return None
+
+        root_type_str = root_types[root_field]
+
+        # Strip any array suffix (we don't support mapping into arrays of messages here)
+        m = re.match(r'^(?P<base>[^\[]+)', str(root_type_str))
+        root_base_type = m.group('base') if m else str(root_type_str)
+
+        # Root must be a nested message type (qualified or local/unqualified)
+        if not TypeConverter.is_ros_message_type(root_base_type):
+            return None
+
+        # If unqualified, infer the package from the parent MessageType
+        qualified_type = root_base_type
+        if '/' not in root_base_type:
+            # e.g. "dragoman_generated_msgs.msg._GatewayTelemetryPacket" -> "dragoman_generated_msgs"
+            pkg = getattr(MessageType, "__module__", "").split('.', 1)[0]
+            if not pkg:
+                return None
+            qualified_type = f"{pkg}/msg/{root_base_type}"
+
+        try:
+            NestedType = MessageTypeLoader.load_message_type(qualified_type)
+        except Exception:
+            return None
+
+        nested_fields = getattr(NestedType, "_fields_and_field_types", {})
+        if member_field not in nested_fields:
+            return None
+
+        return f"{root_field}.{member_field}"
 
 
 class TypeConverter:
@@ -179,49 +232,215 @@ class TypeConverter:
         }
     }
 
+    _ROS_INT_TYPES = {
+        'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64'
+    }
+    _ROS_FLOAT_TYPES = {'float32', 'float64'}
+
+    # Common string enums that YAMCS may return for numeric CCSDS-like fields
+    # (kept generic; applies when the ROS field is an integer type)
+    _COMMON_STRING_TO_INT = {
+        # CCSDS primary header "type" bit (common naming)
+        'TM': 0,
+        'TC': 1,
+
+        # CCSDS packet sequence "sequence flags" (2-bit)
+        'CONTINUATION': 0,
+        'FIRST': 1,
+        'LAST': 2,
+        'STANDALONE': 3,
+    }
+
     @staticmethod
-    def convert_value(param_name: str, ros_field: str, value: Any, logger: Optional[Any] = None) -> Any:
+    def is_ros_message_type(type_str: str) -> bool:
+        """
+        Return True if a ROS field type string refers to a nested message type.
+
+        Supports both:
+        - fully-qualified: "some_pkg/msg/SomeType"
+        - local/unqualified: "SomeType"
+        - array variants: "SomeType[3]", "some_pkg/msg/SomeType[]"
+        """
+        if not isinstance(type_str, str):
+            return False
+
+        m = re.match(r'^(?P<base>[^\[]+)', type_str)
+        base = m.group('base') if m else type_str
+
+        primitives = {
+            'bool',
+            'byte',
+            'char',
+            'float32',
+            'float64',
+            'int8',
+            'uint8',
+            'int16',
+            'uint16',
+            'int32',
+            'uint32',
+            'int64',
+            'uint64',
+            'string',
+            'wstring',
+        }
+
+        if base in primitives:
+            return False
+
+        # Fully-qualified message type
+        if '/' in base:
+            return True
+
+        # Unqualified message types are typically PascalCase (primitives are lowercase)
+        return bool(base) and base[0].isalpha() and base[0].isupper()
+
+    @staticmethod
+    def _parse_ros_type(type_str: str) -> Dict[str, Any]:
+        """
+        Parse ROS type strings like:
+          - "uint32"
+          - "float32[7]"
+          - "uint8[]"
+          - "builtin_interfaces/msg/Time"
+        """
+        m = re.match(r'^(?P<base>[^\[]+)(?:\[(?P<len>\d*)\])?$', type_str)
+        if not m:
+            return {'base': type_str, 'is_array': False, 'array_len': None}
+
+        base = m.group('base')
+        arr = m.group('len')
+        if arr is None:
+            return {'base': base, 'is_array': False, 'array_len': None}
+
+        # "[]" -> variable length, "[7]" -> fixed length
+        return {
+            'base': base,
+            'is_array': True,
+            'array_len': int(arr) if arr.isdigit() else None
+        }
+
+    @staticmethod
+    def snake_to_pascal(name: str) -> str:
+        return ''.join(word.capitalize() for word in name.split('_') if word)
+
+    @staticmethod
+    def _get_member_value(obj: Any, field_name: str) -> Any:
+        """
+        Try to fetch a member value from a YAMCS engineering value object.
+
+        Supports:
+        - dict-like values: value["field"] or value["Field"]
+        - attribute values: value.field or value.Field
+        """
+        if obj is None:
+            raise AttributeError("No object")
+
+        # dict lookup
+        if isinstance(obj, dict):
+            if field_name in obj:
+                return obj[field_name]
+            pascal = TypeConverter.snake_to_pascal(field_name)
+            if pascal in obj:
+                return obj[pascal]
+
+        # attribute lookup
+        if hasattr(obj, field_name):
+            return getattr(obj, field_name)
+
+        pascal = TypeConverter.snake_to_pascal(field_name)
+        if hasattr(obj, pascal):
+            return getattr(obj, pascal)
+
+        raise AttributeError(f"Missing member {field_name}")
+
+    @staticmethod
+    def convert_value(
+        param_name: str,
+        expected_ros_type: str,
+        value: Any,
+        logger: Optional[Any] = None
+    ) -> Any:
         """
         Convert a YAMCS parameter value to the appropriate ROS message field type.
 
         Args:
-            param_name: YAMCS parameter name
-            ros_field: ROS message field name
+            param_name: YAMCS parameter name (used for special-case conversions like enums)
+            expected_ros_type: ROS field type string from _fields_and_field_types
             value: Raw value from YAMCS
             logger: Optional logger for debug output
-
-        Returns:
-            Converted value suitable for ROS message field
         """
-        # Handle bytes/binary data
-        if isinstance(value, bytes):
-            return TypeConverter._convert_bytes(ros_field, value)
+        if expected_ros_type is None:
+            return value
 
-        # Handle absolute time
-        if param_name == 'T_AbsoluteTime':
+        # Handle nested messages (callers should use populate_message instead)
+        if TypeConverter.is_ros_message_type(expected_ros_type):
+            return value
+
+        parsed = TypeConverter._parse_ros_type(expected_ros_type)
+        base = parsed['base']
+        is_array = parsed['is_array']
+
+        # Time messages represented as a message type (but sometimes appear as base types in some codegen)
+        if base.endswith('/Time'):
             return TypeConverter._convert_absolute_time(value)
 
-        # Handle enumerated types
-        if param_name == 'T_EnumeratedAlarm':
+        # Enumerated types (YAMCS often provides strings for enums)
+        if isinstance(value, str) and param_name in TypeConverter.ENUM_MAPPINGS and base in TypeConverter._ROS_INT_TYPES:
             return TypeConverter._convert_enum(param_name, value, logger)
 
-        # Handle numpy arrays
+        # bytes -> list of ints for sequences (esp uint8[])
+        if isinstance(value, bytes):
+            if is_array and base == 'uint8':
+                return list(value)
+            return list(value)
+
+        # numpy arrays -> python lists (works for both fixed and variable-length arrays)
         if isinstance(value, np.ndarray):
             return value.tolist()
 
-        # Handle other iterables (but not strings or bytes)
-        if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+        # Iterables -> list for array fields
+        if is_array and hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
             return list(value)
 
-        # Field-specific conversions
-        return TypeConverter._convert_by_field(ros_field, value)
+        # Scalars by base type
+        if base == 'bool':
+            if isinstance(value, str):
+                v = value.strip().lower()
+                if v in ('true', 't', 'yes', 'y', '1', 'on'):
+                    return True
+                if v in ('false', 'f', 'no', 'n', '0', 'off'):
+                    return False
+            return bool(value)
 
-    @staticmethod
-    def _convert_bytes(ros_field: str, value: bytes) -> Any:
-        """Convert bytes to appropriate format based on ROS field."""
-        if ros_field in ('t_binary_blob', 't_status_aggregate_raw_status_flags'):
-            return np.frombuffer(value, dtype=np.uint8)
-        return list(value)
+        if base in TypeConverter._ROS_INT_TYPES:
+            if isinstance(value, str):
+                s = value.strip()
+
+                # Try well-known enum-like strings first (case-insensitive)
+                if s in TypeConverter._COMMON_STRING_TO_INT:
+                    return TypeConverter._COMMON_STRING_TO_INT[s]
+                su = s.upper()
+                if su in TypeConverter._COMMON_STRING_TO_INT:
+                    return TypeConverter._COMMON_STRING_TO_INT[su]
+
+                # Then try parsing numeric strings (supports "0x.." via base=0)
+                try:
+                    return int(s, 0)
+                except Exception:
+                    # Some values might come as "12.0" strings; allow that too
+                    return int(float(s))
+
+            return int(value)
+
+        if base in TypeConverter._ROS_FLOAT_TYPES:
+            return float(value)
+
+        if base == 'string':
+            return str(value)
+
+        # Unknown: return as-is
+        return value
 
     @staticmethod
     def _convert_absolute_time(value: Any) -> Time:
@@ -249,39 +468,43 @@ class TypeConverter:
         return value
 
     @staticmethod
-    def _convert_by_field(ros_field: str, value: Any) -> Any:
-        """Convert value based on ROS field name."""
-        # Boolean fields
-        if ros_field in ('t_boolean_flag', 't_status_aggregate_heater_enabled'):
-            return bool(value)
+    def populate_message(msg: Any, eng_value: Any, logger: Optional[Any] = None, root_param_name: str = "") -> None:
+        """
+        Populate a (nested) ROS message from a YAMCS engineering value object.
 
-        # Integer fields
-        if ros_field in ('t_enumerated_alarm', 't_integer_signed', 't_relative_time_raw'):
-            return int(value)
+        It tries to match ROS snake_case fields against:
+        - same-name members
+        - PascalCase members (common for XTCE aggregates)
+        """
+        fields_and_types = getattr(msg, "_fields_and_field_types", {})
+        for field_name, field_type in fields_and_types.items():
+            try:
+                member_value = TypeConverter._get_member_value(eng_value, field_name)
+            except AttributeError:
+                continue
 
-        # Float fields
-        if ros_field in ('t_float_raw64', 't_status_aggregate_current_draw'):
-            return float(value)
+            # Nested message field
+            if TypeConverter.is_ros_message_type(field_type):
+                nested_msg = getattr(msg, field_name)
+                TypeConverter.populate_message(
+                    nested_msg,
+                    member_value,
+                    logger=logger,
+                    root_param_name=root_param_name
+                )
+                continue
 
-        # Array fields
-        if ros_field == 't_integer_array':
-            if not isinstance(value, np.ndarray):
-                return np.array(value, dtype=np.uint16)
-            return value
-
-        if ros_field in ('t_binary_blob', 't_status_aggregate_raw_status_flags'):
-            if isinstance(value, bytes):
-                return np.frombuffer(value, dtype=np.uint8)
-            if not isinstance(value, np.ndarray):
-                return np.array(value, dtype=np.uint8)
-            return value
-
-        # String fields
-        if ros_field == 't_string_utf8':
-            return str(value)
-
-        # Return as-is for other types
-        return value
+            try:
+                converted = TypeConverter.convert_value(
+                    root_param_name or field_name,
+                    field_type,
+                    member_value,
+                    logger=logger
+                )
+                setattr(msg, field_name, converted)
+            except Exception as e:
+                if logger:
+                    logger.error(f"Error populating nested field '{field_name}' ({field_type}): {e}")
 
 
 class MessageTypeLoader:
@@ -727,69 +950,87 @@ class YamcsRosBridge(Node):
         """
         Map fields from YAMCS parameter to ROS message.
 
-        Args:
-            parameter: YAMCS parameter object
-            msg: ROS message object to populate
-            field_mapping: Dictionary mapping YAMCS parameter names to ROS fields
+        Supports:
+        - direct scalar mapping: "T_IntegerSigned" -> "t_integer_signed"
+        - whole-aggregate mapping: "T_StatusAggregate" -> "t_status_aggregate" (nested msg)
+        - member mapping (if YAMCS exposes aggregate members as separate parameters):
+            "T_StatusAggregate.CurrentDraw" -> "t_status_aggregate.current_draw"
+            ".../T_StatusAggregate/CurrentDraw" -> same (key is synthesized)
         """
-        # Get the parameter name (e.g., "T_IntegerSigned" from "/AllTypes/T_IntegerSigned")
-        param_name = parameter.name.split('/')[-1]
+        full_name = getattr(parameter, "name", "")
+        parts = [p for p in str(full_name).strip('/').split('/') if p]
+
+        leaf = parts[-1] if parts else str(full_name)
+        dotted = f"{parts[-2]}.{parts[-1]}" if len(parts) >= 2 else None
 
         self.get_logger().debug(
-            f'Mapping parameter: {param_name} (value type: {type(parameter.eng_value).__name__})'
+            f'Mapping parameter: {full_name} (leaf: {leaf}, value type: {type(parameter.eng_value).__name__})'
         )
 
-        # Check if this parameter is in our field mapping
-        if param_name not in field_mapping:
-            # Check for aggregate member access (e.g., "T_StatusAggregate.CurrentDraw")
-            self._map_aggregate_fields(parameter, param_name, msg, field_mapping)
+        # Try multiple keys for robustness across YAMCS naming styles
+        mapping_key = None
+        for candidate in (dotted, leaf, full_name):
+            if candidate and candidate in field_mapping:
+                mapping_key = candidate
+                break
+
+        if mapping_key is None:
             return
 
-        # Map the parameter's engineering value to the ROS message field
-        ros_field = field_mapping[param_name]
+        ros_path = field_mapping[mapping_key]
+
         try:
-            value = TypeConverter.convert_value(
-                param_name, ros_field, parameter.eng_value, self.get_logger()
+            target_msg, field_name, field_type = self._resolve_ros_field_path(msg, ros_path)
+
+            # Whole-aggregate or nested member field
+            if TypeConverter.is_ros_message_type(field_type):
+                nested_msg = getattr(target_msg, field_name)
+                TypeConverter.populate_message(
+                    nested_msg,
+                    parameter.eng_value,
+                    logger=self.get_logger(),
+                    root_param_name=leaf
+                )
+                self.get_logger().debug(
+                    f'Mapped nested {mapping_key} → {ros_path}'
+                )
+                return
+
+            converted = TypeConverter.convert_value(
+                leaf, field_type, parameter.eng_value, logger=self.get_logger()
             )
-            setattr(msg, ros_field, value)
+            setattr(target_msg, field_name, converted)
             self.get_logger().debug(
-                f'Mapped {param_name} → {ros_field}: {type(value).__name__}'
+                f'Mapped {mapping_key} → {ros_path}: {type(converted).__name__}'
             )
         except Exception as e:
             self.get_logger().error(
-                f'Error mapping parameter {param_name} → {ros_field}: {e}\n{traceback.format_exc()}'
+                f'Error mapping parameter {mapping_key} → {ros_path}: {e}\n{traceback.format_exc()}'
             )
 
-    def _map_aggregate_fields(
-        self, parameter: Any, param_name: str, msg: Any, field_mapping: Dict[str, str]
-    ) -> None:
+    def _resolve_ros_field_path(self, msg: Any, ros_path: str):
         """
-        Map aggregate type fields from YAMCS parameter to ROS message.
+        Resolve a ROS field path like:
+          - "temperature"
+          - "ccsds_packet_id.apid"
 
-        Args:
-            parameter: YAMCS parameter object
-            param_name: Parameter name
-            msg: ROS message object to populate
-            field_mapping: Dictionary mapping YAMCS parameter names to ROS fields
+        Returns:
+            (target_msg, leaf_field_name, leaf_field_type_str)
         """
-        for yamcs_field, ros_field in field_mapping.items():
-            if yamcs_field.startswith(param_name + '.'):
-                # This is an aggregate type, extract the member
-                member_name = yamcs_field.split('.')[1]
-                try:
-                    if hasattr(parameter.eng_value, member_name):
-                        value = getattr(parameter.eng_value, member_name)
-                        # Handle binary data for aggregate members
-                        if isinstance(value, bytes):
-                            value = list(value)
-                        setattr(msg, ros_field, value)
-                        self.get_logger().debug(
-                            f'Mapped aggregate {yamcs_field} → {ros_field}'
-                        )
-                except Exception as e:
-                    self.get_logger().error(
-                        f'Error mapping aggregate field {yamcs_field} → {ros_field}: {e}'
-                    )
+        segments = ros_path.split('.')
+        current = msg
+
+        for seg in segments[:-1]:
+            if not hasattr(current, seg):
+                raise AttributeError(f"Missing intermediate field '{seg}' on {type(current).__name__}")
+            current = getattr(current, seg)
+
+        leaf = segments[-1]
+        fields_and_types = getattr(current, "_fields_and_field_types", {})
+        if leaf not in fields_and_types:
+            raise AttributeError(f"Missing leaf field '{leaf}' on {type(current).__name__}")
+
+        return current, leaf, fields_and_types[leaf]
 
     def destroy_node(self) -> None:
         """Clean up resources."""
