@@ -161,12 +161,12 @@ if __name__ == '__main__':
     )
     parser.add_argument("--tm-host", type=str, default='127.0.0.1',
                         help='Telemetry destination host (default: 127.0.0.1)')
-    parser.add_argument("--tm-port", type=int, default=10015,
-                        help='Telemetry destination port (default: 10015)')
+    parser.add_argument("--tm-port", type=int, default=10017,
+                        help='Telemetry destination port (default: 10017)')
     parser.add_argument("--tc-host", type=str, default='127.0.0.1',
                         help='Telecommand receive host (default: 127.0.0.1)')
-    parser.add_argument("--tc-port", type=int, default=10025,
-                        help='Telecommand receive port (default: 10025)')
+    parser.add_argument("--tc-port", type=int, default=10027,
+                        help='Telecommand receive port (default: 10027)')
     parser.add_argument("--rate", type=int, default=1,
                         help='Telemetry rate in Hz (default: 1)')
 

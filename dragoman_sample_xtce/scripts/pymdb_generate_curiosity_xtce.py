@@ -35,7 +35,6 @@ def generate_xtce_curiosity(filename):
      base = ccsds_header.tc_command,
      assignments = {
        ccsds_header.tc_secondary_header.name: "Not Present",
-       ccsds_header.tc_apid.name: 101,
      },
      arguments=[command_id],
      entries=[
@@ -152,8 +151,7 @@ def generate_xtce_curiosity(filename):
     base=ccsds_header.tm_container,
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter)
-    ],
-    condition=yp.eq(ccsds_header.tm_apid, 110)
+    ]
   )
 
 

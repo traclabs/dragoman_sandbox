@@ -150,8 +150,7 @@ def generate_xtce_all_types(filename):
             yp.ParameterEntry(parameter=binary_param),
             yp.ParameterEntry(parameter=array_param_instance),
             yp.ParameterEntry(parameter=aggregate_param_instance),
-        ],
-        condition=yp.eq(ccsds_header.tm_apid, 120)
+        ]
     )
 
     # =========================================================================
@@ -211,7 +210,6 @@ def generate_xtce_all_types(filename):
         short_description="Command with arguments for all major types",
         base=ccsds_header.tc_command,
         assignments = {
-            ccsds_header.tc_apid.name: 200,
             ccsds_header.tc_secondary_header.name: "Not Present",
         },
         arguments=[

@@ -38,7 +38,7 @@ from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 class AllTypesSimulator:
     """Simulator that generates and sends AllTypes telemetry packets"""
 
-    def __init__(self, tm_host='127.0.0.1', tm_port=10015, tc_host='127.0.0.1', tc_port=10025, rate=1):
+    def __init__(self, tm_host='127.0.0.1', tm_port=10015, tc_host='127.0.0.1', tc_port=10028, rate=1):
         """
         Initialize the simulator
 
@@ -74,8 +74,6 @@ class AllTypesSimulator:
             "ACTIVE",
             "IDLE"
         ]
-
-        self.COMMAND_APID = 200
 
         print(f"AllTypes Simulator initialized")
         print(f"  TM Host: {self.tm_host}")
@@ -158,7 +156,7 @@ class AllTypesSimulator:
                 'version': 0,
                 "type": 0,  # 0 = Telemetry
                 'secondary_header_flag': False,
-                'apid': 120,
+                'apid': 0,  # APID
                 'sequence_flags': 3, # 3 = Unsegmented
                 'sequence_count': self.sequence_count,
                 'packet_length': 0  # Placeholder, will be calculated
@@ -227,13 +225,6 @@ class AllTypesSimulator:
         Parse and process ConfigureAllTypes command
         """
         try:
-            # Check APID (first 2 bytes, bits 0-10)
-            apid = int.from_bytes(data[0:2], 'big') & 0x07FF
-
-            if apid != self.COMMAND_APID:
-                print(f"Ignoring command for APID {apid} (expecting {self.COMMAND_APID})")
-                return
-
             # Parse command using construct
             cmd = TC_CONFIGURE_STRUCT.parse(data)
 
@@ -308,8 +299,8 @@ def main():
     parser.add_argument(
         '--tc-port',
         type=int,
-        default=10025,
-        help='Telecommand receive port (default: 10025)'
+        default=10028,
+        help='Telecommand receive port (default: 10028)'
     )
     parser.add_argument(
         '--rate',
