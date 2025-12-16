@@ -95,7 +95,7 @@ def generate_launch_description():
         executable="rviz2",
         name="rviz2_flight",
         output="screen",
-        arguments=["-d", rviz_config_file],
+        arguments=["-d", rviz_config_file, "-t", "RViz (Flight Software Simulation)"],
         condition=IfCondition(LaunchConfiguration("rviz"))
     )
     # Delay RViz start to ensure noVNC is running first
