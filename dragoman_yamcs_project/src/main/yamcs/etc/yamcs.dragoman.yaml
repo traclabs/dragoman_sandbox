@@ -55,12 +55,6 @@ dataLinks:
 mdb:
   - type: xtce
     args:
-      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/CCSDSHeader.xtce
-  - type: xtce
-    args:
-      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Cfs.xtce
-  - type: xtce
-    args:
       file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/AllTypes.xtce
   - type: xtce
     args:
