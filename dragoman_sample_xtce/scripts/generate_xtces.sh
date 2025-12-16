@@ -8,14 +8,6 @@ echo "  XTCE Generator"
 echo "========================================"
 echo ""
 
-echo "→ Generating CCSDSHeader.xtce..."
-ros2 run dragoman_sample_xtce pymdb_generate_ccsds_header.py ${XTCE_DIR}/CCSDSHeader.xtce
-echo ""
-
-echo "→ Generating Cfs.xtce..."
-ros2 run dragoman_sample_xtce pymdb_generate_cfs.py ${XTCE_DIR}/Cfs.xtce
-echo ""
-
 echo "→ Generating IMetro.xtce..."
 ros2 run dragoman_sample_xtce pymdb_generate_imetro_demo_xtce.py ${XTCE_DIR}/IMetro.xtce
 echo ""

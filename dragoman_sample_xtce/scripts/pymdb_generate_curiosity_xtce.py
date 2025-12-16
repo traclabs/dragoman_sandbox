@@ -4,8 +4,6 @@ Generate XTCE for Curiosity Mars rover.
 
 Telemetry: Joint state (float[24]: all rover joints including arm, mast, wheels, suspension)
 Commands: arm_joint_goal (float[5]), mast_joint_goal (float[3])
-
-References CCSDSHeader.xtce for packet structure.
 """
 
 import sys
@@ -15,6 +13,9 @@ import os
 def generate_xtce_curiosity(filename):
 
   spacecraft = yp.System("Curiosity")
+
+  # Set CCSDS header
+  ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
 
 
   # ********************************
@@ -26,15 +27,15 @@ def generate_xtce_curiosity(filename):
     encoding = yp.uint16_t,
   )
 
-  # Curiosity abstract Command - references external CCSDS command
+  # Curiosity abstract Command
   curiosity_command = yp.Command(
      system=spacecraft,
      name="CuriosityPacket",
      abstract = True,
-     base = "/CCSDSHeader/ccsds_space_packet",
+     base = ccsds_header.tc_command,
      assignments = {
-       "ccsds_secondary_header": "Not Present",
-       "ccsds_apid": 101,
+       ccsds_header.tc_secondary_header.name: "Not Present",
+       ccsds_header.tc_apid.name: 101,
      },
      arguments=[command_id],
      entries=[
@@ -145,15 +146,14 @@ def generate_xtce_curiosity(filename):
     short_description="arm_01, arm_02, arm_03, arm_04, arm_tools, back_wheel_L, back_wheel_R, front_wheel_L, front_wheel_R, mast_02, mast_cameras, mast_p, middle_wheel_L, middle_wheel_R, suspension_arm_B2_L, suspension_arm_B2_R, suspension_arm_B_L, suspension_arm_B_R, suspension_arm_F_L, suspension_arm_F_R, suspension_steer_B_L, suspension_steer_B_R, suspension_steer_F_L, suspension_steer_F_R"
   )
 
-  # Telemetry container - references external CCSDS container
   telemetry_container = yp.Container(
     system=spacecraft,
     name="CuriosityTelemetryPacket",
-    base="/CCSDSHeader/ccsds_space_packet",
+    base=ccsds_header.tm_container,
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter)
     ],
-    condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", 110)
+    condition=yp.eq(ccsds_header.tm_apid, 110)
   )
 
 

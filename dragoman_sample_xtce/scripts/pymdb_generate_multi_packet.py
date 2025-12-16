@@ -12,8 +12,6 @@ In this example:
 - VoltagePacket: Contains voltage telemetry (APID 131)
 
 Both packets share the same CCSDS header structure but have different payload data.
-
-References CCSDSHeader.xtce for packet structure.
 """
 
 import sys
@@ -23,6 +21,7 @@ import yamcs.pymdb as yp
 def generate_xtce_multi_packet(filename):
 
     spacecraft = yp.System("MultiPacket")
+    ccsds_header = yp.ccsds.add_ccsds_header(spacecraft)
 
     # =========================================================================
     # PACKET 1: Temperature data (APID 130)
@@ -39,9 +38,9 @@ def generate_xtce_multi_packet(filename):
     yp.Container(
         system=spacecraft,
         name="TemperaturePacket",
-        base="/CCSDSHeader/ccsds_space_packet",
+        base=ccsds_header.tm_container,
         entries=[yp.ParameterEntry(parameter=temp_param)],
-        condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", 130)
+        condition=yp.eq(ccsds_header.tm_apid, 130)
     )
 
     # =========================================================================
@@ -59,9 +58,9 @@ def generate_xtce_multi_packet(filename):
     yp.Container(
         system=spacecraft,
         name="VoltagePacket",
-        base="/CCSDSHeader/ccsds_space_packet",
+        base=ccsds_header.tm_container,
         entries=[yp.ParameterEntry(parameter=voltage_param)],
-        condition=yp.eq("/CCSDSHeader/ccsds_packet_id/apid", 131)
+        condition=yp.eq(ccsds_header.tm_apid, 131)
     )
 
     # =========================================================================
