@@ -53,18 +53,18 @@ dataLinks:
 #     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
 
 mdb:
-  - type: xtce
-    args:
-      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/AllTypes.xtce
-  - type: xtce
-    args:
-      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Curiosity.xtce
-  - type: xtce
-    args:
-      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/IMetro.xtce
-  - type: xtce
-    args:
-      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/MultiPacket.xtce
+  # - type: xtce
+  #   args:
+  #     file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/AllTypes.xtce
+  # - type: xtce
+  #   args:
+  #     file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Curiosity.xtce
+  # - type: xtce
+  #   args:
+  #     file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/IMetro.xtce
+  # - type: xtce
+  #   args:
+  #     file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/MultiPacket.xtce
   - type: xtce
     args:
       file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Gateway.xtce
