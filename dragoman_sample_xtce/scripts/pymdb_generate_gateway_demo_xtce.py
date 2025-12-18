@@ -50,7 +50,7 @@ def generate_xtce_gateway_demo(filename):
      abstract=False,
      base=cFS_command,
      assignments={
-       ccsds_header.tc_apid.name: CMD_MID,
+       ccsds_header.tc_apid.name: 128,
        "scr_header": {
          "fcn_code": 0x06,
          "checksum": 0
@@ -131,32 +131,12 @@ def generate_xtce_gateway_demo(filename):
     short_description="big_arm_joint_ [2..8]"
   )
 
-  timestamp_sec_parameter = yp.IntegerParameter(
-    system=spacecraft,
-    name="timestamp_sec",
-    signed=True,
-    bits=32,
-    encoding=yp.int32le_t,
-    short_description="Timestamp seconds (int32)"
-  )
-
-  timestamp_nanosec_parameter = yp.IntegerParameter(
-    system=spacecraft,
-    name="timestamp_nanosec",
-    signed=False,
-    bits=32,
-    encoding=yp.uint32le_t,
-    short_description="Timestamp nanoseconds (uint32)"
-  )
-
   telemetry_container = yp.Container(
     system=spacecraft,
     name="GatewayTelemetryPacket",
     base=cFS_telemetry_container,
     entries=[
-      yp.ParameterEntry(parameter=joint_state_parameter),
-      yp.ParameterEntry(parameter=timestamp_sec_parameter),
-      yp.ParameterEntry(parameter=timestamp_nanosec_parameter)
+      yp.ParameterEntry(parameter=joint_state_parameter)
     ],
     condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
   )
