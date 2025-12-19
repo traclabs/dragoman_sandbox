@@ -21,48 +21,134 @@ services:
   - class: org.yamcs.plists.ParameterListService
   - class: org.yamcs.timeline.TimelineService
 
+# Use this for multihost demo
 #   rosfsw: 10.5.0.4 fsw: 10.5.0.3 rosgsw: 10.5.0.2
 dataLinks:
-  - name: udp-in
+  - name: udp-in-gateway
     class: org.yamcs.tctm.UdpTmDataLink
-    stream: tm_realtime
+    stream: tm_realtime_gateway
     port: 1235
     packetPreprocessorClassName: com.traclabs.dragoman.MyPacketPreprocessor
 
-  - name: udp-out
+  - name: udp-out-gateway
     class: org.yamcs.tctm.UdpTcDataLink
-    stream: tc_realtime
-    host: 10.5.0.3 
+    stream: tc_realtime_gateway
+    host: 10.5.0.3
     port: 1235
     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
 
+# # Use this for localhost demo
+# dataLinks:
+#   - name: udp-in-all-types
+#     class: org.yamcs.tctm.UdpTmDataLink
+#     stream: tm_realtime_all_types
+#     port: 10015
+#     packetPreprocessorClassName: com.traclabs.dragoman.MyPacketPreprocessor
+#   - name: udp-in-curiosity
+#     class: org.yamcs.tctm.UdpTmDataLink
+#     stream: tm_realtime_curiosity
+#     port: 10016
+#     packetPreprocessorClassName: com.traclabs.dragoman.MyPacketPreprocessor
+#   - name: udp-in-imetro
+#     class: org.yamcs.tctm.UdpTmDataLink
+#     stream: tm_realtime_imetro
+#     port: 10017
+#     packetPreprocessorClassName: com.traclabs.dragoman.MyPacketPreprocessor
+#   - name: udp-in-multi-packet
+#     class: org.yamcs.tctm.UdpTmDataLink
+#     stream: tm_realtime_multi_packet
+#     port: 10018
+#     packetPreprocessorClassName: com.traclabs.dragoman.MyPacketPreprocessor
+#   - name: udp-in-gateway
+#     class: org.yamcs.tctm.UdpTmDataLink
+#     stream: tm_realtime_gateway
+#     port: 10019
+#     packetPreprocessorClassName: com.traclabs.dragoman.MyPacketPreprocessor
+
+#   - name: udp-out-all-types
+#     class: org.yamcs.tctm.UdpTcDataLink
+#     stream: tc_realtime_all_types
+#     host: localhost
+#     port: 10025
+#     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
+#   - name: udp-out-curiosity
+#     class: org.yamcs.tctm.UdpTcDataLink
+#     stream: tc_realtime_curiosity
+#     host: localhost
+#     port: 10026
+#     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
+#   - name: udp-out-imetro
+#     class: org.yamcs.tctm.UdpTcDataLink
+#     stream: tc_realtime_imetro
+#     host: localhost
+#     port: 10027
+#     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
+#   - name: udp-out-multi-packet
+#     class: org.yamcs.tctm.UdpTcDataLink
+#     stream: tc_realtime_multi_packet
+#     host: localhost
+#     port: 10028
+#     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
+#   - name: udp-out-gateway
+#     class: org.yamcs.tctm.UdpTcDataLink
+#     stream: tc_realtime_gateway
+#     host: localhost
+#     port: 10029
+#     commandPostprocessorClassName: com.traclabs.dragoman.MyCommandPostprocessor
+
 mdb:
-#   - type: xtce
-#     args:
-#       file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/AllTypes.xtce
-#   - type: xtce
-#     args:
-#       file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Curiosity.xtce
-#  - type: xtce
-#    args:
-#      file: /code/rosws/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/IMetro.xtce
-#   - type: xtce
-#     args:
-#       file: /dragoman/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/MultiPacket.xtce
-   - type: xtce
-     args:
-       file: /code/rosws/install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Gateway.xtce
+  - type: xtce
+    args:
+      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/AllTypes.xtce
+  - type: xtce
+    args:
+      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Curiosity.xtce
+  - type: xtce
+    args:
+      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/IMetro.xtce
+  - type: xtce
+    args:
+      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/MultiPacket.xtce
+  - type: xtce
+    args:
+      file: ../../../../../../../install/dragoman_sample_xtce/share/dragoman_sample_xtce/xtce/Gateway.xtce
 
 # Configuration for streams created at server startup
 streamConfig:
   tm:
-    - name: "tm_realtime"
+    - name: "tm_realtime_all_types"
       processor: "realtime"
+      rootContainer: "/AllTypes/ccsds_space_packet"
+    - name: "tm_realtime_curiosity"
+      processor: "realtime"
+      rootContainer: "/Curiosity/ccsds_space_packet"
+    - name: "tm_realtime_imetro"
+      processor: "realtime"
+      rootContainer: "/IMetro/ccsds_space_packet"
+    - name: "tm_realtime_multi_packet"
+      processor: "realtime"
+      rootContainer: "/MultiPacket/ccsds_space_packet"
+    - name: "tm_realtime_gateway"
+      processor: "realtime"
+      rootContainer: "/Gateway/ccsds_space_packet"
     - name: "tm_dump"
   cmdHist: ["cmdhist_realtime", "cmdhist_dump"]
   event: ["events_realtime", "events_dump"]
   param: ["pp_realtime", "pp_dump", "sys_param", "proc_param"]
   parameterAlarm: ["alarms_realtime"]
   tc:
-    - name: "tc_realtime"
+    - name: "tc_realtime_all_types"
       processor: "realtime"
+      tcPatterns: ["/AllTypes/.*"]
+    - name: "tc_realtime_curiosity"
+      processor: "realtime"
+      tcPatterns: ["/Curiosity/.*"]
+    - name: "tc_realtime_imetro"
+      processor: "realtime"
+      tcPatterns: ["/IMetro/.*"]
+    - name: "tc_realtime_multi_packet"
+      processor: "realtime"
+      tcPatterns: ["/MultiPacket/.*"]
+    - name: "tc_realtime_gateway"
+      processor: "realtime"
+      tcPatterns: ["/Gateway/.*"]

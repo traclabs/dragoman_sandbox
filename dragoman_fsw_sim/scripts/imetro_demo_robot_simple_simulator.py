@@ -16,7 +16,9 @@ from control_msgs.action import ParallelGripperCommand
 from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
-from dragoman_fsw_sim.imetro_xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_fsw_sim.imetro_construct_definitions import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
+from dragoman_fsw_sim.ccsds_secondary_header_definitions import CommandSecondaryHeader
 from dragoman_fsw_sim.srdf_parser import parse_srdf_group_states
 from dragoman_fsw_sim.clr_trajectory_router import (
     send_trajectory,
@@ -24,22 +26,15 @@ from dragoman_fsw_sim.clr_trajectory_router import (
     send_gripper_command,
 )
 
-# *************************
-# Constants
-# *************************
 # Command IDs
 CMD_CANNED_POSE = 0
 CMD_ARM_JOINT_GOAL = 1
 CMD_RAIL_JOINT_GOAL = 2
 CMD_LIFT_JOINT_GOAL = 3
 
-# Telemetry constants
+# Number of joints
 NUM_JOINTS = 9
 
-
-# *************************
-# Send telemetry
-# *************************
 def send_tm(simulator):
     """Send telemetry packets at configured rate"""
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -54,17 +49,16 @@ def send_tm(simulator):
             continue
 
         if len(js) == NUM_JOINTS:
-            # Build telemetry packet using construct structures from XTCE
             tm_packet = simulator.tm_packet_struct.build(
                 {
                     "header": {
                         "version": 0,
                         "type": 0,  # 0 = Telemetry
-                        "secondary_header_flag": 0,
-                        "apid": 0x0827,  # APID for telemetry
+                        "secondary_header_flag": True,
+                        "apid": 39, #0x0827 - 0x0800,  # APID for telemetry
                         "sequence_flags": 3,  # 3 = Unsegmented
                         "sequence_count": tm_count,
-                        "packet_length": NUM_JOINTS * 4 - 1,  # 9 floats * 4 bytes - 1
+                        "packet_length": TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1,
                     },
                     "sec_header": {
                         "sec": 0,
@@ -81,9 +75,6 @@ def send_tm(simulator):
         sleep(1 / simulator.rate)
 
 
-# *************************
-# Receive command
-# *************************
 def receive_tc(simulator):
     """Receive and process telecommand packets"""
     tc_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -102,8 +93,9 @@ def parse_tc_data(data, simulator):
     logger = simulator.get_logger()
 
     try:
-        # Parse command_id (2 bytes after full CCSDS header)
-        offset = 6 + 2 # 6 bytes for primary header + 2 bytes for secondary header)
+        # Calculate offset dynamically based on secondary header presence
+        offset = CCSDSHeader.sizeof() + CommandSecondaryHeader.sizeof()
+
         command_id = Int16ub.parse(data[offset:offset+2])
 
         # Get the appropriate command structure and parse
@@ -130,16 +122,16 @@ def parse_tc_data(data, simulator):
         logger.error(traceback.format_exc())
 
 def debug_mid_print(parsed_packet, logger):
-  
-  # Verifying that mid and fcn_code are correctly being sent 
-  version = parsed_packet.header.version 
+
+  # Verifying that mid and fcn_code are correctly being sent
+  version = parsed_packet.header.version
   msg_type = parsed_packet.header.type
   sec_flag = parsed_packet.header.secondary_header_flag
-  apid = parsed_packet.header.apid      
-        
-  mid = (version << 13) | (msg_type << 12) | (sec_flag << 11) | apid                
+  apid = parsed_packet.header.apid
+
+  mid = (version << 13) | (msg_type << 12) | (sec_flag << 11) | apid
   fcn_code = parsed_packet.sec_header.fcn_code
-        
+
   logger.info(f"MID of received command: {hex(mid)} and fcn code: {fcn_code}")
 
 

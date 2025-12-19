@@ -9,20 +9,20 @@ Node("arm_comm_udp")
 {
   this->declare_parameter("joint_state", std::string("/big_arm/joint_states"));
   this->declare_parameter("joint_command", std::string("/big_arm/joint_state_command"));
-    
-  this->declare_parameter("cfs_port", 8080);
-  this->declare_parameter("robot_port", 8585);  
-  this->declare_parameter("cfs_ip", std::string("127.0.0.1"));
-  this->declare_parameter("robot_ip", std::string("127.0.0.1"));    
 
-      
+  this->declare_parameter("cfs_port", 8080);
+  this->declare_parameter("robot_port", 8585);
+  this->declare_parameter("cfs_ip", std::string("127.0.0.1"));
+  this->declare_parameter("robot_ip", std::string("127.0.0.1"));
+
+
    base_link_ = "big_arm_link_1";
    tip_link_ = "big_arm_link_8";
    robot_description_ = "robot_description";
    eps_ = 1e-5;
-   max_time_ = 0.005;   
+   max_time_ = 0.005;
    solve_type_ = TRAC_IK::Speed;
-   
+
    cmd_freq_ = 30.0;
    cmd_rate_ = 1.0/cmd_freq_; // 30 Hz
 
@@ -34,14 +34,13 @@ bool ArmCommUdp::initRobotComm()
   std::string js_topic;
   std::string jc_topic;
 
-  this->get_parameter("joint_state", js_topic);  
+  this->get_parameter("joint_state", js_topic);
   this->get_parameter("joint_command", jc_topic);
-
 
   sub_js_ = this->create_subscription<sensor_msgs::msg::JointState>(js_topic, 10, std::bind(&ArmCommUdp::js_cb, this, _1));
   pub_jc_ = this->create_publisher<sensor_msgs::msg::JointState>(jc_topic, 10);
- 
-  trac_ik_.reset( new TRAC_IK::TRAC_IK(shared_from_this(), base_link_, tip_link_, 
+
+  trac_ik_.reset( new TRAC_IK::TRAC_IK(shared_from_this(), base_link_, tip_link_,
                    robot_description_, max_time_, eps_, solve_type_) );
 
 
@@ -55,30 +54,30 @@ bool ArmCommUdp::initUdpComm()
   int robot_port;
   std::string cfs_ip;
   std::string robot_ip;
-    
-  this->get_parameter("cfs_port", cfs_port);  
-  this->get_parameter("robot_port", robot_port);
-  this->get_parameter("cfs_ip", cfs_ip);  
-  this->get_parameter("robot_ip", robot_ip);      
 
-  RCLCPP_INFO(this->get_logger(), "** initUdpComm: cfs port: %d cfs ip: %s robot port: %d robot ip: %s", 
+  this->get_parameter("cfs_port", cfs_port);
+  this->get_parameter("robot_port", robot_port);
+  this->get_parameter("cfs_ip", cfs_ip);
+  this->get_parameter("robot_ip", robot_ip);
+
+  RCLCPP_INFO(this->get_logger(), "** initUdpComm: cfs port: %d cfs ip: %s robot port: %d robot ip: %s",
               cfs_port, cfs_ip.c_str(), robot_port, robot_ip.c_str());
 
    cfs_port_ = cfs_port;
    robot_port_ = robot_port;
    cfs_ip_ = cfs_ip;
    robot_ip_ = robot_ip;
-   
+
    std::string error_msg;
-   
+
    return sm_.initializeComm(robot_port_, cfs_port_, robot_ip_, cfs_ip_, error_msg);
 }
 
 bool ArmCommUdp::initRest(const int &_tlm_ms, const int &_cmd_ms)
 {
    timer_tlm_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-   timer_cmd_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive); 
-      
+   timer_cmd_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
    timer_tlm_ = this->create_wall_timer(
       std::chrono::milliseconds(_tlm_ms),
       std::bind(&ArmCommUdp::send_telemetry, this), timer_tlm_cb_group_);
@@ -96,8 +95,8 @@ void ArmCommUdp::send_telemetry()
    sensor_msgs::msg::JointState js;
    mux_.lock();
    js = joint_state_;
-   mux_.unlock();   
-   
+   mux_.unlock();
+
    // Send it to cFS
    if(js.name.size() == 0)
      return;
@@ -119,11 +118,11 @@ void ArmCommUdp::rcv_command()
   if(sm_.receiveMessage(cmd))
   {
     RCLCPP_INFO(this->get_logger(), "Received pose command: %f %f %f -- %f %f %f %f", cmd.position.x, cmd.position.y, cmd.position.z, cmd.orientation.x, cmd.orientation.y, cmd.orientation.z, cmd.orientation.w);
-    
+
     // Do IK magic
     double jv = 5.0*M_PI/180.0;
     calculateMotion(cmd, jv);
-  }  
+  }
 }
 
 /**
@@ -136,13 +135,13 @@ bool ArmCommUdp::calculateMotion(const geometry_msgs::msg::Pose &_pose, const do
   KDL::JntArray qs, qg;
   KDL::Frame Tg;
   KDL::Twist bounds;
-  
+
   Tg = KDL::Frame::Identity();
   tf2::fromMsg(_pose, Tg);
   bounds = KDL::Twist::Zero();
-  
+
   sensor_msgs::msg::JointState js;
-  mux_.lock(); js = joint_state_; mux_.unlock();  
+  mux_.lock(); js = joint_state_; mux_.unlock();
   qs.data.resize(js.position.size());
   for(size_t i = 0; i < js.position.size(); ++i)
     qs(i) = js.position[i];
@@ -152,7 +151,7 @@ bool ArmCommUdp::calculateMotion(const geometry_msgs::msg::Pose &_pose, const do
   {
     RCLCPP_INFO(this->get_logger(), "IK result was: %d returning", res);
     return false;
-  }  
+  }
   // If a solution is found, move the robot
   rclcpp::Rate r(cmd_freq_);
 
@@ -162,20 +161,20 @@ bool ArmCommUdp::calculateMotion(const geometry_msgs::msg::Pose &_pose, const do
   RCLCPP_INFO(this->get_logger(), "Executing motion ");
   size_t counts = ( dq.norm()/_jv ) * cmd_freq_;
   dqi = dq/(double)counts;
-    
+
   sensor_msgs::msg::JointState ji;
-  
+
   ji = js;
   for(size_t i = 0; i < counts; ++i)
   {
      qi = qs.data + dqi*((double)i);
      for(size_t k = 0; k < ji.position.size(); ++k)
        ji.position[k] = qi(k);
-        
+
      pub_jc_->publish(ji);
      r.sleep();
   }
-  
+
   return true;
 }
 

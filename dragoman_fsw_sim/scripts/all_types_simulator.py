@@ -22,34 +22,43 @@ No ROS dependencies - pure Python mocking.
 """
 
 import socket
-import struct
 import time
 import random
 import math
 import argparse
 from threading import Thread
-from datetime import datetime
+
+from dragoman_fsw_sim.all_types_construct_definitions import (
+    TM_PACKET_STRUCT,
+    TC_CONFIGURE_STRUCT
+)
+from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 
 
 class AllTypesSimulator:
     """Simulator that generates and sends AllTypes telemetry packets"""
 
-    def __init__(self, tm_host='127.0.0.1', tm_port=10015, rate=1):
+    def __init__(self, tm_host='127.0.0.1', tm_port=10015, tc_host='127.0.0.1', tc_port=10028, rate=1):
         """
         Initialize the simulator
 
         Args:
             tm_host: Telemetry destination host
             tm_port: Telemetry destination port
+            tc_host: Telecommand receive host
+            tc_port: Telecommand receive port
             rate: Telemetry rate in Hz
         """
         self.tm_host = tm_host
         self.tm_port = tm_port
+        self.tc_host = tc_host
+        self.tc_port = tc_port
         self.rate = rate
 
-        # Counters
         self.tm_counter = 0
+        self.tc_counter = 0
         self.sequence_count = 0
+        self.last_tc = None
 
         # Start time for relative time calculations
         self.start_time = time.time()
@@ -69,15 +78,12 @@ class AllTypesSimulator:
         print(f"AllTypes Simulator initialized")
         print(f"  TM Host: {self.tm_host}")
         print(f"  TM Port: {self.tm_port}")
+        print(f"  TC Host: {self.tc_host}")
+        print(f"  TC Port: {self.tc_port}")
         print(f"  Rate: {self.rate} Hz")
 
     def generate_mock_data(self):
-        """
-        Generate mock values for all telemetry parameters
-
-        Returns:
-            dict: Dictionary containing all parameter values
-        """
+        """Generate mock values for all telemetry parameters"""
         elapsed = time.time() - self.start_time
 
         # T_IntegerSigned: Counter that increments (can go negative)
@@ -141,92 +147,31 @@ class AllTypesSimulator:
             }
         }
 
-    def build_ccsds_header(self, data_length):
-        """
-        Build CCSDS Space Packet Primary Header (6 bytes)
-
-        Args:
-            data_length: Length of packet data (excluding header)
-
-        Returns:
-            bytes: 6-byte CCSDS header
-        """
-        # Packet ID (2 bytes)
-        # - version (3 bits): 0
-        # - type (1 bit): 0 (telemetry)
-        # - secondary_header_flag (1 bit): 0 (not present)
-        # - apid (11 bits): 120
-        packet_id = (0 << 13) | (0 << 12) | (0 << 11) | 120
-
-        # Packet Sequence Control (2 bytes)
-        # - sequence_flags (2 bits): 3 (unsegmented)
-        # - sequence_count (14 bits): incrementing counter
-        packet_sequence = (3 << 14) | (self.sequence_count & 0x3FFF)
-
-        # Packet Length (2 bytes)
-        # Length of packet data - 1 (as per CCSDS standard)
-        packet_length = data_length - 1
-
-        # Pack as big-endian (network byte order)
-        header = struct.pack('>HHH', packet_id, packet_sequence, packet_length)
-
-        return header
-
     def build_telemetry_packet(self):
-        """
-        Build complete telemetry packet with CCSDS header and all parameters
-
-        Returns:
-            bytes: Complete telemetry packet
-        """
-        # Generate mock data
+        """Build complete telemetry packet with CCSDS header and all parameters"""
         data = self.generate_mock_data()
 
-        # Build packet data (all parameters in order)
-        packet_data = b''
+        packet_dict = {
+            'header': {
+                'version': 0,
+                "type": 0,  # 0 = Telemetry
+                'secondary_header_flag': False,
+                'apid': 0,  # APID
+                'sequence_flags': 3, # 3 = Unsegmented
+                'sequence_count': self.sequence_count,
+                'packet_length': 0  # Placeholder, will be calculated
+            },
+            **data
+        }
 
-        # 1. T_IntegerSigned (32-bit signed, big-endian)
-        packet_data += struct.pack('>i', data['integer_signed'])
+        # Build the packet first to determine actual size
+        packet = TM_PACKET_STRUCT.build(packet_dict)
 
-        # 2. T_FloatRaw64 (64-bit float, big-endian)
-        packet_data += struct.pack('>d', data['float_raw64'])
+        # Calculate actual packet_length field (packet length - CCSDS header size - 1)
+        packet_dict['header']['packet_length'] = len(packet) - CCSDSHeader.sizeof() - 1
 
-        # 3. T_EnumeratedAlarm (8-bit unsigned)
-        packet_data += struct.pack('>B', data['enum_alarm'])
-
-        # 4. T_StringUTF8 (null-terminated UTF-8 string)
-        string_bytes = data['string_utf8'].encode('utf-8') + b'\x00'
-        packet_data += string_bytes
-
-        # 5. T_BooleanFlag (8-bit unsigned: 0 or 1)
-        packet_data += struct.pack('>B', 1 if data['boolean_flag'] else 0)
-
-        # 6. T_AbsoluteTime (64-bit unsigned, big-endian)
-        packet_data += struct.pack('>Q', data['absolute_time'])
-
-        # 7. T_RelativeTimeRaw (32-bit unsigned, big-endian)
-        packet_data += struct.pack('>I', data['relative_time'])
-
-        # 8. T_BinaryBlob (128 bits = 16 bytes)
-        packet_data += data['binary_blob']
-
-        # 9. T_IntegerArray (10 x 16-bit unsigned, big-endian)
-        for value in data['integer_array']:
-            packet_data += struct.pack('>H', value)
-
-        # 10. T_StatusAggregate (struct)
-        # - CurrentDraw (32-bit float)
-        packet_data += struct.pack('>f', data['aggregate']['current_draw'])
-        # - HeaterEnabled (8-bit boolean)
-        packet_data += struct.pack('>B', 1 if data['aggregate']['heater_enabled'] else 0)
-        # - RawStatusFlags (32 bits = 4 bytes)
-        packet_data += data['aggregate']['raw_status_flags']
-
-        # Build CCSDS header
-        header = self.build_ccsds_header(len(packet_data))
-
-        # Combine header and data
-        packet = header + packet_data
+        # Rebuild with correct packet_length
+        packet = TM_PACKET_STRUCT.build(packet_dict)
 
         return packet
 
@@ -257,16 +202,67 @@ class AllTypesSimulator:
         finally:
             tm_socket.close()
 
+    def receive_telecommand(self):
+        """
+        Telecommand receiving thread - listens for and processes commands
+        """
+        tc_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        tc_socket.bind((self.tc_host, self.tc_port))
+
+        print(f"\nListening for telecommands on {self.tc_host}:{self.tc_port}...")
+
+        while True:
+            try:
+                data, addr = tc_socket.recvfrom(4096)
+                self.parse_telecommand(data)
+                self.last_tc = data
+                self.tc_counter += 1
+            except Exception as e:
+                print(f"Error receiving telecommand: {e}")
+
+    def parse_telecommand(self, data):
+        """
+        Parse and process ConfigureAllTypes command
+        """
+        try:
+            # Parse command using construct
+            cmd = TC_CONFIGURE_STRUCT.parse(data)
+
+            # Log received command
+            print(f"\n{'='*60}")
+            print(f"Received ConfigureAllTypes Command:")
+            print(f"  C_ArgInt16: {cmd.arg_int16}")
+            print(f"  C_ArgFloat64: {cmd.arg_float64:.6f}")
+            print(f"  C_ArgStringUTF16: '{cmd.arg_string_utf16}'")
+            print(f"  C_ArgBoolean: {cmd.arg_boolean}")
+            print(f"  C_ArgArrayFloat3: [{cmd.arg_array_float3[0]:.3f}, {cmd.arg_array_float3[1]:.3f}, {cmd.arg_array_float3[2]:.3f}]")
+            print(f"  C_ArgConfigStruct:")
+            print(f"    ID: {cmd.arg_config_struct.id}")
+            print(f"    Value: {cmd.arg_config_struct.value:.6f}")
+            print(f"    ConfigData: {cmd.arg_config_struct.config_data.hex()}")
+            print(f"{'='*60}\n")
+
+        except Exception as e:
+            print(f"Error parsing telecommand: {e}")
+            import traceback
+            traceback.print_exc()
+
     def print_status(self):
         """Print current simulator status"""
         elapsed = time.time() - self.start_time
-        print(f"Packets sent: {self.tm_counter}, Elapsed: {elapsed:.1f}s, Rate: {self.rate} Hz")
+        tc_hex = self.last_tc.hex() if self.last_tc else "None"
+        print(f"TM sent: {self.tm_counter}, TC received: {self.tc_counter}, "
+              f"Elapsed: {elapsed:.1f}s, Rate: {self.rate} Hz, Last TC: {tc_hex[:20]}...")
 
     def start(self):
         """Start the simulator"""
         # Start telemetry thread
         tm_thread = Thread(target=self.send_telemetry, daemon=True)
         tm_thread.start()
+
+        # Start telecommand thread
+        tc_thread = Thread(target=self.receive_telecommand, daemon=True)
+        tc_thread.start()
 
         # Status reporting loop
         try:
@@ -295,6 +291,18 @@ def main():
         help='Telemetry destination port (default: 10015)'
     )
     parser.add_argument(
+        '--tc-host',
+        type=str,
+        default='127.0.0.1',
+        help='Telecommand receive host (default: 127.0.0.1)'
+    )
+    parser.add_argument(
+        '--tc-port',
+        type=int,
+        default=10028,
+        help='Telecommand receive port (default: 10028)'
+    )
+    parser.add_argument(
         '--rate',
         type=float,
         default=1.0,
@@ -307,6 +315,8 @@ def main():
     simulator = AllTypesSimulator(
         tm_host=args.tm_host,
         tm_port=args.tm_port,
+        tc_host=args.tc_host,
+        tc_port=args.tc_port,
         rate=args.rate
     )
     simulator.start()

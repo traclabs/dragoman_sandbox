@@ -7,8 +7,8 @@ A simulator that generates mock telemetry data for voltage and temperature
 parameters defined in MultiPacket.xtce and sends them to YAMCS via UDP.
 
 This simulator demonstrates multi-packet telemetry with different APIDs:
-- TemperaturePacket (APID 101): Temperature readings in degrees Celsius
-- VoltagePacket (APID 102): Voltage readings in Volts
+- TemperaturePacket (APID 130): Temperature readings in degrees Celsius
+- VoltagePacket (APID 131): Voltage readings in Volts
 
 The simulator alternates between sending temperature and voltage packets,
 each with realistic physical patterns and noise characteristics.
@@ -17,19 +17,23 @@ No ROS dependencies - pure Python mocking.
 """
 
 import socket
-import struct
 import time
 import random
 import math
 import argparse
 from threading import Thread
-from datetime import datetime
+
+from dragoman_fsw_sim.multipacket_construct_definitions import (
+    TEMPERATURE_PACKET_STRUCT,
+    VOLTAGE_PACKET_STRUCT
+)
+from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 
 
 class MultiPacketSimulator:
     """Simulator that generates and sends Temperature and Voltage telemetry packets"""
 
-    def __init__(self, tm_host='127.0.0.1', tm_port=10015, rate=1,
+    def __init__(self, tm_host='127.0.0.1', tm_port=10018, rate=1,
                  temp_apid=130, voltage_apid=131):
         """
         Initialize the simulator
@@ -122,39 +126,6 @@ class MultiPacketSimulator:
 
         return voltage
 
-    def build_ccsds_header(self, apid, sequence_count, data_length):
-        """
-        Build CCSDS Space Packet Primary Header (6 bytes)
-
-        Args:
-            apid: Application Process Identifier
-            sequence_count: Packet sequence counter
-            data_length: Length of packet data (excluding header)
-
-        Returns:
-            bytes: 6-byte CCSDS header
-        """
-        # Packet ID (2 bytes)
-        # - version (3 bits): 0
-        # - type (1 bit): 0 (telemetry)
-        # - secondary_header_flag (1 bit): 0 (not present)
-        # - apid (11 bits): provided as parameter
-        packet_id = (0 << 13) | (0 << 12) | (0 << 11) | (apid & 0x7FF)
-
-        # Packet Sequence Control (2 bytes)
-        # - sequence_flags (2 bits): 3 (unsegmented)
-        # - sequence_count (14 bits): incrementing counter
-        packet_sequence = (3 << 14) | (sequence_count & 0x3FFF)
-
-        # Packet Length (2 bytes)
-        # Length of packet data - 1 (as per CCSDS standard)
-        packet_length = data_length - 1
-
-        # Pack as big-endian (network byte order)
-        header = struct.pack('>HHH', packet_id, packet_sequence, packet_length)
-
-        return header
-
     def build_temperature_packet(self):
         """
         Build complete TemperaturePacket with CCSDS header
@@ -165,18 +136,18 @@ class MultiPacketSimulator:
         # Generate temperature value
         temperature = self.generate_temperature()
 
-        # Build packet data (single 32-bit float, big-endian)
-        packet_data = struct.pack('>f', temperature)
-
-        # Build CCSDS header
-        header = self.build_ccsds_header(
-            self.temp_apid,
-            self.temp_sequence_count,
-            len(packet_data)
-        )
-
-        # Combine header and data
-        packet = header + packet_data
+        packet = TEMPERATURE_PACKET_STRUCT.build({
+            'header': {
+                'version': 0,
+                'type': 0,  # 0 = Telemetry
+                'secondary_header_flag': False,
+                'apid': self.temp_apid,  # APID for TemperaturePacket
+                'sequence_flags': 3,  # 3 = Unsegmented
+                'sequence_count': self.temp_sequence_count,
+                'packet_length': TEMPERATURE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
+            },
+            'temperature': temperature
+        })
 
         return packet
 
@@ -190,18 +161,18 @@ class MultiPacketSimulator:
         # Generate voltage value
         voltage = self.generate_voltage()
 
-        # Build packet data (single 32-bit float, big-endian)
-        packet_data = struct.pack('>f', voltage)
-
-        # Build CCSDS header
-        header = self.build_ccsds_header(
-            self.voltage_apid,
-            self.voltage_sequence_count,
-            len(packet_data)
-        )
-
-        # Combine header and data
-        packet = header + packet_data
+        packet = VOLTAGE_PACKET_STRUCT.build({
+            'header': {
+                'version': 0,
+                'type': 0,  # 0 = Telemetry
+                'secondary_header_flag': False,
+                'apid': self.voltage_apid,  # APID for VoltagePacket
+                'sequence_flags': 3,  # 3 = Unsegmented
+                'sequence_count': self.voltage_sequence_count,
+                'packet_length': VOLTAGE_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1
+            },
+            'voltage': voltage
+        })
 
         return packet
 
@@ -266,7 +237,6 @@ class MultiPacketSimulator:
 
 
 def main():
-    """Main entry point"""
     parser = argparse.ArgumentParser(
         description='MultiPacket Telemetry Simulator - Sends temperature and voltage telemetry to YAMCS'
     )
@@ -279,8 +249,8 @@ def main():
     parser.add_argument(
         '--tm-port',
         type=int,
-        default=10015,
-        help='Telemetry destination port (default: 10015)'
+        default=10018,
+        help='Telemetry destination port (default: 10018)'
     )
     parser.add_argument(
         '--rate',

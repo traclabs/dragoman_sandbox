@@ -2,7 +2,7 @@
 
 import yamcs.pymdb as yp
 
-# cFS headers defined here:  
+# cFS headers defined here:
 # cFS/cfe/modules/msg/option_inc/default_cfe_msg_hdr_pri.h
 # struct CFE_MSG_CommandHeader
 # {
@@ -22,10 +22,10 @@ import yamcs.pymdb as yp
 # **********************************************
 # Generic cFS command
 # **********************************************
-def add_cfs_command_header(system: yp.System, 
+def add_cfs_command_header(system: yp.System,
                            ccsds_header: yp.ccsds.CcsdsHeader,
                            name: str = "CfsPacket") -> yp.Command :
-  
+
   scr_header = yp.AggregateArgument(
     name="scr_header",
     members=[
@@ -45,9 +45,9 @@ def add_cfs_command_header(system: yp.System,
       )
     ]
   )
-    
+
   return yp.Command(
-     system=system, 
+     system=system,
      name=name,
      abstract = True,
      base = ccsds_header.tc_command,
@@ -61,9 +61,9 @@ def add_cfs_command_header(system: yp.System,
        yp.ArgumentEntry(scr_header)
      ]
   )
-  
+
 # *************************************
-# cFS Telemetry packet 
+# cFS Telemetry packet
 # *************************************
 def add_cfs_telemetry_header(system: yp.System, ccsds_header: yp.ccsds.CcsdsHeader,
     name: str = "CfsTelemetryPacket") -> yp.Container :
@@ -87,6 +87,7 @@ def add_cfs_telemetry_header(system: yp.System, ccsds_header: yp.ccsds.CcsdsHead
   return yp.Container(
     system=system,
     name=name,
+    abstract=True,
     base=ccsds_header.tm_container,
     entries=[
       yp.ParameterEntry(parameter=secondary_header_parameter)

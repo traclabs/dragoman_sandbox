@@ -14,25 +14,20 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
 
 from construct import Int16ub
-from dragoman_fsw_sim.curiosity_xtce_construct_generator import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_fsw_sim.curiosity_construct_definitions import TM_PACKET_STRUCT, COMMAND_STRUCTS
+from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
+from dragoman_fsw_sim.ccsds_secondary_header_definitions import CommandSecondaryHeader
 from dragoman_fsw_sim.srdf_parser import parse_srdf_group_states
 from dragoman_fsw_sim.clr_trajectory_router import send_trajectory
 
-# *************************
-# Constants
-# *************************
 # Command IDs
 CMD_CANNED_POSE = 0
 CMD_ARM_JOINT_GOAL = 1
 CMD_MAST_JOINT_GOAL = 2
 
-# Telemetry constants
-NUM_JOINTS = 24  # All rover joints (5 arm + 3 mast + 6 wheels + 10 suspension)
+# Number of joints
+NUM_JOINTS = 24
 
-
-# *************************
-# Send telemetry
-# *************************
 def send_tm(simulator):
     """Send telemetry packets at configured rate"""
     tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -47,17 +42,16 @@ def send_tm(simulator):
             continue
 
         if len(js) == NUM_JOINTS:
-            # Build telemetry packet using construct structures from XTCE
             tm_packet = simulator.tm_packet_struct.build(
                 {
                     "header": {
                         "version": 0,
                         "type": 0,  # 0 = Telemetry
-                        "secondary_header_flag": 0,
-                        "apid": 110,  # APID for telemetry
+                        "secondary_header_flag": False,
+                        "apid": 0,  # APID
                         "sequence_flags": 3,  # 3 = Unsegmented
                         "sequence_count": tm_count,
-                        "packet_length": NUM_JOINTS * 4 - 1,  # 24 floats * 4 bytes - 1
+                        "packet_length": TM_PACKET_STRUCT.sizeof() - CCSDSHeader.sizeof() - 1,
                     },
                     "joint_state": list(js),
                 }
@@ -69,9 +63,6 @@ def send_tm(simulator):
         sleep(1 / simulator.rate)
 
 
-# *************************
-# Receive command
-# *************************
 def receive_tc(simulator):
     """Receive and process telecommand packets"""
     tc_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -90,8 +81,9 @@ def parse_tc_data(data, simulator):
     logger = simulator.get_logger()
 
     try:
-        # Parse command_id (2 bytes after 6-byte CCSDS header)
-        command_id = Int16ub.parse(data[6:8])
+        # Calculate offset and parse command_id
+        offset = CCSDSHeader.sizeof()
+        command_id = Int16ub.parse(data[offset:offset+2])
 
         # Get the appropriate command structure and parse
         command_struct = COMMAND_STRUCTS.get(command_id)

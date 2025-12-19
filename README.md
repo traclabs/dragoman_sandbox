@@ -63,6 +63,9 @@ ros2 run dragoman_fsw_sim all_types_simulator.py
 
 # MultiPacket demo - demonstrates multi-packet telemetry
 ros2 run dragoman_fsw_sim multipacket_simulator.py
+
+# Gateway demo - simple command/telemetry gateway
+ros2 run dragoman_fsw_sim gateway_demo_dummy_simulator.py
 ```
 
 **ROS2-Integrated Demos:**
@@ -72,6 +75,9 @@ ros2 launch dragoman_fsw_sim imetro_robot_simple_demo.launch.py
 
 # Curiosity rover demo (Gazebo simulation)
 ros2 launch dragoman_fsw_sim curiosity_simulation.launch.py
+
+# Gateway demo
+ros2 launch dragoman_fsw_sim gateway_single_arm_flight_demo.launch.py
 ```
 
 ### 3. Launch Ground-Side Visualization (Optional)

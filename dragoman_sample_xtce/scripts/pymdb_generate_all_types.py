@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
+"""
+Generate XTCE demonstrating all supported parameter and argument types.
+
+Telemetry: Integer, Float, Enumerated, String, Boolean, AbsoluteTime, RelativeTime,
+           Binary, Array, Aggregate
+Commands: Integer, Float, String, Boolean, Array, Aggregate arguments
+"""
 
 import sys
 import os
 import yamcs.pymdb as yp
 from datetime import datetime
 
-# This function will create the XTCE structure with a representative example
 def generate_xtce_all_types(filename):
 
     # 1. Setup & Boilerplate
@@ -144,8 +150,7 @@ def generate_xtce_all_types(filename):
             yp.ParameterEntry(parameter=binary_param),
             yp.ParameterEntry(parameter=array_param_instance),
             yp.ParameterEntry(parameter=aggregate_param_instance),
-        ],
-        condition=yp.eq(ccsds_header.tm_apid, 120)
+        ]
     )
 
     # =========================================================================
@@ -156,7 +161,7 @@ def generate_xtce_all_types(filename):
     arg_int = yp.IntegerArgument(
         name="C_ArgInt16",
         signed=True,
-        encoding=yp.uint16_t
+        encoding=yp.int16_t
     )
 
     # --- 2. FloatArgument (64-bit) ---
@@ -169,7 +174,7 @@ def generate_xtce_all_types(filename):
     arg_string = yp.StringArgument(
         name="C_ArgStringUTF16",
         max_length=10,
-        encoding=yp.StringEncoding(charset=yp.Charset.UTF_16BE)
+        encoding=yp.StringEncoding()
     )
 
     # --- 4. BooleanArgument ---
@@ -205,7 +210,7 @@ def generate_xtce_all_types(filename):
         short_description="Command with arguments for all major types",
         base=ccsds_header.tc_command,
         assignments = {
-            ccsds_header.tc_apid.name: 200,
+            ccsds_header.tc_secondary_header.name: "Not Present",
         },
         arguments=[
             arg_int,
