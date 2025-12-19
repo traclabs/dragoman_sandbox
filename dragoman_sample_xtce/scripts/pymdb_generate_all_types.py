@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
+"""
+Generate XTCE demonstrating all supported parameter and argument types.
+
+Telemetry: Integer, Float, Enumerated, String, Boolean, AbsoluteTime, RelativeTime,
+           Binary, Array, Aggregate
+Commands: Integer, Float, String, Boolean, Array, Aggregate arguments
+"""
 
 import sys
 import os
 import yamcs.pymdb as yp
 from datetime import datetime
 
-# This function will create the XTCE structure with a representative example
 def generate_xtce_all_types(filename):
 
     # 1. Setup & Boilerplate
@@ -206,6 +212,7 @@ def generate_xtce_all_types(filename):
         base=ccsds_header.tc_command,
         assignments = {
             ccsds_header.tc_apid.name: 200,
+            ccsds_header.tc_secondary_header.name: "Not Present",
         },
         arguments=[
             arg_int,

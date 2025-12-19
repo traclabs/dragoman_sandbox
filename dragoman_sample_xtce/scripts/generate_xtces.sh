@@ -1,6 +1,7 @@
 #!/bin/bash
 
-XTCE_DIR=$(ros2 pkg prefix --share dragoman_sample_xtce)/xtce
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+XTCE_DIR=${SCRIPT_DIR}/../xtce
 
 echo "========================================"
 echo "  XTCE Generator"

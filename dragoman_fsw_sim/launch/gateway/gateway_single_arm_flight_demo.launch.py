@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, TimerAction
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -10,7 +10,7 @@ def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument("rviz", default_value="true"),
         DeclareLaunchArgument("cfs_ip", default_value="127.0.0.1"),
-        DeclareLaunchArgument("robot_ip", default_value="127.0.0.1")      
+        DeclareLaunchArgument("robot_ip", default_value="127.0.0.1")
     ]
 
     # *****************************
@@ -98,6 +98,8 @@ def generate_launch_description():
         arguments=["-d", rviz_config_file],
         condition=IfCondition(LaunchConfiguration("rviz"))
     )
+    # Delay RViz start to ensure noVNC is running first
+    delayed_rviz_node = TimerAction(period=3.0, actions=[rviz_node])
 
     # ***********************************************
     # Arm communication with cFS and robot control
@@ -110,11 +112,11 @@ def generate_launch_description():
          {'cfs_port': 8080},
          {'robot_port': 8585},
          {'cfs_ip': LaunchConfiguration("cfs_ip")},
-         {'robot_ip': LaunchConfiguration("robot_ip")},      
+         {'robot_ip': LaunchConfiguration("robot_ip")},
          {"robot_description": big_arm_xacro},
         ],
         output="screen",
-    )    
+    )
 
     nodes_to_start = [
         gateway_rsp,
@@ -122,7 +124,7 @@ def generate_launch_description():
         big_arm_jsp,
         little_arm_rsp,
         little_arm_jsp,
-        rviz_node,
+        delayed_rviz_node,
         robot_comm_node
     ]
 

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
+"""
+Generate XTCE for Curiosity Mars rover.
+
+Telemetry: Joint state (float[24]: all rover joints including arm, mast, wheels, suspension)
+Commands: arm_joint_goal (float[5]), mast_joint_goal (float[3])
+"""
 
 import sys
 import yamcs.pymdb as yp
 import os
 
-# ===============================================================================
-# Telemetry: Joint state (float[24]: all rover joints)
-# Command: arm_joint_goal (float[5]), mast_joint_goal (float[3])
-# ================================================================================
 def generate_xtce_curiosity(filename):
 
   spacecraft = yp.System("Curiosity")
@@ -135,7 +137,7 @@ def generate_xtce_curiosity(filename):
 
   # ***********************************************
   # Telemetry packet containing joint state data
-  # ***************################################
+  # ***********************************************
   joint_state_parameter = yp.ArrayParameter(
     system=spacecraft,
     name="joint_state",
