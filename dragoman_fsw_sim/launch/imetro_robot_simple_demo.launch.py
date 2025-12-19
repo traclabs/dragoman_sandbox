@@ -22,9 +22,9 @@ def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument("use_sim_time", default_value="False"),
         DeclareLaunchArgument("tm_host", default_value="127.0.0.1"),
-        DeclareLaunchArgument("tm_port", default_value="10015"),
+        DeclareLaunchArgument("tm_port", default_value="10017"),
         DeclareLaunchArgument("tc_host", default_value="127.0.0.1"),
-        DeclareLaunchArgument("tc_port", default_value="10025"),
+        DeclareLaunchArgument("tc_port", default_value="10027"),
         DeclareLaunchArgument("rate", default_value="1"),
         DeclareLaunchArgument("rviz", default_value="True"),
     ]

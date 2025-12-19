@@ -4,7 +4,7 @@ XTCE Construct Structure Library for AllTypes Simulator
 This module provides construct structures for encoding and decoding CCSDS packets
 for the AllTypes simulator, demonstrating all major XTCE parameter types.
 
-Based on AllTypes.xtce specification with APID 120.
+Based on AllTypes.xtce
 """
 
 from construct import (

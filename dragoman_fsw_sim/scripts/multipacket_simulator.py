@@ -33,7 +33,7 @@ from dragoman_fsw_sim.ccsds_header_definitions import CCSDSHeader
 class MultiPacketSimulator:
     """Simulator that generates and sends Temperature and Voltage telemetry packets"""
 
-    def __init__(self, tm_host='127.0.0.1', tm_port=10015, rate=1,
+    def __init__(self, tm_host='127.0.0.1', tm_port=10018, rate=1,
                  temp_apid=130, voltage_apid=131):
         """
         Initialize the simulator
@@ -249,8 +249,8 @@ def main():
     parser.add_argument(
         '--tm-port',
         type=int,
-        default=10015,
-        help='Telemetry destination port (default: 10015)'
+        default=10018,
+        help='Telemetry destination port (default: 10018)'
     )
     parser.add_argument(
         '--rate',
