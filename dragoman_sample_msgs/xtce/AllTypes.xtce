@@ -347,6 +347,7 @@ The first 6 bytes of a Space Packet are known as the
       <MetaCommand name="ConfigureAllTypes" abstract="false" shortDescription="Command with arguments for all major types">
         <BaseMetaCommand metaCommandRef="ccsds_space_packet">
           <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="0"/>
             <ArgumentAssignment argumentName="ccsds_secondary_header" argumentValue="Not Present"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>

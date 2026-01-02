@@ -34,6 +34,7 @@ def generate_xtce_curiosity(filename):
      abstract = True,
      base = ccsds_header.tc_command,
      assignments = {
+       ccsds_header.tc_apid.name: 0,
        ccsds_header.tc_secondary_header.name: "Not Present",
      },
      arguments=[command_id],
@@ -69,7 +70,10 @@ def generate_xtce_curiosity(filename):
     base=curiosity_command,
     name="send_canned_pose",
     short_description="Send a canned pose",
-    assignments={command_id.name: 0},
+    assignments={
+      ccsds_header.tc_apid.name: 0,
+      command_id.name: 0
+    },
     arguments=[
        group_arg,
        group_state_arg
@@ -94,7 +98,10 @@ def generate_xtce_curiosity(filename):
     base=curiosity_command,
     name="arm_joint_state_goal",
     short_description="Send an arm js: [arm_01, arm_02, arm_03, arm_04, arm_tools]",
-    assignments={command_id.name: 1},
+    assignments={
+      ccsds_header.tc_apid.name: 0,
+      command_id.name: 1
+    },
     arguments=[
       arm_js
     ],
@@ -118,7 +125,10 @@ def generate_xtce_curiosity(filename):
     base=curiosity_command,
     name="mast_joint_state_goal",
     short_description="Send a mast js: [mast_p, mast_02, mast_cameras]",
-    assignments={command_id.name: 2},
+    assignments={
+      ccsds_header.tc_apid.name: 0,
+      command_id.name: 2
+    },
     arguments=[
       mast_js
     ],
@@ -153,7 +163,6 @@ def generate_xtce_curiosity(filename):
       yp.ParameterEntry(parameter=joint_state_parameter)
     ]
   )
-
 
   # Create an XML that conforms to XTCE
   xtce_file = open(filename, 'w')

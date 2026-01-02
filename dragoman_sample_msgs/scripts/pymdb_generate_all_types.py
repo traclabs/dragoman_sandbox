@@ -210,6 +210,7 @@ def generate_xtce_all_types(filename):
         short_description="Command with arguments for all major types",
         base=ccsds_header.tc_command,
         assignments = {
+            ccsds_header.tc_apid.name: 0,
             ccsds_header.tc_secondary_header.name: "Not Present",
         },
         arguments=[
