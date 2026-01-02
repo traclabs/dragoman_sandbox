@@ -2,7 +2,7 @@
 """
 YAMCS-ROS Bridge
 
-Bridges YAMCS telemetry parameters to ROS2 messages based on YAML configuration.
+Bridges YAMCS telemetry packets to ROS2 messages using packet subscription.
 
 Usage:
     python3 yamcs_ros_bridge.py --config bridge_config.yaml [--yamcs-url localhost:8090]
@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Type
 from datetime import datetime
+import time
 
 import yaml
 import rclpy
@@ -549,100 +550,12 @@ class MessageTypeLoader:
             )
 
 
-class YamcsParameterDiscovery:
-    """Discovers available parameters from YAMCS server."""
-
-    def __init__(self, yamcs_client: YamcsClient, instance: str, logger: Optional[Any] = None):
-        """
-        Initialize parameter discovery service.
-
-        Args:
-            yamcs_client: YamcsClient instance
-            instance: YAMCS instance name
-            logger: Optional ROS logger
-        """
-        self.client = yamcs_client
-        self.instance = instance
-        self.logger = logger
-
-    def discover_parameters_in_namespace(self, namespace: str) -> List[str]:
-        """
-        Query YAMCS for all parameters in a namespace.
-
-        Uses YAMCS Python Client API:
-            mdb = client.get_mdb(instance)
-            parameters = mdb.list_parameters()
-
-        Args:
-            namespace: YAMCS namespace (e.g., "/Curiosity")
-
-        Returns:
-            list: Full parameter paths (e.g., ["/Curiosity/joint_state"])
-        """
-        try:
-            mdb = self.client.get_mdb(self.instance)
-            all_params = mdb.list_parameters()
-
-            # Filter by namespace
-            if namespace:
-                filtered = [p.qualified_name for p in all_params
-                           if p.qualified_name.startswith(namespace)]
-                if self.logger:
-                    self.logger.debug(
-                        f"Discovered {len(filtered)} parameters in namespace '{namespace}'"
-                    )
-                return filtered
-
-            if self.logger:
-                self.logger.info(f"Discovered {len(all_params)} total parameters")
-            return [p.qualified_name for p in all_params]
-
-        except Exception as e:
-            if self.logger:
-                self.logger.error(f"Failed to discover parameters: {e}")
-            raise
-
-    def discover_parameters_in_packet(self, packet_name: str) -> List[str]:
-        """
-        Query YAMCS for all parameters in a specific packet/container.
-
-        Since the YAMCS Python Client doesn't expose container introspection directly,
-        we use the packet name as a namespace prefix to filter parameters.
-
-        Args:
-            packet_name: YAMCS packet/container name (e.g., "IMetro/IMetroTelemetryPacket")
-                        This is converted to a namespace by extracting the path prefix.
-                        Example: "IMetro/IMetroTelemetryPacket" -> "/IMetro"
-
-        Returns:
-            list: Full parameter paths for all parameters in the packet's namespace
-        """
-        try:
-            # Extract namespace from packet name
-            # "IMetro/IMetroTelemetryPacket" -> "/IMetro"
-            # "AllTypes/AllTelemetryPacket" -> "/AllTypes"
-            namespace = '/' + packet_name.split('/')[0]
-
-            if self.logger:
-                self.logger.debug(
-                    f"Converting packet name '{packet_name}' to namespace '{namespace}'"
-                )
-
-            # Use namespace-based discovery
-            return self.discover_parameters_in_namespace(namespace)
-
-        except Exception as e:
-            if self.logger:
-                self.logger.error(f"Failed to discover parameters for packet '{packet_name}': {e}")
-            raise
-
-
 class YamcsRosBridge(Node):
     """
-    ROS2 node that bridges YAMCS telemetry to ROS2 messages.
+    ROS2 node that bridges YAMCS telemetry packets to ROS2 messages.
 
-    Reads configuration from YAML file to determine which YAMCS parameters
-    to subscribe to and which ROS2 messages to publish.
+    Subscribes to YAMCS packets/containers and automatically maps parameters
+    to ROS message fields using naming conventions.
     """
 
     def __init__(self, config_file: str, yamcs_url_override: Optional[str] = None):
@@ -693,19 +606,16 @@ class YamcsRosBridge(Node):
         """
         Load and validate YAML configuration file.
 
-        Supports both old (manual) and new (auto-discovery) configuration formats:
+        Expected configuration format:
+            yamcs:
+              url: "localhost:8090"
+              instance: "dragoman"
+              processor: "realtime"
 
-        Old format (manual):
-            - name: "bridge_name"
-              yamcs_parameter: ["/path/to/param"]
-              ros_topic: "/topic"
-              ros_message_type: "package/msg/Type"
-              field_mapping: {param: field}
-
-        New format (auto-discovery):
-            - ros_message_type: "package/msg/Type"
-              ros_topic: "/topic"
-              yamcs_namespace: "/Namespace"  # Optional
+            bridges:
+              - ros_message_type: "package/msg/Type"
+                ros_topic: "/topic"
+                yamcs_packet_name: "Namespace/PacketName"
 
         Args:
             config_file: Path to YAML configuration file
@@ -740,80 +650,110 @@ class YamcsRosBridge(Node):
 
         # Validate each bridge configuration
         for i, bridge in enumerate(config['bridges']):
-            # ros_message_type and ros_topic are always required
+            # Required fields for packet subscription
             if 'ros_message_type' not in bridge:
                 raise ValueError(f'Bridge {i} missing required field: ros_message_type')
             if 'ros_topic' not in bridge:
                 raise ValueError(f'Bridge {i} missing required field: ros_topic')
-
-            # Check if this is old format (has all manual fields) or new format (auto-discovery)
-            has_manual_fields = all(field in bridge for field in ['name', 'yamcs_parameter', 'field_mapping'])
-            has_auto_fields = 'yamcs_namespace' in bridge or ('yamcs_parameter' not in bridge and 'field_mapping' not in bridge)
-
-            if not has_manual_fields and not has_auto_fields:
-                # Partial configuration - need either all manual fields or use auto-discovery
-                self.get_logger().info(
-                    f'Bridge {i} will use auto-discovery mode (missing manual configuration fields)'
-                )
+            if 'yamcs_packet_name' not in bridge:
+                raise ValueError(f'Bridge {i} missing required field: yamcs_packet_name')
 
         return config
 
-    def connect_yamcs(self) -> None:
+    def connect_yamcs(self, max_retries: int = 10, initial_delay: float = 1.0) -> None:
         """
-        Connect to YAMCS server and get processor instance.
+        Connect to YAMCS server and get processor instance with retry logic.
+
+        Args:
+            max_retries: Maximum number of connection attempts (default: 10)
+            initial_delay: Initial delay between retries in seconds (default: 1.0)
 
         Raises:
-            Exception: If connection fails
+            Exception: If connection fails after all retries
         """
         yamcs_config = self.config['yamcs']
 
-        self.get_logger().debug(f'Connecting to YAMCS at {yamcs_config["url"]}...')
+        for attempt in range(max_retries):
+            try:
+                self.get_logger().info(
+                    f'Connecting to YAMCS at {yamcs_config["url"]} '
+                    f'(attempt {attempt + 1}/{max_retries})...'
+                )
 
-        self.client = YamcsClient(yamcs_config['url'])
-        self.processor = self.client.get_processor(
-            yamcs_config['instance'],
-            yamcs_config['processor']
-        )
+                self.client = YamcsClient(yamcs_config['url'])
+                self.processor = self.client.get_processor(
+                    yamcs_config['instance'],
+                    yamcs_config['processor']
+                )
 
-        self.get_logger().debug(
-            f'Connected to YAMCS instance: {yamcs_config["instance"]}, '
-            f'processor: {yamcs_config["processor"]}'
-        )
+                self.get_logger().info(
+                    f'Successfully connected to YAMCS instance: {yamcs_config["instance"]}, '
+                    f'processor: {yamcs_config["processor"]}'
+                )
+                return
 
-    def setup_bridges(self) -> None:
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    # Calculate exponential backoff delay
+                    delay = initial_delay * (2 ** attempt)
+                    self.get_logger().warn(
+                        f'Failed to connect to YAMCS: {e}. '
+                        f'Retrying in {delay:.1f} seconds...'
+                    )
+                    time.sleep(delay)
+                else:
+                    self.get_logger().error(
+                        f'Failed to connect to YAMCS after {max_retries} attempts: {e}'
+                    )
+                    raise
+
+    def setup_bridges(self, max_retries: int = 5, initial_delay: float = 2.0) -> None:
         """
-        Create publishers and YAMCS subscriptions for all configured bridges.
+        Create publishers and YAMCS packet subscriptions for all configured bridges with retry logic.
+
+        Args:
+            max_retries: Maximum number of retry attempts per bridge (default: 5)
+            initial_delay: Initial delay between retries in seconds (default: 2.0)
         """
         self.bridges = []
 
         for bridge_config in self.config['bridges']:
-            try:
-                bridge = self.create_bridge(bridge_config)
-                self.bridges.append(bridge)
-                bridge_name = bridge_config.get('name', 'unknown')
-                self.get_logger().debug(
-                    f'Created bridge "{bridge_name}": '
-                    f'{bridge_config["yamcs_parameter"]} → {bridge_config["ros_topic"]}'
-                )
-            except Exception as e:
-                # Get bridge name safely (might not be set yet)
-                bridge_name = bridge_config.get('name', bridge_config.get('ros_message_type', 'unknown'))
-                self.get_logger().error(
-                    f'Failed to create bridge "{bridge_name}": {e}'
-                )
-                self.get_logger().error(traceback.format_exc())
-                raise
+            bridge_name = bridge_config.get('name', bridge_config['ros_message_type'].split('/')[-1])
+
+            for attempt in range(max_retries):
+                try:
+                    bridge = self.create_bridge(bridge_config)
+                    self.bridges.append(bridge)
+                    self.get_logger().info(
+                        f'Created bridge "{bridge_name}": '
+                        f'{bridge_config["yamcs_packet_name"]} → {bridge_config["ros_topic"]}'
+                    )
+                    break  # Success, exit retry loop
+
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        delay = initial_delay * (2 ** attempt)
+                        self.get_logger().warn(
+                            f'Failed to create bridge "{bridge_name}" (attempt {attempt + 1}/{max_retries}): {e}. '
+                            f'Retrying in {delay:.1f} seconds...'
+                        )
+                        time.sleep(delay)
+                    else:
+                        self.get_logger().error(
+                            f'Failed to create bridge "{bridge_name}" after {max_retries} attempts: {e}'
+                        )
+                        self.get_logger().debug(traceback.format_exc())
+                        # Continue with other bridges instead of raising
 
     def create_bridge(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Create a single bridge (ROS publisher + YAMCS subscription).
-
-        Supports both manual and auto-discovery modes:
-        - Manual: Uses provided yamcs_parameter and field_mapping
-        - Auto: Discovers parameters from YAMCS and generates field mapping
+        Create a single bridge (ROS publisher + YAMCS packet subscription).
 
         Args:
-            config: Bridge configuration dictionary
+            config: Bridge configuration dictionary with:
+                - ros_message_type: ROS message type string
+                - ros_topic: ROS topic to publish to
+                - yamcs_packet_name: YAMCS packet/container name
 
         Returns:
             dict: Bridge information including publisher and subscription
@@ -821,70 +761,16 @@ class YamcsRosBridge(Node):
         # Load ROS message type dynamically
         MessageType = MessageTypeLoader.load_message_type(config['ros_message_type'])
         msg_class = config['ros_message_type'].split('/')[-1]
-
-        # Auto-discover YAMCS parameters if not explicitly provided
-        if 'yamcs_parameter' not in config:
-            discovery = YamcsParameterDiscovery(
-                self.client,
-                self.config['yamcs']['instance'],
-                self.get_logger()
-            )
-
-            # Try packet name first (most specific), then namespace
-            if 'yamcs_packet_name' in config:
-                packet_name = config['yamcs_packet_name']
-                self.get_logger().debug(
-                    f"Auto-discovering YAMCS parameters for {config['ros_message_type']} "
-                    f"from packet '{packet_name}'"
-                )
-                yamcs_parameters = discovery.discover_parameters_in_packet(packet_name)
-            else:
-                namespace = config.get('yamcs_namespace', '')
-                self.get_logger().debug(
-                    f"Auto-discovering YAMCS parameters for {config['ros_message_type']} "
-                    f"in namespace '{namespace}'"
-                )
-                yamcs_parameters = discovery.discover_parameters_in_namespace(namespace)
-
-            config['yamcs_parameter'] = yamcs_parameters
-
-            self.get_logger().debug(
-                f"Discovered {len(yamcs_parameters)} parameters"
-            )
-
-        # Auto-generate field mapping using introspection if not provided
-        if 'field_mapping' not in config:
-            self.get_logger().debug(
-                f"Auto-generating field mapping for {config['ros_message_type']}"
-            )
-
-            introspector = MessageIntrospector()
-
-            # Use strict mode to filter out unmappable parameters
-            field_mapping, filtered_parameters = introspector.create_field_mapping(
-                MessageType,
-                config['yamcs_parameter'],
-                self.get_logger(),
-                strict=True
-            )
-
-            # Update config with only mappable parameters
-            config['yamcs_parameter'] = filtered_parameters
-            config['field_mapping'] = field_mapping
-
-            if len(filtered_parameters) == 0:
-                raise ValueError(
-                    f"No mappable parameters found for {config['ros_message_type']}. "
-                    f"ROS message fields: {list(MessageType._fields_and_field_types.keys())}"
-                )
-
-            self.get_logger().debug(
-                f"Generated {len(field_mapping)} field mappings from {len(filtered_parameters)} parameters"
-            )
+        packet_name = config['yamcs_packet_name']
 
         # Generate bridge name if not provided
         if 'name' not in config:
             config['name'] = f"{msg_class}_bridge"
+
+        self.get_logger().info(
+            f"Creating packet subscription bridge for {config['ros_message_type']} "
+            f"(packet: '{packet_name}')"
+        )
 
         # Create ROS publisher
         publisher = self.create_publisher(
@@ -893,11 +779,15 @@ class YamcsRosBridge(Node):
             10
         )
 
-        # Create YAMCS parameter subscription
-        subscription = self.processor.create_parameter_subscription(
-            config['yamcs_parameter'],
-            on_data=lambda data: self.yamcs_callback(
-                data, config, publisher, MessageType
+        # Get list of parameters for this container from the MDB
+        # We'll query these parameters when the container arrives
+        parameter_names = self._get_container_parameters(packet_name, MessageType)
+
+        # Create YAMCS packet/container subscription
+        subscription = self.processor.create_container_subscription(
+            containers=[packet_name],
+            on_data=lambda packet: self.yamcs_packet_callback(
+                packet, config, publisher, MessageType, parameter_names
             )
         )
 
@@ -905,108 +795,170 @@ class YamcsRosBridge(Node):
             'config': config,
             'publisher': publisher,
             'subscription': subscription,
-            'message_type': MessageType
+            'message_type': MessageType,
+            'parameter_names': parameter_names
         }
 
-    def yamcs_callback(self, data: Any, config: Dict[str, Any], publisher: Publisher, MessageType: Type) -> None:
+    def _get_container_parameters(self, container_name: str, MessageType: Type) -> List[str]:
         """
-        Handle YAMCS parameter updates and publish to ROS.
+        Get the list of parameter names for a container by inspecting the ROS message type.
 
         Args:
-            data: YAMCS parameter data
+            container_name: YAMCS container name
+            MessageType: ROS message type
+
+        Returns:
+            List of fully-qualified parameter names
+        """
+        # Extract namespace from container name (e.g., "/Curiosity/CuriosityTelemetryPacket" -> "Curiosity")
+        parts = [p for p in container_name.strip('/').split('/') if p]
+        if not parts:
+            return []
+
+        namespace = parts[0] if len(parts) > 1 else ""
+
+        # Get all fields from the ROS message
+        fields = MessageType._fields_and_field_types
+        parameter_names = []
+
+        for field_name in fields.keys():
+            # Convert ROS field name back to YAMCS parameter name
+            # e.g., "ccsds_packet_id" -> "/Curiosity/ccsds_packet_id"
+            param_name = f"/{namespace}/{field_name}" if namespace else f"/{field_name}"
+            parameter_names.append(param_name)
+
+        return parameter_names
+
+    def yamcs_packet_callback(self, packet: Any, config: Dict[str, Any], publisher: Publisher, MessageType: Type, parameter_names: List[str]) -> None:
+        """
+        Handle YAMCS packet/container updates and publish to ROS.
+
+        Receives complete packets from YAMCS, automatically maps parameters to ROS
+        message fields based on naming conventions, and publishes atomically.
+
+        Args:
+            packet: YAMCS packet/container data with parameters
             config: Bridge configuration
             publisher: ROS publisher
             MessageType: ROS message class
         """
         try:
-            # Create a single message to accumulate all parameter values
+            # Create ROS message
             msg = MessageType()
 
-            self.get_logger().debug(
-                f'Processing {len(data.parameters)} parameters for {MessageType.__name__}'
-            )
+            # Query parameter values from YAMCS for this container
+            try:
+                # Get current parameter values
+                param_values = self.processor.get_parameter_values(
+                    parameters=parameter_names,
+                    from_cache=True,
+                    timeout=1.0
+                )
 
-            # Map all parameters to the message
-            for parameter in data.parameters:
-                self.map_fields(parameter, msg, config['field_mapping'])
+                # Map parameter values to ROS message fields
+                for param_name, param_value in zip(parameter_names, param_values):
+                    if param_value is not None:
+                        self._map_parameter_value_to_message(param_name, param_value, msg)
 
-            # Set timestamp if message has a header
+            except Exception as e:
+                self.get_logger().error(f'Failed to query parameters: {e}')
+
+            # Set timestamp from packet generation time if available
             if hasattr(msg, 'header'):
-                msg.header.stamp = self.get_clock().now().to_msg()
+                if hasattr(packet, 'generation_time') and packet.generation_time:
+                    # Convert YAMCS generation time to ROS time
+                    gen_time = packet.generation_time
+                    if isinstance(gen_time, datetime):
+                        timestamp = gen_time.timestamp()
+                    else:
+                        timestamp = float(gen_time)
+
+                    msg.header.stamp.sec = int(timestamp)
+                    msg.header.stamp.nanosec = int((timestamp - int(timestamp)) * 1e9)
+                else:
+                    # Fallback to current time
+                    msg.header.stamp = self.get_clock().now().to_msg()
 
             # Publish the complete message
             publisher.publish(msg)
 
             self.get_logger().debug(
-                f'Published to {config["ros_topic"]} with {len(data.parameters)} parameters'
+                f'Published packet to {config["ros_topic"]}'
             )
 
         except Exception as e:
             self.get_logger().error(
-                f'Error in callback for {config["name"]}: {e}\n{traceback.format_exc()}'
+                f'Error in packet callback for {config["name"]}: {e}\n{traceback.format_exc()}'
             )
 
-    def map_fields(self, parameter: Any, msg: Any, field_mapping: Dict[str, str]) -> None:
+    def _map_parameter_value_to_message(self, param_name: str, param_value: Any, msg: Any) -> None:
         """
-        Map fields from YAMCS parameter to ROS message.
+        Map a YAMCS ParameterValue to a ROS message field.
 
-        Supports:
-        - direct scalar mapping: "T_IntegerSigned" -> "t_integer_signed"
-        - whole-aggregate mapping: "T_StatusAggregate" -> "t_status_aggregate" (nested msg)
-        - member mapping (if YAMCS exposes aggregate members as separate parameters):
-            "T_StatusAggregate.CurrentDraw" -> "t_status_aggregate.current_draw"
-            ".../T_StatusAggregate/CurrentDraw" -> same (key is synthesized)
+        Args:
+            param_name: Full YAMCS parameter name (e.g., "/Curiosity/ccsds_packet_id")
+            param_value: YAMCS ParameterValue object
+            msg: ROS message to populate
         """
-        full_name = getattr(parameter, "name", "")
-        parts = [p for p in str(full_name).strip('/').split('/') if p]
-
-        leaf = parts[-1] if parts else str(full_name)
-        dotted = f"{parts[-2]}.{parts[-1]}" if len(parts) >= 2 else None
-
-        self.get_logger().debug(
-            f'Mapping parameter: {full_name} (leaf: {leaf}, value type: {type(parameter.eng_value).__name__})'
-        )
-
-        # Try multiple keys for robustness across YAMCS naming styles
-        mapping_key = None
-        for candidate in (dotted, leaf, full_name):
-            if candidate and candidate in field_mapping:
-                mapping_key = candidate
-                break
-
-        if mapping_key is None:
+        # Extract the leaf name from the full parameter path
+        parts = [p for p in str(param_name).strip('/').split('/') if p]
+        if not parts:
             return
 
-        ros_path = field_mapping[mapping_key]
+        leaf = parts[-1]
+        eng_value = param_value.eng_value if hasattr(param_value, 'eng_value') else None
 
-        try:
-            target_msg, field_name, field_type = self._resolve_ros_field_path(msg, ros_path)
+        # Try nested field mapping first (e.g., Parent/Member -> parent.member)
+        if len(parts) >= 3:  # e.g., /Curiosity/ccsds_packet_id/apid
+            parent = parts[-2]
+            dotted_name = f"{parent}.{leaf}"
+            ros_path = MessageIntrospector._yamcs_member_to_ros_path(type(msg), dotted_name)
+            if ros_path:
+                try:
+                    self._set_field_value(msg, ros_path, eng_value, leaf)
+                    return
+                except Exception as e:
+                    self.get_logger().debug(f'Nested mapping failed: {e}')
 
-            # Whole-aggregate or nested member field
-            if TypeConverter.is_ros_message_type(field_type):
-                nested_msg = getattr(target_msg, field_name)
-                TypeConverter.populate_message(
-                    nested_msg,
-                    parameter.eng_value,
-                    logger=self.get_logger(),
-                    root_param_name=leaf
-                )
-                self.get_logger().debug(
-                    f'Mapped nested {mapping_key} → {ros_path}'
-                )
-                return
+        # Try simple field mapping (e.g., ccsds_packet_id -> ccsds_packet_id)
+        ros_field_name = MessageIntrospector.to_ros_field_name(leaf)
 
-            converted = TypeConverter.convert_value(
-                leaf, field_type, parameter.eng_value, logger=self.get_logger()
+        if hasattr(msg, ros_field_name):
+            try:
+                self._set_field_value(msg, ros_field_name, eng_value, leaf)
+            except Exception as e:
+                self.get_logger().error(f'Could not map {param_name}: {e}')
+        else:
+            self.get_logger().debug(f'Field {ros_field_name} not found in message')
+
+    def _set_field_value(self, msg: Any, ros_path: str, value: Any, param_name: str) -> None:
+        """
+        Set a field value in a ROS message, handling nested fields and type conversion.
+
+        Args:
+            msg: ROS message object
+            ros_path: Field path (e.g., "field" or "parent.child")
+            value: Value to set
+            param_name: Original parameter name for type conversion
+        """
+        target_msg, field_name, field_type = self._resolve_ros_field_path(msg, ros_path)
+
+        # Handle nested message fields
+        if TypeConverter.is_ros_message_type(field_type):
+            nested_msg = getattr(target_msg, field_name)
+            TypeConverter.populate_message(
+                nested_msg,
+                value,
+                logger=self.get_logger(),
+                root_param_name=param_name
             )
-            setattr(target_msg, field_name, converted)
-            self.get_logger().debug(
-                f'Mapped {mapping_key} → {ros_path}: {type(converted).__name__}'
-            )
-        except Exception as e:
-            self.get_logger().error(
-                f'Error mapping parameter {mapping_key} → {ros_path}: {e}\n{traceback.format_exc()}'
-            )
+            return
+
+        # Handle scalar fields with type conversion
+        converted = TypeConverter.convert_value(
+            param_name, field_type, value, logger=self.get_logger()
+        )
+        setattr(target_msg, field_name, converted)
 
     def _resolve_ros_field_path(self, msg: Any, ros_path: str):
         """

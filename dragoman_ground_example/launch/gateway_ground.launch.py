@@ -27,8 +27,8 @@ def generate_launch_description():
     dragoman_ground_example_dir = get_package_share_directory("dragoman_ground_example")
     dragoman_yamcs_ros_bridge_dir = get_package_share_directory("dragoman_yamcs_ros_bridge")
 
-    # Bridge configuration file
-    bridge_config = os.path.join(
+    # Default bridge configuration file
+    default_bridge_config = os.path.join(
         dragoman_yamcs_ros_bridge_dir,
         "config",
         "yamcs_bridge_params.yaml"
@@ -48,6 +48,11 @@ def generate_launch_description():
             "yamcs_url",
             default_value="localhost:8090",
             description="Yamcs server URL"
+        ),
+        DeclareLaunchArgument(
+            "bridge_config",
+            default_value=default_bridge_config,
+            description="Path to YAMCS bridge configuration file"
         ),
     ]
 
@@ -79,7 +84,7 @@ def generate_launch_description():
         name="yamcs_gateway_bridge",
         output="screen",
         arguments=[
-            "--config", bridge_config,
+            "--config", LaunchConfiguration("bridge_config"),
             "--yamcs-url", LaunchConfiguration("yamcs_url"),
         ],
         parameters=[
