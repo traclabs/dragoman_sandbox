@@ -18,7 +18,7 @@ yamcs:
   processor: "realtime"
 
 bridges:
-  - ros_message_type: "dragoman_generated_msgs/msg/IMetroTelemetryPacket"
+  - ros_message_type: "dragoman_sample_msgs/msg/IMetroTelemetryPacket"
     ros_topic: "/yamcs/imetro"
     yamcs_packet_name: "IMetro/IMetroTelemetryPacket"
 ```

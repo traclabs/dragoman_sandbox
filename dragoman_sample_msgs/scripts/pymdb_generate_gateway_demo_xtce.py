@@ -10,7 +10,7 @@ import sys
 import yamcs.pymdb as yp
 import os
 
-from dragoman_sample_xtce.cfs_msg_hdr import (
+from cfs_msg_hdr import (
     add_cfs_command_header,
     add_cfs_telemetry_header
 )

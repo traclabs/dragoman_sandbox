@@ -9,7 +9,7 @@ for the Gateway big arm.
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from dragoman_generated_msgs.msg import GatewayTelemetryPacket
+from dragoman_sample_msgs.msg import GatewayTelemetryPacket
 
 
 class GatewayJointStatePublisher(Node):

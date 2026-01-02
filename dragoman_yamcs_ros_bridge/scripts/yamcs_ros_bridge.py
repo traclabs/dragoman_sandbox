@@ -202,7 +202,7 @@ class MessageIntrospector:
         # If unqualified, infer the package from the parent MessageType
         qualified_type = root_base_type
         if '/' not in root_base_type:
-            # e.g. "dragoman_generated_msgs.msg._GatewayTelemetryPacket" -> "dragoman_generated_msgs"
+            # e.g. "dragoman_sample_msgs.msg._GatewayTelemetryPacket" -> "dragoman_sample_msgs"
             pkg = getattr(MessageType, "__module__", "").split('.', 1)[0]
             if not pkg:
                 return None

@@ -10,33 +10,16 @@ This project demonstrates the integration between YAMCS (Yet Another Mission Con
 - YAMCS-ROS2 bridge for telemetry/command handling
 - Ground station visualization with RViz
 
-## Package Organization
+## Packages
 
-- **[`dragoman_sample_xtce`](dragoman_sample_xtce/README.md)** - XTCE file generation scripts
-- **[`dragoman_fsw_sim`](dragoman_fsw_sim/README.md)** - Flight software simulators (spacecraft-side)
+- **[`dragoman_xtce2msg`](dragoman_xtce2msg/README.md)** - XTCE to ROS message converter with CMake macro
+- **[`dragoman_sample_msgs`](dragoman_sample_msgs/README.md)** - Sample message package with sample XTCE files
+- **[`dragoman_fsw_sim`](dragoman_fsw_sim/README.md)** - Flight software simulators
 - **[`dragoman_yamcs_project`](dragoman_yamcs_project/dragoman_yamcs_project/README.md)** - YAMCS server configuration
 - **[`dragoman_yamcs_ros_bridge`](dragoman_yamcs_ros_bridge/README.md)** - YAMCS-ROS2 bridge
-- **[`dragoman_xtce2msg`](dragoman_xtce2msg/README.md)** - XTCE to ROS2 message converter
-- **[`dragoman_generated_msgs`](dragoman_generated_msgs/README.md)** - Auto-generated ROS2 messages from XTCE
-- **[`dragoman_ground_example`](dragoman_ground_example/README.md)** - Ground station visualization (ground-side)
+- **[`dragoman_ground_example`](dragoman_ground_example/README.md)** - Ground station visualization
 
-## Quick Start
-
-### Preparation (one-time setup)
-
-1. Generate XTCE files
-   ```bash
-   ros2 run dragoman_sample_xtce generate_xtces.sh
-   colcon build --packages-select dragoman_sample_xtce
-   ```
-
-2. Generate and build ROS messages from XTCE
-   ```bash
-   ros2 run dragoman_xtce2msg generate_msgs.sh
-   colcon build --packages-select dragoman_generated_msgs
-   ```
-
-## Quick Start Demo
+## Demo
 
 ### 1. Start YAMCS Server
 ```bash

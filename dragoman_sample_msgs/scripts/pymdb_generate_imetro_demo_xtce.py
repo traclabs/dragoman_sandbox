@@ -9,7 +9,7 @@ Commands: arm_joint_goal (float[6]), rail_joint_goal (float), lift_joint_goal (f
 import sys
 import yamcs.pymdb as yp
 
-from dragoman_sample_xtce.cfs_msg_hdr import (
+from cfs_msg_hdr import (
     add_cfs_command_header,
     add_cfs_telemetry_header
 )

@@ -9,7 +9,7 @@ for the Curiosity rover.
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from dragoman_generated_msgs.msg import CuriosityTelemetryPacket
+from dragoman_sample_msgs.msg import CuriosityTelemetryPacket
 
 
 class CuriosityJointStatePublisher(Node):

@@ -11,7 +11,7 @@ set(DEPS
   rclcpp
   rclpy
   geometry_msgs
-  dragoman_generated_msgs
+  dragoman_sample_msgs
   sensor_msgs
 )
 
