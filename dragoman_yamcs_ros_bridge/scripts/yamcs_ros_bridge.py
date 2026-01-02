@@ -597,10 +597,10 @@ class YamcsRosBridge(Node):
             raise
 
         # Log summary of created bridges
-        self.get_logger().info(f'YAMCS-ROS Bridge initialized with {len(self.bridges)} bridge(s):')
+        self.get_logger().debug(f'YAMCS-ROS Bridge initialized with {len(self.bridges)} bridge(s):')
         for bridge in self.bridges:
             config = bridge['config']
-            self.get_logger().info(f"  • {config['name']}: {config['ros_topic']}")
+            self.get_logger().debug(f"  • {config['name']}: {config['ros_topic']}")
 
     def load_config(self, config_file: str) -> Dict[str, Any]:
         """
@@ -675,7 +675,7 @@ class YamcsRosBridge(Node):
 
         for attempt in range(max_retries):
             try:
-                self.get_logger().info(
+                self.get_logger().debug(
                     f'Connecting to YAMCS at {yamcs_config["url"]} '
                     f'(attempt {attempt + 1}/{max_retries})...'
                 )
@@ -686,7 +686,7 @@ class YamcsRosBridge(Node):
                     yamcs_config['processor']
                 )
 
-                self.get_logger().info(
+                self.get_logger().debug(
                     f'Successfully connected to YAMCS instance: {yamcs_config["instance"]}, '
                     f'processor: {yamcs_config["processor"]}'
                 )
@@ -724,7 +724,7 @@ class YamcsRosBridge(Node):
                 try:
                     bridge = self.create_bridge(bridge_config)
                     self.bridges.append(bridge)
-                    self.get_logger().info(
+                    self.get_logger().debug(
                         f'Created bridge "{bridge_name}": '
                         f'{bridge_config["yamcs_packet_name"]} → {bridge_config["ros_topic"]}'
                     )
@@ -767,7 +767,7 @@ class YamcsRosBridge(Node):
         if 'name' not in config:
             config['name'] = f"{msg_class}_bridge"
 
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Creating packet subscription bridge for {config['ros_message_type']} "
             f"(packet: '{packet_name}')"
         )
@@ -986,14 +986,12 @@ class YamcsRosBridge(Node):
 
     def destroy_node(self) -> None:
         """Clean up resources."""
-        self.get_logger().info('Shutting down YAMCS-ROS Bridge...')
-
         # Cancel all YAMCS subscriptions
         for bridge in self.bridges:
             try:
                 bridge['subscription'].cancel()
-            except Exception as e:
-                self.get_logger().error(f'Error canceling subscription: {e}')
+            except Exception:
+                pass  # Silently ignore errors during shutdown
 
         super().destroy_node()
 
@@ -1035,16 +1033,25 @@ def main(args=None):
         rclpy.spin(node)
 
     except KeyboardInterrupt:
-        print('\nShutdown requested by user')
+        pass  # Silently handle Ctrl+C
     except Exception as e:
         print(f'Error: {e}')
         traceback.print_exc()
         return 1
     finally:
+        # Clean up node first
         if node is not None:
-            node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+            try:
+                node.destroy_node()
+            except Exception:
+                pass  # Ignore errors during shutdown
+
+        # Then shutdown rclpy if still active
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass  # Ignore errors during shutdown
 
     return 0
 
