@@ -226,7 +226,6 @@ The first 6 bytes of a Space Packet are known as the
       <MetaCommand name="arm_joint_state_goal" abstract="false" shortDescription="Send an arm js: [arm_01, arm_02, arm_03, arm_04, arm_tools]">
         <BaseMetaCommand metaCommandRef="CuriosityPacket">
           <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="0"/>
             <ArgumentAssignment argumentName="command_id" argumentValue="1"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>
@@ -302,7 +301,6 @@ The first 6 bytes of a Space Packet are known as the
       <MetaCommand name="mast_joint_state_goal" abstract="false" shortDescription="Send a mast js: [mast_p, mast_02, mast_cameras]">
         <BaseMetaCommand metaCommandRef="CuriosityPacket">
           <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="0"/>
             <ArgumentAssignment argumentName="command_id" argumentValue="2"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>
@@ -325,7 +323,6 @@ The first 6 bytes of a Space Packet are known as the
       <MetaCommand name="send_canned_pose" abstract="false" shortDescription="Send a canned pose">
         <BaseMetaCommand metaCommandRef="CuriosityPacket">
           <ArgumentAssignmentList>
-            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="0"/>
             <ArgumentAssignment argumentName="command_id" argumentValue="0"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>

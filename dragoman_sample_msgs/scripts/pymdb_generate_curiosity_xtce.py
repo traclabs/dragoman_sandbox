@@ -71,7 +71,6 @@ def generate_xtce_curiosity(filename):
     name="send_canned_pose",
     short_description="Send a canned pose",
     assignments={
-      ccsds_header.tc_apid.name: 0,
       command_id.name: 0
     },
     arguments=[
@@ -99,7 +98,6 @@ def generate_xtce_curiosity(filename):
     name="arm_joint_state_goal",
     short_description="Send an arm js: [arm_01, arm_02, arm_03, arm_04, arm_tools]",
     assignments={
-      ccsds_header.tc_apid.name: 0,
       command_id.name: 1
     },
     arguments=[
@@ -126,7 +124,6 @@ def generate_xtce_curiosity(filename):
     name="mast_joint_state_goal",
     short_description="Send a mast js: [mast_p, mast_02, mast_cameras]",
     assignments={
-      ccsds_header.tc_apid.name: 0,
       command_id.name: 2
     },
     arguments=[
