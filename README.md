@@ -15,7 +15,6 @@ This project demonstrates the integration between YAMCS (Yet Another Mission Con
 - **[`dragoman_xtce2msg`](dragoman_xtce2msg/README.md)** - XTCE to ROS message converter with CMake macro
 - **[`dragoman_sample_msgs`](dragoman_sample_msgs/README.md)** - Sample message package with sample XTCE files
 - **[`dragoman_fsw_sim`](dragoman_fsw_sim/README.md)** - Flight software simulators
-- **[`dragoman_yamcs_project`](dragoman_yamcs_project/dragoman_yamcs_project/README.md)** - YAMCS server configuration
 - **[`dragoman_yamcs_ros_bridge`](dragoman_yamcs_ros_bridge/README.md)** - YAMCS-ROS2 bridge
 - **[`dragoman_ground_example`](dragoman_ground_example/README.md)** - Ground station visualization
 
@@ -23,7 +22,8 @@ This project demonstrates the integration between YAMCS (Yet Another Mission Con
 
 ### 1. Start YAMCS Server
 ```bash
-ros2 run dragoman_yamcs_project dragoman_yamcs
+# From the dragoman root directory
+./yamcs
 ```
 Open web interface at `http://localhost:8090/`.
 
