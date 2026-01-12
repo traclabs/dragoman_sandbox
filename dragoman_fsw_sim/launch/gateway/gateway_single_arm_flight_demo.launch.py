@@ -98,8 +98,6 @@ def generate_launch_description():
         arguments=["-d", rviz_config_file, "-t", "RViz (Flight Software Simulation)"],
         condition=IfCondition(LaunchConfiguration("rviz"))
     )
-    # Delay RViz start to ensure noVNC is running first
-    delayed_rviz_node = TimerAction(period=3.0, actions=[rviz_node])
 
     # ***********************************************
     # Arm communication with cFS and robot control
@@ -124,7 +122,7 @@ def generate_launch_description():
         big_arm_jsp,
         little_arm_rsp,
         little_arm_jsp,
-        delayed_rviz_node,
+        rviz_node,
         robot_comm_node
     ]
 
