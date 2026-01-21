@@ -1,32 +1,38 @@
 # dragoman_xtce2msg
 
-Converts XTCE (XML Telemetric and Command Exchange) telemetry definitions into ROS 2 message files.
+Converts XTCE (XML Telemetric and Command Exchange) telemetry definitions into compiled ROS 2 message types.
 
-## Usage
+## Quick Start
 
-### Batch Generation
-```bash
-ros2 run dragoman_xtce2msg generate_msgs.sh
+### CMakeLists.txt
+
+```cmake
+find_package(ament_cmake REQUIRED)
+find_package(dragoman_xtce2msg REQUIRED)
+
+xtce_generate_messages(
+  FILES
+    xtce/MySpacecraft.xtce
+)
+
+ament_package()
 ```
 
-**Output Location:** Message files are generated in the `dragoman_generated_msgs` package's `msg/` directory:
-```
-$(ros2 pkg prefix --share dragoman_generated_msgs)/msg/
+### package.xml
+
+**Required dependencies** for packages using `xtce_generate_messages()`:
+
+```xml
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>dragoman_xtce2msg</depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 ```
 
-### Single File Conversion
-```bash
-ros2 run dragoman_xtce2msg xtce2msg <input_xtce_file.xml> <output_directory>
-```
-
-## Features
-
-- Generates separate `.msg` files for each non-abstract XTCE container
-- Resolves XTCE parameter types to ROS 2 primitives
-- Flattens aggregate types into individual fields
-- Handles fixed and variable-length arrays
-- Converts all field names to snake_case (e.g., `MyParameter` → `my_parameter`)
-- Supports CCSDS packet headers
+These dependencies are required for any ROS 2 message package and cannot be inherited from `dragoman_xtce2msg`.
 
 ## Supported XTCE Types
 
@@ -39,8 +45,8 @@ ros2 run dragoman_xtce2msg xtce2msg <input_xtce_file.xml> <output_directory>
 | StringParameterType | string, string[N] |
 | BinaryParameterType | uint8[N], uint8[] |
 | ArrayParameterType | type[N] |
-| AggregateParameterType | Individual fields* |
+| AggregateParameterType | Separate message type |
 | AbsoluteTimeParameterType | builtin_interfaces/Time |
 | RelativeTimeParameterType | builtin_interfaces/Duration |
 
-\* Aggregates (structs) are flattened into individual fields with prefixed names. Example: `StatusData` with members `voltage` and `current` becomes `status_data_voltage` and `status_data_current`.
+\* Aggregates (structs) are separated into individual message types.

@@ -89,7 +89,8 @@ def parse_containers(root):
     """
     Parses the XTCE file to extract container definitions.
     Returns a dictionary mapping container names to their parameter lists.
-    Only non-abstract containers are included.
+    Only non-abstract containers are included, but parameters are inherited
+    from base containers (including abstract ones).
     """
     containers = {}
 
@@ -98,23 +99,63 @@ def parse_containers(root):
     if container_set is None:
         return containers
 
+    # First pass: Build a map of all containers (including abstract ones) for inheritance lookup
+    all_containers = {}
     for container_elem in container_set.findall(Q_SEQUENCE_CONTAINER):
         container_name = container_elem.get('name')
-        is_abstract = container_elem.get('abstract', 'false').lower() == 'true'
+        if container_name:
+            all_containers[container_name] = container_elem
 
-        # Skip abstract containers (like ccsds_space_packet)
-        if is_abstract or not container_name:
-            continue
+    def collect_parameters_recursive(container_elem, visited=None):
+        """
+        Recursively collect parameters from a container and its base containers.
+        Returns a list of parameter names in inheritance order (base first, derived last).
+        """
+        if visited is None:
+            visited = set()
 
-        # Extract parameters from this container
+        container_name = container_elem.get('name')
+
+        # Prevent infinite recursion
+        if container_name in visited:
+            return []
+        visited.add(container_name)
+
         parameters = []
-        entry_list = container_elem.find(Q_ENTRY_LIST)
 
+        # First, collect parameters from base container (if any)
+        base_container_elem = container_elem.find(Q_BASE_CONTAINER)
+        if base_container_elem is not None:
+            base_container_ref = base_container_elem.get('containerRef')
+            if base_container_ref and base_container_ref in all_containers:
+                # Recursively get parameters from base container
+                base_params = collect_parameters_recursive(
+                    all_containers[base_container_ref],
+                    visited
+                )
+                parameters.extend(base_params)
+
+        # Then, add parameters from this container's EntryList
+        entry_list = container_elem.find(Q_ENTRY_LIST)
         if entry_list is not None:
             for param_ref_entry in entry_list.findall(Q_PARAMETER_REF_ENTRY):
                 param_ref = param_ref_entry.get('parameterRef')
                 if param_ref:
                     parameters.append(param_ref)
+
+        return parameters
+
+    # Second pass: Process non-abstract containers and collect their full parameter lists
+    for container_elem in container_set.findall(Q_SEQUENCE_CONTAINER):
+        container_name = container_elem.get('name')
+        is_abstract = container_elem.get('abstract', 'false').lower() == 'true'
+
+        # Skip abstract containers - we only generate messages for concrete containers
+        if is_abstract or not container_name:
+            continue
+
+        # Collect all parameters including inherited ones
+        parameters = collect_parameters_recursive(container_elem)
 
         # Store container info
         containers[container_name] = {

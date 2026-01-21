@@ -1,43 +1,42 @@
 #!/usr/bin/env python3
 """
-Curiosity Joint State Publisher
+Gateway Joint State Publisher
 
-Subscribes to Curiosity telemetry messages and converts them to ROS2 JointState messages
-for the Curiosity rover.
+Subscribes to Gateway telemetry messages and converts them to ROS2 JointState messages
+for the Gateway big arm.
 """
 
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from dragoman_sample_msgs.msg import CuriosityTelemetryPacket
+from dragoman_sample_msgs.msg import GatewayTelemetryPacket
 
 
-class CuriosityJointStatePublisher(Node):
+class GatewayJointStatePublisher(Node):
     """
-    Joint state publisher for Curiosity rover.
+    Joint state publisher for Gateway big arm.
 
-    Subscribes to CuriosityTelemetryPacket messages and converts them to ROS2 JointState messages.
+    Subscribes to GatewayTelemetryPacket messages and converts them to ROS2 JointState messages.
     """
 
     # Joint names in the order they appear in the telemetry packet
     # These names must match the joint names in the URDF
+    # Big arm has 7 revolute joints: big_arm_joint_2 through big_arm_joint_8
     JOINT_NAMES = [
-        "arm_01_joint", "arm_02_joint", "arm_03_joint", "arm_04_joint", "arm_tools_joint",
-        "back_wheel_L_joint", "back_wheel_R_joint", "front_wheel_L_joint", "front_wheel_R_joint",
-        "mast_02_joint", "mast_cameras_joint", "mast_p_joint",
-        "middle_wheel_L_joint", "middle_wheel_R_joint",
-        "suspension_arm_B2_L_joint", "suspension_arm_B2_R_joint",
-        "suspension_arm_B_L_joint", "suspension_arm_B_R_joint",
-        "suspension_arm_F_L_joint", "suspension_arm_F_R_joint",
-        "suspension_steer_B_L_joint", "suspension_steer_B_R_joint",
-        "suspension_steer_F_L_joint", "suspension_steer_F_R_joint"
+        "big_arm_joint_2",
+        "big_arm_joint_3",
+        "big_arm_joint_4",
+        "big_arm_joint_5",
+        "big_arm_joint_6",
+        "big_arm_joint_7",
+        "big_arm_joint_8",
     ]
 
     def __init__(self):
-        super().__init__('curiosity_joint_state_publisher')
+        super().__init__('gateway_joint_state_publisher')
 
         # Declare parameters
-        self.declare_parameter('input_topic', '/yamcs/curiosity')
+        self.declare_parameter('input_topic', '/yamcs/gateway')
 
         # Get parameters
         input_topic = self.get_parameter('input_topic').value
@@ -45,20 +44,20 @@ class CuriosityJointStatePublisher(Node):
         # Create ROS2 publisher
         self.publisher = self.create_publisher(JointState, '/joint_states', 10)
 
-        # Subscribe to Curiosity telemetry topic
+        # Subscribe to Gateway telemetry topic
         self.subscription = self.create_subscription(
-            CuriosityTelemetryPacket,
+            GatewayTelemetryPacket,
             input_topic,
             self.telemetry_callback,
             10
         )
 
-        self.get_logger().info(f'Curiosity Joint State Publisher initialized')
+        self.get_logger().info(f'Gateway Joint State Publisher initialized')
         self.get_logger().info(f'Subscribing to: {input_topic}')
         self.get_logger().info(f'Publishing to: /joint_states')
 
     def telemetry_callback(self, msg):
-        """Convert CuriosityTelemetryPacket to JointState message and publish."""
+        """Convert GatewayTelemetryPacket to JointState message and publish."""
         joint_state_msg = JointState()
 
         # Set timestamp
@@ -76,7 +75,7 @@ class CuriosityJointStatePublisher(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = CuriosityJointStatePublisher()
+    node = GatewayJointStatePublisher()
 
     try:
         rclpy.spin(node)

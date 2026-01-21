@@ -9,7 +9,7 @@ for the iMetro/CLR robot.
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from dragoman_generated_msgs.msg import IMetroTelemetryPacket
+from dragoman_sample_msgs.msg import IMetroTelemetryPacket
 
 
 class IMetroJointStatePublisher(Node):
@@ -83,8 +83,15 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        try:
+            node.destroy_node()
+        except Exception:
+            pass
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
 
 
 if __name__ == '__main__':

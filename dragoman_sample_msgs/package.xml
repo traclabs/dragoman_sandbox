@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dragoman_sample_msgs</name>
+  <version>0.0.0</version>
+  <description>Package demonstrating usage of dragoman_xtce2msg to generate ROS messages from sample XTCE files</description>
+  <maintainer email="robotics@traclabs.com">TRACLabs Robotics</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>dragoman_xtce2msg</depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -10,45 +10,22 @@ This project demonstrates the integration between YAMCS (Yet Another Mission Con
 - YAMCS-ROS2 bridge for telemetry/command handling
 - Ground station visualization with RViz
 
-## Package Organization
+## Packages
 
-- **[`dragoman_sample_xtce`](dragoman_sample_xtce/README.md)** - XTCE file generation scripts
-- **[`dragoman_fsw_sim`](dragoman_fsw_sim/README.md)** - Flight software simulators (spacecraft-side)
-- **[`dragoman_yamcs_project`](dragoman_yamcs_project/dragoman_yamcs_project/README.md)** - YAMCS server configuration
+- **[`dragoman_xtce2msg`](dragoman_xtce2msg/README.md)** - XTCE to ROS message converter with CMake macro
+- **[`dragoman_sample_msgs`](dragoman_sample_msgs/README.md)** - Sample message package with sample XTCE files
+- **[`dragoman_fsw_sim`](dragoman_fsw_sim/README.md)** - Flight software simulators
 - **[`dragoman_yamcs_ros_bridge`](dragoman_yamcs_ros_bridge/README.md)** - YAMCS-ROS2 bridge
-- **[`dragoman_xtce2msg`](dragoman_xtce2msg/README.md)** - XTCE to ROS2 message converter
-- **[`dragoman_generated_msgs`](dragoman_generated_msgs/README.md)** - Auto-generated ROS2 messages from XTCE
-- **[`dragoman_ground_example`](dragoman_ground_example/README.md)** - Ground station visualization (ground-side)
+- **[`dragoman_ground_example`](dragoman_ground_example/README.md)** - Ground station visualization
 
-## Quick Start
-
-### Preparation (one-time setup)
-
-1. Generate XTCE files
-   ```bash
-   ros2 run dragoman_sample_xtce generate_xtces.sh
-   colcon build --packages-select dragoman_sample_xtce
-   ```
-
-2. Generate ROS messages from XTCE
-   ```bash
-   ros2 run dragoman_xtce2msg generate_msgs.sh
-   ```
-
-3. Build generated messages
-   ```bash
-   colcon build --packages-select dragoman_generated_msgs
-   ```
-
-## Quick Start Demo
+## Demo
 
 ### 1. Start YAMCS Server
 ```bash
-ros2 run dragoman_yamcs_project dragoman_yamcs
+# From the dragoman root directory
+./yamcs
 ```
 Open web interface at `http://localhost:8090/`.
-
-**Note:** Before starting YAMCS, ensure the appropriate XTCE file is uncommented in [`yamcs.dragoman.yaml`](dragoman_yamcs_project/src/main/yamcs/etc/yamcs.dragoman.yaml:38) (lines 38-50) to match your chosen demo.
 
 ### 2. Launch Spacecraft-Side Simulation
 Choose one:
@@ -75,9 +52,6 @@ ros2 launch dragoman_fsw_sim imetro_robot_simple_demo.launch.py
 
 # Curiosity rover demo (Gazebo simulation)
 ros2 launch dragoman_fsw_sim curiosity_simulation.launch.py
-
-# Gateway demo
-ros2 launch dragoman_fsw_sim gateway_single_arm_flight_demo.launch.py
 ```
 
 ### 3. Launch Ground-Side Visualization (Optional)

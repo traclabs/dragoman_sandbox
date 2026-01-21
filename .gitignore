@@ -47,7 +47,3 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
-
-# Dragoman
-dragoman_sample_xtce/xtce/*.xtce
-dragoman_generated_msgs/msg/*.msg
