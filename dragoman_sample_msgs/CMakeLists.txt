@@ -16,6 +16,7 @@ xtce_generate_messages(
     xtce/Gateway.xtce
     xtce/IMetro.xtce
     xtce/MultiPacket.xtce
+    xtce/MobileServicingSystem.xtce
 )
 
 # Install XTCE files for use in YAMCS

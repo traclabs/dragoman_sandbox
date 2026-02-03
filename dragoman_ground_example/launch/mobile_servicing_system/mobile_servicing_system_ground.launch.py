@@ -25,12 +25,11 @@ def generate_launch_description():
 
     # Get package directories
     dragoman_ground_example_dir = get_package_share_directory("dragoman_ground_example")
-    dragoman_yamcs_ros_bridge_dir = get_package_share_directory("dragoman_yamcs_ros_bridge")
 
-    # Default bridge configuration file
-    default_bridge_config = os.path.join(
-        dragoman_yamcs_ros_bridge_dir,
-        "config",
+    # Bridge configuration file
+    mss_bridge_config = os.path.join(
+        dragoman_ground_example_dir,
+        "config", "mobile_servicing_system",
         "yamcs_bridge_params.yaml"
     )
 
@@ -51,7 +50,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "bridge_config",
-            default_value=default_bridge_config,
+            default_value=mss_bridge_config,
             description="Path to YAMCS bridge configuration file"
         ),
     ]
@@ -106,7 +105,7 @@ def generate_launch_description():
         + [
             robot,
             yamcs_ros_bridge,
-            #joint_state_publisher,
+            joint_state_publisher,
             rviz_node,
         ]
     )

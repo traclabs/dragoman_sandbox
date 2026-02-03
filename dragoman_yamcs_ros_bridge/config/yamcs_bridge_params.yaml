@@ -34,4 +34,4 @@ bridges:
   # Gateway telemetry packet
   - ros_message_type: "dragoman_sample_msgs/msg/GatewayTelemetryPacket"
     ros_topic: "/yamcs/gateway"
-    yamcs_packet_name: "/Gateway/GatewayTelemetryPacket"
+    yamcs_packet_name: "/Gateway/GatewayTelemetryPacket"    

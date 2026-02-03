@@ -26,6 +26,10 @@ echo "→ Generating Gateway.xtce..."
 ${SCRIPT_DIR}/pymdb_generate_gateway_demo_xtce.py ${OUTPUT_DIR}/Gateway.xtce
 echo ""
 
+echo "→ Generating MobileServicingSystem.xtce..."
+${SCRIPT_DIR}/pymdb_generate_mobile_servicing_system_demo_xtce.py ${OUTPUT_DIR}/MobileServicingSystem.xtce
+echo ""
+
 echo "→ Generating AllTypes.xtce..."
 ${SCRIPT_DIR}/pymdb_generate_all_types.py ${OUTPUT_DIR}/AllTypes.xtce
 echo ""

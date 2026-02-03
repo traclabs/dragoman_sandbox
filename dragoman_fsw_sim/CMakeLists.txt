@@ -12,6 +12,7 @@ set(DEPS
   rclpy
   geometry_msgs
   sensor_msgs
+  trajectory_msgs
   tf2
   tf2_kdl
   trac_ik_lib
@@ -34,6 +35,13 @@ add_executable(arm_comm_udp_node
 )
 ament_target_dependencies(arm_comm_udp_node ${DEPS} )
 
+add_executable(mobile_servicing_system_comm_udp_node 
+  src/mobile_servicing_system_comm_udp_node.cpp
+  src/mobile_servicing_system_comm_udp.cpp
+  src/serialize_mobile_servicing_system_manual.cpp
+)
+ament_target_dependencies(mobile_servicing_system_comm_udp_node ${DEPS} )
+
 
 
 ament_export_dependencies(
@@ -46,6 +54,7 @@ ament_export_dependencies(
 
 install(TARGETS
   arm_comm_udp_node
+  mobile_servicing_system_comm_udp_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

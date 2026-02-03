@@ -2,41 +2,44 @@
 """
 Mobile Servicing System Joint State Publisher
 
-Subscribes to Gateway telemetry messages and converts them to ROS2 JointState messages
-for the Gateway big arm.
+Subscribes to MobileServicingSystem telemetry messages and converts them to ROS2 JointState messages
+for the MobileServicingSystem
 """
 
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from dragoman_sample_msgs.msg import GatewayTelemetryPacket
+from dragoman_sample_msgs.msg import MobileServicingSystemTelemetryPacket
 
 
-class GatewayJointStatePublisher(Node):
+class MobileServicingSystemJointStatePublisher(Node):
     """
-    Joint state publisher for Gateway big arm.
+    Joint state publisher for MobileServicingSystem big arm.
 
-    Subscribes to GatewayTelemetryPacket messages and converts them to ROS2 JointState messages.
+    Subscribes to MobileServicingSystemTelemetryPacket messages and converts them to ROS2 JointState messages.
     """
 
     # Joint names in the order they appear in the telemetry packet
     # These names must match the joint names in the URDF
-    # Big arm has 7 revolute joints: big_arm_joint_2 through big_arm_joint_8
     JOINT_NAMES = [
-        "big_arm_joint_2",
-        "big_arm_joint_3",
-        "big_arm_joint_4",
-        "big_arm_joint_5",
-        "big_arm_joint_6",
-        "big_arm_joint_7",
-        "big_arm_joint_8",
+    "joint_canadarm2_1", "joint_canadarm2_2", "joint_canadarm2_3", "joint_canadarm2_4", "joint_canadarm2_5", "joint_canadarm2_6", "joint_canadarm2_7",
+    "joint_dextre_arm_1_elbow_pitch", "joint_dextre_arm_1_shoulder_pitch", "joint_dextre_arm_1_shoulder_roll",
+    "joint_dextre_arm_1_shoulder_yaw", "joint_dextre_arm_1_wrist_pitch_yaw", "joint_dextre_arm_1_wrist_roll",
+    "joint_dextre_arm_2_elbow_pitch", "joint_dextre_arm_2_shoulder_pitch", "joint_dextre_arm_2_shoulder_roll",
+    "joint_dextre_arm_2_shoulder_yaw", "joint_dextre_arm_2_wrist_pitch_yaw", "joint_dextre_arm_2_wrist_roll",
+    "joint_dextre_body",
+    "joint_mbs",
+    "joint_port_bga_1", "joint_port_bga_2", "joint_port_bga_3", "joint_port_bga_4",
+    "joint_port_sarj",
+    "joint_starboard_bga_1", "joint_starboard_bga_2", "joint_starboard_bga_3", "joint_starboard_bga_4",
+    "joint_starboard_sarj"
     ]
 
     def __init__(self):
-        super().__init__('gateway_joint_state_publisher')
+        super().__init__('mobile_servicing_system_joint_state_publisher')
 
         # Declare parameters
-        self.declare_parameter('input_topic', '/yamcs/gateway')
+        self.declare_parameter('input_topic', '/yamcs/mobile_servicing_system')
 
         # Get parameters
         input_topic = self.get_parameter('input_topic').value
@@ -44,20 +47,20 @@ class GatewayJointStatePublisher(Node):
         # Create ROS2 publisher
         self.publisher = self.create_publisher(JointState, '/joint_states', 10)
 
-        # Subscribe to Gateway telemetry topic
+        # Subscribe to Mobile Servicing System telemetry topic
         self.subscription = self.create_subscription(
-            GatewayTelemetryPacket,
+            MobileServicingSystemTelemetryPacket,
             input_topic,
             self.telemetry_callback,
             10
         )
 
-        self.get_logger().info(f'Gateway Joint State Publisher initialized')
+        self.get_logger().info(f'Mobile Servicing System Joint State Publisher initialized')
         self.get_logger().info(f'Subscribing to: {input_topic}')
         self.get_logger().info(f'Publishing to: /joint_states')
 
     def telemetry_callback(self, msg):
-        """Convert GatewayTelemetryPacket to JointState message and publish."""
+        """Convert MobileServicingSystemTelemetryPacket to JointState message and publish."""
         joint_state_msg = JointState()
 
         # Set timestamp
@@ -75,7 +78,7 @@ class GatewayJointStatePublisher(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = GatewayJointStatePublisher()
+    node = MobileServicingSystemJointStatePublisher()
 
     try:
         rclpy.spin(node)
