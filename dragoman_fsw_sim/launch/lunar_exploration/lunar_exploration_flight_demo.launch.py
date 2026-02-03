@@ -4,25 +4,38 @@ from launch.substitutions import Command, FindExecutable, LaunchConfiguration, P
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition, UnlessCondition
+import os
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("dragoman_fsw_sim"), "rviz", "lunar_exploration_flight_demo.rviz"]
-    )
+    dragoman_fsw_sim_dir = get_package_share_directory("dragoman_fsw_sim")
+    rviz_config_file = os.path.join(dragoman_fsw_sim_dir, "rviz", "lunar_exploration_flight_demo.rviz")
+
+    world_models_path = get_package_share_directory("lunar_terrain_gz_worlds") # 'lunar_pole_exploration_rover_gazebo'
+    world_terrain = os.path.join(world_models_path, "worlds/dem_moon.sdf") # 'worlds/lunar_pole.world'
 
     launch_args = [
         DeclareLaunchArgument("rviz", default_value="True"),
         DeclareLaunchArgument("cfs_ip", default_value="127.0.0.1"),
-        DeclareLaunchArgument("robot_ip", default_value="127.0.0.1")
+        DeclareLaunchArgument("robot_ip", default_value="127.0.0.1"),
+        DeclareLaunchArgument("world", default_value=world_terrain),
+        DeclareLaunchArgument("x", default_value="0.0"),
+        DeclareLaunchArgument("y", default_value="0.0"),
+        DeclareLaunchArgument("z", default_value="550.5"),
+        DeclareLaunchArgument("yaw", default_value="3.1416")
     ]
-
 
     robot = GroupAction([
       IncludeLaunchDescription(
         PathJoinSubstitution([FindPackageShare("lunar_pole_exploration_rover_gazebo"), "launch", "lunar_pole_exploration_rover_gazebo.launch.py"]),
         launch_arguments={
           "rviz": "False",
+          "x": LaunchConfiguration("x"),
+          "y": LaunchConfiguration("y"),
+          "z": LaunchConfiguration("z"),
+          "yaw": LaunchConfiguration("yaw"),
+          "world": LaunchConfiguration("world")
         }.items(),
       )
     ])
