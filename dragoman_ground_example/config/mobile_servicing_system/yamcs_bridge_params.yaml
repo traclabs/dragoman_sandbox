@@ -1,0 +1,13 @@
+# YAMCS-ROS Bridge Configuration
+
+yamcs:
+  url: "localhost:8090"
+  instance: "dragoman"
+  processor: "realtime"
+
+bridges:
+
+  # Mobile Servicing System telemetry packet
+  - ros_message_type: "dragoman_sample_msgs/msg/MobileServicingSystemTelemetryPacket"
+    ros_topic: "/yamcs/mobile_servicing_system"
+    yamcs_packet_name: "/MobileServicingSystem/MobileServicingSystemTelemetryPacket"

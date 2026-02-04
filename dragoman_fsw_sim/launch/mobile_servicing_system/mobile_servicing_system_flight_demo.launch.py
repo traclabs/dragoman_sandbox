@@ -12,7 +12,7 @@ def generate_launch_description():
     )
 
     launch_args = [
-        DeclareLaunchArgument("rviz", default_value="True"),
+        DeclareLaunchArgument("rviz", default_value="False"),
         DeclareLaunchArgument("cfs_ip", default_value="127.0.0.1"),
         DeclareLaunchArgument("robot_ip", default_value="127.0.0.1")
     ]
@@ -37,25 +37,25 @@ def generate_launch_description():
     )
 
     # ***********************************************
-    # Arm communication with cFS and robot control
+    # MSS communication with cFS and robot control
     # ***********************************************
-    #robot_comm_node = Node(
-    #    package="dragoman_fsw_sim",
-    #    executable="arm_comm_udp_node",
-    #    name="arm_comm_udp_node",
-    #    parameters=[
-    #     {'cfs_port': 8080},
-    #     {'robot_port': 8585},
-    #     {'cfs_ip': LaunchConfiguration("cfs_ip")},
-    #     {'robot_ip': LaunchConfiguration("robot_ip")},
-    #     {"robot_description": big_arm_xacro},
-    #    ],
-    #    output="screen",
-    #)
+    robot_comm_node = Node(
+        package="dragoman_fsw_sim",
+        executable="mobile_servicing_system_comm_udp_node",
+        name="mobile_servicing_system_comm_udp_node",
+        parameters=[
+         {'cfs_port': 8080},
+         {'robot_port': 8585},
+         {'cfs_ip': LaunchConfiguration("cfs_ip")},
+         {'robot_ip': LaunchConfiguration("robot_ip")},
+         #{"robot_description": big_arm_xacro},
+        ],
+        output="screen",
+    )
 
     return LaunchDescription(
       launch_args + 
-      [robot, rviz_node]
+      [robot, robot_comm_node, rviz_node]
     )
 
 
