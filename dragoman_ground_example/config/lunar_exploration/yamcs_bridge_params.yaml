@@ -1,0 +1,13 @@
+# YAMCS-ROS Bridge Configuration
+
+yamcs:
+  url: "localhost:8090"
+  instance: "dragoman"
+  processor: "realtime"
+
+bridges:
+
+  # Lunar Exploration telemetry packet
+  - ros_message_type: "dragoman_sample_msgs/msg/LunarExplorationTelemetryPacket"
+    ros_topic: "/yamcs/lunar_exploration"
+    yamcs_packet_name: "/LunarExploration/LunarExplorationTelemetryPacket"

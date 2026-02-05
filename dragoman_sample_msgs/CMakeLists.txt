@@ -17,6 +17,7 @@ xtce_generate_messages(
     xtce/IMetro.xtce
     xtce/MultiPacket.xtce
     xtce/MobileServicingSystem.xtce
+    xtce/LunarExploration.xtce
 )
 
 # Install XTCE files for use in YAMCS
