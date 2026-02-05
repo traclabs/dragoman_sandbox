@@ -99,11 +99,24 @@ def generate_aggregate_message(space_system_name, aggregate_type_name, type_defi
         # Check if this field is itself an aggregate that needs its own message
         field_ros_type = agg_field['ros_type']
 
-        # If the field type is an aggregate, generate its message first
+        # If the field type is an aggregate, generate its message first and use it as the field type.
         if field_ros_type == '__AGGREGATE__':
-            # This shouldn't happen as resolve_aggregate_type should have resolved it
-            # but handle it just in case
-            continue
+            nested_type_ref = agg_field.get('type_ref')
+            if not nested_type_ref:
+                # Can't resolve without the XTCE typeRef
+                continue
+
+            nested_msg_type = generate_aggregate_message(
+                space_system_name,
+                nested_type_ref,
+                type_definitions,
+                output_dir,
+                xtce_file_path,
+                generated_aggregates,
+            )
+            if not nested_msg_type:
+                continue
+            field_ros_type = nested_msg_type
 
         ros_field_name = to_ros_field_name(agg_field['name'])
         field_entry = {

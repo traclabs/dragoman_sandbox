@@ -69,12 +69,54 @@ use a different convention where 0=core and 1=payload.
               <FixedValue>0</FixedValue>
             </StartingIndex>
             <EndingIndex>
-              <FixedValue>23</FixedValue>
+              <FixedValue>16</FixedValue>
             </EndingIndex>
           </Dimension>
         </DimensionList>
       </ArrayParameterType>
       <FloatParameterType name="joint_state__el" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <AggregateParameterType name="pose">
+        <MemberList>
+          <Member name="position" typeRef="pose__position"/>
+          <Member name="orientation" typeRef="pose__orientation"/>
+        </MemberList>
+      </AggregateParameterType>
+      <AggregateParameterType name="pose__position">
+        <MemberList>
+          <Member name="x" typeRef="pose__position__x"/>
+          <Member name="y" typeRef="pose__position__y"/>
+          <Member name="z" typeRef="pose__position__z"/>
+        </MemberList>
+      </AggregateParameterType>
+      <FloatParameterType name="pose__position__x" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="pose__position__y" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="pose__position__z" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <AggregateParameterType name="pose__orientation">
+        <MemberList>
+          <Member name="x" typeRef="pose__orientation__x"/>
+          <Member name="y" typeRef="pose__orientation__y"/>
+          <Member name="z" typeRef="pose__orientation__z"/>
+          <Member name="w" typeRef="pose__orientation__w"/>
+        </MemberList>
+      </AggregateParameterType>
+      <FloatParameterType name="pose__orientation__x" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="pose__orientation__y" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="pose__orientation__z" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="pose__orientation__w" sizeInBits="32">
         <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
       </FloatParameterType>
       <AggregateParameterType name="scr_header">
@@ -124,7 +166,10 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="ccsds_packet_sequence" parameterTypeRef="ccsds_packet_sequence" shortDescription="Second word of the primary CCSDS header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
-      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="Joints [17] + XYZ/QXYZW">
+      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="Joint state (17 floats)">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="pose" parameterTypeRef="pose" shortDescription="Odometry pose (position + orientation quaternion)">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
       <Parameter name="scr_header" parameterTypeRef="scr_header">
@@ -145,6 +190,11 @@ use a different convention where 0=core and 1=payload.
       <SequenceContainer name="LunarExplorationTelemetryPacket" abstract="false">
         <EntryList>
           <ParameterRefEntry parameterRef="joint_state">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="pose">
             <LocationInContainerInBits referenceLocation="previousEntry">
               <FixedValue>0</FixedValue>
             </LocationInContainerInBits>
