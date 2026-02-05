@@ -58,23 +58,23 @@ def generate_launch_description():
     # ***********************************************
     # Arm communication with cFS and robot control
     # ***********************************************
-    #robot_comm_node = Node(
-    #    package="dragoman_fsw_sim",
-    #    executable="arm_comm_udp_node",
-    #    name="arm_comm_udp_node",
-    #    parameters=[
-    #     {'cfs_port': 8080},
-    #     {'robot_port': 8585},
-    #     {'cfs_ip': LaunchConfiguration("cfs_ip")},
-    #     {'robot_ip': LaunchConfiguration("robot_ip")},
+    robot_comm_node = Node(
+        package="dragoman_fsw_sim",
+        executable="lunar_exploration_comm_udp_node",
+        name="lunar_exploration_comm_udp_node",
+        parameters=[
+         {'cfs_port': 8080},
+         {'robot_port': 8585},
+         {'cfs_ip': LaunchConfiguration("cfs_ip")},
+         {'robot_ip': LaunchConfiguration("robot_ip")},
     #     {"robot_description": big_arm_xacro},
-    #    ],
-    #    output="screen",
-    #)
+        ],
+        output="screen",
+    )
 
     return LaunchDescription(
       launch_args + 
-      [robot, odom_node, rviz_node]
+      [robot, odom_node, robot_comm_node, rviz_node]
     )
 
 
