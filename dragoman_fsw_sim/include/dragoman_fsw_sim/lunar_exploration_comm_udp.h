@@ -8,8 +8,12 @@
 #include <netinet/in.h>
 
 #include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 
 #include <dragoman_fsw_sim/serialize_lunar_exploration_manual.h>
 #include <trac_ik/trac_ik.hpp>
@@ -30,10 +34,12 @@ protected:
   
   void js_cb(const sensor_msgs::msg::JointState::SharedPtr _msg);
   bool initDefaults();
-  
+  bool getTransform(const std::string &_source, 
+                    const std::string &_target, 
+                    geometry_msgs::msg::Pose &_pose);
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_js_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_camera_;
-  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_mbs_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel_;
     
   rclcpp::TimerBase::SharedPtr timer_tlm_;
   rclcpp::TimerBase::SharedPtr timer_cmd_; 
@@ -64,5 +70,10 @@ protected:
   // Joints
   std::vector<std::string> camera_joints_;
   int duration_;
+
+  // TF
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;  
+  geometry_msgs::msg::Twist twist_;
 
 };

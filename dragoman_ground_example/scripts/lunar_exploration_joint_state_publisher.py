@@ -11,32 +11,45 @@ from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from dragoman_sample_msgs.msg import LunarExplorationTelemetryPacket
 
+from geometry_msgs.msg import TransformStamped
+from tf2_ros import TransformBroadcaster
+import numpy as np
 
-class GatewayJointStatePublisher(Node):
+class LunarExplorationJointStatePublisher(Node):
     """
-    Joint state publisher for Gateway big arm.
+    Joint state publisher for Lunar Exploration demo.
 
-    Subscribes to GatewayTelemetryPacket messages and converts them to ROS2 JointState messages.
+    Subscribes to LunarExplorationTelemetryPacket messages and converts them to ROS2 JointState messages + TF
     """
 
     # Joint names in the order they appear in the telemetry packet
     # These names must match the joint names in the URDF
-    # Big arm has 7 revolute joints: big_arm_joint_2 through big_arm_joint_8
+    # 17 JOINTS + xyz/qxyzw
     JOINT_NAMES = [
-        "big_arm_joint_2",
-        "big_arm_joint_3",
-        "big_arm_joint_4",
-        "big_arm_joint_5",
-        "big_arm_joint_6",
-        "big_arm_joint_7",
-        "big_arm_joint_8",
+    "front_left_suspension_joint",
+    "front_left_wheel_axle_joint",
+    "front_left_wheel_joint",
+    "front_right_suspension_joint",
+    "front_right_wheel_axle_joint",
+    "front_right_wheel_joint",
+    "left_solar_panel_joint",
+    "mast_camera_joint",
+    "mast_head_pivot_joint",
+    "rear_left_suspension_joint",
+    "rear_left_wheel_axle_joint",
+    "rear_left_wheel_joint",
+    "rear_right_suspension_joint",
+    "rear_right_wheel_axle_joint",
+    "rear_right_wheel_joint",
+    "rear_solar_panel_joint",
+    "right_solar_panel_joint"
     ]
 
     def __init__(self):
-        super().__init__('gateway_joint_state_publisher')
+        super().__init__('lunar_exploration_joint_state_publisher')
 
         # Declare parameters
-        self.declare_parameter('input_topic', '/yamcs/gateway')
+        self.declare_parameter('input_topic', '/yamcs/lunar_exploration')
 
         # Get parameters
         input_topic = self.get_parameter('input_topic').value
@@ -44,38 +57,72 @@ class GatewayJointStatePublisher(Node):
         # Create ROS2 publisher
         self.publisher = self.create_publisher(JointState, '/joint_states', 10)
 
-        # Subscribe to Gateway telemetry topic
+        # Subscribe to LunarExploration telemetry topic
         self.subscription = self.create_subscription(
-            GatewayTelemetryPacket,
+            LunarExplorationTelemetryPacket,
             input_topic,
             self.telemetry_callback,
             10
         )
-
-        self.get_logger().info(f'Gateway Joint State Publisher initialized')
+ 
+        # Broadcaster
+        self.tf_broadcaster = TransformBroadcaster(self)
+           
+        self.get_logger().info(f'LunarExploration Joint State Publisher initialized')
         self.get_logger().info(f'Subscribing to: {input_topic}')
         self.get_logger().info(f'Publishing to: /joint_states')
 
     def telemetry_callback(self, msg):
-        """Convert GatewayTelemetryPacket to JointState message and publish."""
+        """Convert LunarExplorationTelemetryPacket to JointState message and publish."""
         joint_state_msg = JointState()
-
+        self.get_logger().info(f'Gotten telemetry at ground!')
         # Set timestamp
         joint_state_msg.header.stamp = self.get_clock().now().to_msg()
         joint_state_msg.header.frame_id = ''
 
         # Set joint positions and names from telemetry packet
-        joint_state_msg.position = list(msg.joint_state)
+        joint_state_msg.position = list(msg.joint_state[0:17])
         joint_state_msg.name = self.JOINT_NAMES
 
-        # Publish the message
+                                                          
+        # Publish the joint state message
         self.publisher.publish(joint_state_msg)
+        self.get_logger().info(f'Published joint state!')
         self.get_logger().debug(f'Published {len(joint_state_msg.name)} joint states')
+
+        # Publish transform between odom and base_footprint
+        tfx = TransformStamped()
+
+        # Read message content and assign it to
+        # corresponding tf variables
+        tfx.header.stamp = self.get_clock().now().to_msg()
+        tfx.header.frame_id = 'odom'
+        tfx.child_frame_id = 'base_footprint'
+
+        self.get_logger().info(f'Transform x!')
+        tfx.transform.translation.x = msg.joint_state[17].astype(np.float64)
+        self.get_logger().info(f'Transform y!')
+        tfx.transform.translation.y = msg.joint_state[18].astype(np.float64)
+        self.get_logger().info(f'Transform z!')
+
+        tfx.transform.translation.z = msg.joint_state[19].astype(np.float64)
+        self.get_logger().info(f'Transform qx!')
+
+        tfx.transform.rotation.x = msg.joint_state[20].astype(np.float64)
+        tfx.transform.rotation.y = msg.joint_state[21].astype(np.float64)
+        tfx.transform.rotation.z = msg.joint_state[22].astype(np.float64)
+        self.get_logger().info(f'Transform qw!')
+
+        tfx.transform.rotation.w = msg.joint_state[23].astype(np.float64)
+        self.get_logger().info(f'Transform send!!!')
+
+        # Send the transformation
+        self.tf_broadcaster.sendTransform(tfx)
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = GatewayJointStatePublisher()
+    node = LunarExplorationJointStatePublisher()
 
     try:
         rclpy.spin(node)

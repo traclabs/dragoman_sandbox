@@ -127,7 +127,7 @@ def generate_xtce_lunar_exploration_demo(filename):
   camera_joint_command = yp.Command(
      system=spacecraft,
      name="CameraJointPacket",
-     short_description="Rotate camera [ mast_camera_joint, mast_head_pivot_joint]",
+     short_description="Rotate camera [ pan [-3.49, 3.49], tilt [-1.30, 1.30]]",
      #abstract=True,
      base=cFS_command,
      assignments={

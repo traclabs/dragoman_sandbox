@@ -12,17 +12,24 @@ def generate_launch_description():
     dragoman_fsw_sim_dir = get_package_share_directory("dragoman_fsw_sim")
     rviz_config_file = os.path.join(dragoman_fsw_sim_dir, "rviz", "lunar_exploration_flight_demo.rviz")
 
-    world_models_path = get_package_share_directory("lunar_terrain_gz_worlds") # 'lunar_pole_exploration_rover_gazebo'
-    world_terrain = os.path.join(world_models_path, "worlds/dem_moon.sdf") # 'worlds/lunar_pole.world'
+    # Lunar Terrain world
+    #world_models_path = get_package_share_directory("lunar_terrain_gz_worlds")
+    #world_terrain = os.path.join(world_models_path, "worlds/dem_moon.sdf")
+    
+    # Regular Lunar Pole Exploration rover world (flatter)
+    world_models_path = get_package_share_directory("lunar_pole_exploration_rover_gazebo")
+    world_terrain = os.path.join(world_models_path, 'worlds/lunar_pole.world')
+
 
     launch_args = [
-        DeclareLaunchArgument("rviz", default_value="True"),
+        DeclareLaunchArgument("rviz", default_value="False"),
         DeclareLaunchArgument("cfs_ip", default_value="127.0.0.1"),
         DeclareLaunchArgument("robot_ip", default_value="127.0.0.1"),
         DeclareLaunchArgument("world", default_value=world_terrain),
+        # xyz: 0 0 0 for flatter world, 0.0, 0.0, 550.5 for Lunar Terrain world
         DeclareLaunchArgument("x", default_value="0.0"),
         DeclareLaunchArgument("y", default_value="0.0"),
-        DeclareLaunchArgument("z", default_value="550.5"),
+        DeclareLaunchArgument("z", default_value="0.0"), #550.5 0.0
         DeclareLaunchArgument("yaw", default_value="3.1416")
     ]
 
@@ -39,6 +46,12 @@ def generate_launch_description():
         }.items(),
       )
     ])
+
+    cmd_vel_node = Node(
+        package="lunar_pole_exploration_rover_demo",
+        executable="move_wheel",
+        output='screen'
+    )
 
     odom_node = Node(
         package="lunar_pole_exploration_rover_demo",
@@ -74,7 +87,11 @@ def generate_launch_description():
 
     return LaunchDescription(
       launch_args + 
-      [robot, odom_node, robot_comm_node, rviz_node]
+      [robot, 
+       cmd_vel_node,
+       odom_node, 
+       robot_comm_node, 
+       rviz_node]
     )
 
 

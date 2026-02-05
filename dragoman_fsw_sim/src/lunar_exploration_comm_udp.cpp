@@ -14,6 +14,8 @@ Node("lunar_exploration_comm_udp")
   this->declare_parameter("cfs_ip", std::string("127.0.0.1"));
   this->declare_parameter("robot_ip", std::string("127.0.0.1"));
 
+  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
    base_link_ = "big_arm_link_1";
    tip_link_ = "big_arm_link_8";
@@ -32,8 +34,8 @@ Node("lunar_exploration_comm_udp")
  */
 bool LunarExplorationCommUdp::initDefaults()
 {
-   camera_joints_ = {"mast_camera_joint", "mast_head_pivot_joint"};   
-   duration_ = 10;
+   camera_joints_ = {"mast_head_pivot_joint", "mast_camera_joint"};   
+   duration_ = 5.0;
    
    return true;
 }
@@ -48,6 +50,7 @@ bool LunarExplorationCommUdp::initRobotComm()
 
   sub_js_ = this->create_subscription<sensor_msgs::msg::JointState>(js_topic, 10, std::bind(&LunarExplorationCommUdp::js_cb, this, _1));
 
+  pub_cmd_vel_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
   pub_camera_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/mast_camera_joint_trajectory_controller/joint_trajectory", 10);
 
   initDefaults();
@@ -105,11 +108,17 @@ void LunarExplorationCommUdp::send_telemetry()
    js = joint_state_;
    mux_.unlock();
 
+   // 
+   geometry_msgs::msg::Pose pose;
+   pose.orientation.w = 1.0;
+   if(!getTransform("odom", "base_footprint", pose))
+     RCLCPP_WARN(this->get_logger(), "Not getting robot pose w.r.t. odom! Returning identity");
+
    // Send it to cFS
    if(js.name.size() == 0)
      return;
 
-   if(!sm_.sendMessage(&js))
+   if(!sm_.sendMessage(&js, pose))
      RCLCPP_ERROR(this->get_logger(), "Error sending message");
 }
 
@@ -123,15 +132,15 @@ void LunarExplorationCommUdp::rcv_command()
 
   if(sm_.receiveMessage(code, val1, val2))
   {
-    RCLCPP_INFO(this->get_logger(), "Received command %d %f %f", code, val1, val2);
+    RCLCPP_INFO(this->get_logger(), "** Received command %d %f %f", code, val1, val2);
 
     // Send service call
     if(code == 1)
     {    
       // Publish motion
-      //traj.points.push_back(point1);
-      //pub_canadarm_->publish(traj);
-      
+      twist_ = geometry_msgs::msg::Twist();
+      twist_.linear.x = val1;
+      twist_.angular.z = val2;      
     } 
     // Camera
     else if(code == 2)
@@ -148,11 +157,10 @@ void LunarExplorationCommUdp::rcv_command()
       pub_camera_->publish(traj);    
     }
     
-    
-    // Do IK magic
-    //double jv = 5.0*M_PI/180.0;
-    //calculateMotion(cmd, jv);
   }
+  
+  // Constantly publishes twist
+  pub_cmd_vel_->publish(twist_);
 }
 
 
@@ -164,5 +172,33 @@ void LunarExplorationCommUdp::js_cb(const sensor_msgs::msg::JointState::SharedPt
   mux_.lock();
  joint_state_ = *_msg;
  mux_.unlock();
+}
+
+/**
+ * @function getTransform
+ */
+bool  LunarExplorationCommUdp::getTransform(const std::string &_source, 
+                                            const std::string &_target, 
+                                            geometry_msgs::msg::Pose &_pose)
+{
+    geometry_msgs::msg::TransformStamped tfs;
+    try
+    {
+      tfs = tf_buffer_->lookupTransform(_source, _target, rclcpp::Time(0),
+                                        rclcpp::Duration(1, 0));
+    }
+    catch (tf2::TransformException& ex)
+    {
+      RCLCPP_ERROR_STREAM(this->get_logger(), "No transform from " << _source << " to " << _target
+                                                       << ".  Error: " << ex.what());
+      return false;
+    }
+
+    _pose.position.x  = tfs.transform.translation.x;
+    _pose.position.y  = tfs.transform.translation.y;
+    _pose.position.z  = tfs.transform.translation.z;
+    _pose.orientation = tfs.transform.rotation;
+
+  return true;
 }
 

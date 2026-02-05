@@ -49,10 +49,10 @@ bool SerializeLunarExplorationManual::initializeComm( const int &_own_port,
 /**
  * @brief Serialize joint state from robot and send back to cFS
  */
-bool SerializeLunarExplorationManual::sendMessage( sensor_msgs::msg::JointState* _js )
+bool SerializeLunarExplorationManual::sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose )
 {
   unsigned char* buf     = 0;
-  size_t         bufSize = serialize(_js, &buf);
+  size_t         bufSize = serialize(_js, _pose, &buf);
 
   int res = sendto(sockfd_, buf, bufSize, 0, (const struct sockaddr *)&other_address_, sizeof(other_address_));
 
@@ -87,7 +87,7 @@ bool SerializeLunarExplorationManual::receiveMessage(uint8_t &_code, float &_val
  * @function serialize
  * @brief Send data back
  */
-size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *_js, uint8_t** _buf)
+size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *_js, geometry_msgs::msg::Pose _pose, uint8_t** _buf)
 {
   if (_js->name.size() == 0 || _js->position.size() == 0)
     return 0;
@@ -114,8 +114,13 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
 */
   // xyz, qxyzw = 17 + 7 = 24  
   float x, y, z, qx, qy, qz, qw;
-  x = 0; y = 0; z = 0; qx = 0; qy = 0; qz = 0; qw = 0;
-
+  x = (float)_pose.position.x;
+  y = (float)_pose.position.y;
+  z = (float)_pose.position.z;
+  qx = (float)_pose.orientation.x;
+  qy = (float)_pose.orientation.y;
+  qz = (float)_pose.orientation.z;
+  qw = (float)_pose.orientation.w;          
 
   if(num_joints != 17) 
   {
