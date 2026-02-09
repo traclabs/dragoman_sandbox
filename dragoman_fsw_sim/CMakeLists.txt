@@ -42,6 +42,12 @@ add_executable(mobile_servicing_system_comm_udp_node
 )
 ament_target_dependencies(mobile_servicing_system_comm_udp_node ${DEPS} )
 
+add_executable(lunar_exploration_comm_udp_node 
+  src/lunar_exploration_comm_udp_node.cpp
+  src/lunar_exploration_comm_udp.cpp
+  src/serialize_lunar_exploration_manual.cpp
+)
+ament_target_dependencies(lunar_exploration_comm_udp_node ${DEPS} )
 
 
 ament_export_dependencies(
@@ -55,6 +61,7 @@ ament_export_dependencies(
 install(TARGETS
   arm_comm_udp_node
   mobile_servicing_system_comm_udp_node
+  lunar_exploration_comm_udp_node  
   DESTINATION lib/${PROJECT_NAME}
 )
 

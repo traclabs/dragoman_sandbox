@@ -30,6 +30,11 @@ echo "→ Generating MobileServicingSystem.xtce..."
 ${SCRIPT_DIR}/pymdb_generate_mobile_servicing_system_demo_xtce.py ${OUTPUT_DIR}/MobileServicingSystem.xtce
 echo ""
 
+echo "→ Generating LunarExploration.xtce..."
+${SCRIPT_DIR}/pymdb_generate_lunar_exploration_demo_xtce.py ${OUTPUT_DIR}/LunarExploration.xtce
+echo ""
+
+
 echo "→ Generating AllTypes.xtce..."
 ${SCRIPT_DIR}/pymdb_generate_all_types.py ${OUTPUT_DIR}/AllTypes.xtce
 echo ""

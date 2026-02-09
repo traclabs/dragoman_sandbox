@@ -21,6 +21,8 @@ from dragoman_sample_msgs.msg import IMetroTelemetryPacket
 - **Curiosity.xtce** → CuriosityTelemetryPacket
 - **AllTypes.xtce** → AllTelemetryPacket
 - **MultiPacket.xtce** → TemperaturePacket, VoltagePacket
+- **MobileServicingSytem.xtce** → MobileServicingSystemPacket
+- **LunarExploration.xtce** → LunarExplorationPacket
 
 ## Updating Messages
 

@@ -1,0 +1,415 @@
+<?xml version="1.0" ?>
+<!--
+This file was generated with Yamcs PyMDB.
+See https://github.com/yamcs/pymdb
+-->
+<SpaceSystem xmlns="http://www.omg.org/spec/XTCE/20180204" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.omg.org/spec/XTCE/20180204 https://www.omg.org/spec/XTCE/20180204/SpaceSystem.xsd" name="LunarExploration">
+  <TelemetryMetaData>
+    <ParameterTypeSet>
+      <AggregateParameterType name="ccsds_packet_id">
+        <MemberList>
+          <Member name="version" typeRef="ccsds_packet_id__version"/>
+          <Member name="type" typeRef="ccsds_packet_id__type">
+            <LongDescription>
+Used to distinguish telemetry (or reporting) packets from
+telecommand (or requesting) packets.
+
+Note that some systems, notably the International Space System,
+use a different convention where 0=core and 1=payload.
+</LongDescription>
+          </Member>
+          <Member name="secondary_header" typeRef="ccsds_packet_id__secondary_header"/>
+          <Member name="apid" typeRef="ccsds_packet_id__apid"/>
+        </MemberList>
+      </AggregateParameterType>
+      <IntegerParameterType name="ccsds_packet_id__version" signed="false" sizeInBits="32">
+        <IntegerDataEncoding sizeInBits="3" encoding="unsigned"/>
+      </IntegerParameterType>
+      <EnumeratedParameterType name="ccsds_packet_id__type">
+        <IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="TM"/>
+          <Enumeration value="1" label="TC"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <BooleanParameterType name="ccsds_packet_id__secondary_header" zeroStringValue="Not Present" oneStringValue="Present">
+        <IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+      </BooleanParameterType>
+      <IntegerParameterType name="ccsds_packet_id__apid" signed="false" sizeInBits="32">
+        <IntegerDataEncoding sizeInBits="11" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
+      </IntegerParameterType>
+      <IntegerParameterType name="ccsds_packet_length" signed="false" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">Octets</Unit>
+        </UnitSet>
+        <IntegerDataEncoding sizeInBits="16" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
+      </IntegerParameterType>
+      <AggregateParameterType name="ccsds_packet_sequence">
+        <MemberList>
+          <Member name="group_flags" typeRef="ccsds_packet_sequence__group_flags"/>
+          <Member name="source_sequence_count" typeRef="ccsds_packet_sequence__source_sequence_count"/>
+        </MemberList>
+      </AggregateParameterType>
+      <EnumeratedParameterType name="ccsds_packet_sequence__group_flags">
+        <IntegerDataEncoding sizeInBits="2" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="Continuation"/>
+          <Enumeration value="1" label="First"/>
+          <Enumeration value="2" label="Last"/>
+          <Enumeration value="3" label="Standalone"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <IntegerParameterType name="ccsds_packet_sequence__source_sequence_count" signed="false" sizeInBits="32">
+        <IntegerDataEncoding sizeInBits="14" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
+      </IntegerParameterType>
+      <ArrayParameterType name="joint_state" arrayTypeRef="joint_state__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>23</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayParameterType>
+      <FloatParameterType name="joint_state__el" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <AggregateParameterType name="scr_header">
+        <MemberList>
+          <Member name="Sec" typeRef="scr_header__Sec"/>
+          <Member name="Spare" typeRef="scr_header__Spare"/>
+        </MemberList>
+      </AggregateParameterType>
+      <ArrayParameterType name="scr_header__Sec" arrayTypeRef="scr_header__Sec__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>5</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayParameterType>
+      <IntegerParameterType name="scr_header__Sec__el" signed="true" sizeInBits="8">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+      </IntegerParameterType>
+      <ArrayParameterType name="scr_header__Spare" arrayTypeRef="scr_header__Spare__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>3</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayParameterType>
+      <IntegerParameterType name="scr_header__Spare__el" signed="true" sizeInBits="8">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+      </IntegerParameterType>
+    </ParameterTypeSet>
+    <ParameterSet>
+      <Parameter name="ccsds_packet_id" parameterTypeRef="ccsds_packet_id" shortDescription="First word of the primary CCSDS header">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="ccsds_packet_length" parameterTypeRef="ccsds_packet_length">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="ccsds_packet_sequence" parameterTypeRef="ccsds_packet_sequence" shortDescription="Second word of the primary CCSDS header">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="Joints [17] + XYZ/QXYZW">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="scr_header" parameterTypeRef="scr_header">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+    </ParameterSet>
+    <ContainerSet>
+      <SequenceContainer name="CfsTelemetryPacket" abstract="true">
+        <EntryList>
+          <ParameterRefEntry parameterRef="scr_header">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+        </EntryList>
+        <BaseContainer containerRef="ccsds_space_packet"/>
+      </SequenceContainer>
+      <SequenceContainer name="LunarExplorationTelemetryPacket" abstract="false">
+        <EntryList>
+          <ParameterRefEntry parameterRef="joint_state">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+        </EntryList>
+        <BaseContainer containerRef="CfsTelemetryPacket">
+          <RestrictionCriteria>
+            <BooleanExpression>
+              <Condition>
+                <ParameterInstanceRef parameterRef="ccsds_packet_id/apid" useCalibratedValue="true"/>
+                <ComparisonOperator>==</ComparisonOperator>
+                <Value>39</Value>
+              </Condition>
+            </BooleanExpression>
+          </RestrictionCriteria>
+        </BaseContainer>
+      </SequenceContainer>
+      <SequenceContainer name="ccsds_space_packet" abstract="true" shortDescription="CCSDS 133.0-B-1 Space Packet">
+        <LongDescription>
+Represents a Space Packet as defined in CCSDS 133.0-B-1
+
+The first 6 bytes of a Space Packet are known as the
+&quot;Primary Header&quot;.
+</LongDescription>
+        <BinaryEncoding>
+          <SizeInBits>
+            <FixedValue>48</FixedValue>
+          </SizeInBits>
+        </BinaryEncoding>
+        <EntryList>
+          <ParameterRefEntry parameterRef="ccsds_packet_id">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="ccsds_packet_sequence">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="ccsds_packet_length">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+        </EntryList>
+      </SequenceContainer>
+    </ContainerSet>
+  </TelemetryMetaData>
+  <CommandMetaData>
+    <ArgumentTypeSet>
+      <ArrayArgumentType name="CameraJointPacket__camera_joint" arrayTypeRef="CameraJointPacket__camera_joint__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>1</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayArgumentType>
+      <FloatArgumentType name="CameraJointPacket__camera_joint__el" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatArgumentType>
+      <AggregateArgumentType name="CfsPacket__scr_header">
+        <MemberList>
+          <Member name="fcn_code" typeRef="CfsPacket__scr_header__fcn_code"/>
+          <Member name="checksum" typeRef="CfsPacket__scr_header__checksum"/>
+        </MemberList>
+      </AggregateArgumentType>
+      <IntegerArgumentType name="CfsPacket__scr_header__fcn_code" signed="false" sizeInBits="8">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+      </IntegerArgumentType>
+      <IntegerArgumentType name="CfsPacket__scr_header__checksum" signed="false" sizeInBits="8">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+      </IntegerArgumentType>
+      <StringArgumentType name="TOLabEnablePacket__dest_ip">
+        <StringDataEncoding encoding="US-ASCII">
+          <Variable maxSizeInBits="8388608">
+            <DynamicValue>
+              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
+            </DynamicValue>
+            <TerminationChar>00</TerminationChar>
+          </Variable>
+        </StringDataEncoding>
+        <SizeRangeInCharacters minInclusive="7" maxInclusive="15"/>
+      </StringArgumentType>
+      <BooleanArgumentType name="ccsds_space_packet__ccsds_secondary_header" zeroStringValue="Not Present" oneStringValue="Present">
+        <IntegerDataEncoding sizeInBits="1" encoding="unsigned"/>
+      </BooleanArgumentType>
+      <IntegerArgumentType name="ccsds_space_packet__ccsds_apid" signed="false" sizeInBits="32">
+        <IntegerDataEncoding sizeInBits="11" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
+      </IntegerArgumentType>
+      <ArrayArgumentType name="twist_rover_command__twist" arrayTypeRef="twist_rover_command__twist__el">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>1</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayArgumentType>
+      <FloatArgumentType name="twist_rover_command__twist__el" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatArgumentType>
+    </ArgumentTypeSet>
+    <MetaCommandSet>
+      <MetaCommand name="CameraJointPacket" abstract="false" shortDescription="Rotate camera [ pan [-3.49, 3.49], tilt [-1.30, 1.30]]">
+        <BaseMetaCommand metaCommandRef="CfsPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="39"/>
+            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 2, 'checksum': 0}"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="camera_joint" argumentTypeRef="CameraJointPacket__camera_joint"/>
+        </ArgumentList>
+        <CommandContainer name="CameraJointPacket">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="camera_joint">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="CfsPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="CfsPacket" abstract="true">
+        <BaseMetaCommand metaCommandRef="ccsds_space_packet">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_secondary_header" argumentValue="Present"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="scr_header" argumentTypeRef="CfsPacket__scr_header"/>
+        </ArgumentList>
+        <CommandContainer name="CfsPacket">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="scr_header">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="ccsds_space_packet"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="LunarExplorationPacket" abstract="true">
+        <BaseMetaCommand metaCommandRef="CfsPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="39"/>
+            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 1, 'checksum': 0}"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <CommandContainer name="LunarExplorationPacket">
+          <EntryList/>
+          <BaseContainer containerRef="CfsPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="TOLabEnablePacket" abstract="false">
+        <BaseMetaCommand metaCommandRef="CfsPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="128"/>
+            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 6, 'checksum': 0}"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="dest_ip" argumentTypeRef="TOLabEnablePacket__dest_ip"/>
+        </ArgumentList>
+        <CommandContainer name="TOLabEnablePacket">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="dest_ip">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="CfsPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="ccsds_space_packet" abstract="true" shortDescription="CCSDS 133.0-B-1 Space Packet">
+        <LongDescription>
+Represents a Space Packet as defined in CCSDS 133.0-B-1
+
+The first 6 bytes of a Space Packet are known as the
+&quot;Primary Header&quot;.
+</LongDescription>
+        <ArgumentList>
+          <Argument name="ccsds_secondary_header" argumentTypeRef="ccsds_space_packet__ccsds_secondary_header"/>
+          <Argument name="ccsds_apid" argumentTypeRef="ccsds_space_packet__ccsds_apid"/>
+        </ArgumentList>
+        <CommandContainer name="ccsds_space_packet">
+          <EntryList>
+            <FixedValueEntry binaryValue="00" sizeInBits="3" name="ccsds_version">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </FixedValueEntry>
+            <FixedValueEntry binaryValue="01" sizeInBits="1" name="ccsds_type">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </FixedValueEntry>
+            <ArgumentRefEntry argumentRef="ccsds_secondary_header">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+            <ArgumentRefEntry argumentRef="ccsds_apid">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+            <FixedValueEntry binaryValue="03" sizeInBits="2" name="ccsds_group_flags">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </FixedValueEntry>
+            <FixedValueEntry binaryValue="0000" sizeInBits="14" name="ccsds_source_sequence_count" shortDescription="Value set by Yamcs during link post-processing">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </FixedValueEntry>
+            <FixedValueEntry binaryValue="0000" sizeInBits="16" name="ccsds_packet_length" shortDescription="Value set by Yamcs during link post-processing">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </FixedValueEntry>
+          </EntryList>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="twist_rover_command" abstract="false" shortDescription="Send a twist [vel_lin, vel_ang]">
+        <BaseMetaCommand metaCommandRef="LunarExplorationPacket"/>
+        <ArgumentList>
+          <Argument name="twist" argumentTypeRef="twist_rover_command__twist"/>
+        </ArgumentList>
+        <CommandContainer name="twist_rover_command">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="twist">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="LunarExplorationPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+    </MetaCommandSet>
+  </CommandMetaData>
+</SpaceSystem>
