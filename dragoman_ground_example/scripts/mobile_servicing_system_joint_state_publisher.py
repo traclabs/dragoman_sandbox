@@ -22,6 +22,9 @@ class MobileServicingSystemJointStatePublisher(Node):
     # Joint names in the order they appear in the telemetry packet
     # These names must match the joint names in the URDF
     JOINT_NAMES = [
+    "boom_a_clpa_pan_joint", "boom_a_clpa_tilt_joint", "boom_b_clpa_pan_joint", "boom_b_clpa_tilt_joint",
+    "etvcg_cp13_pan_joint", "etvcg_cp13_tilt_joint", "etvcg_cp3_pan_joint", "etvcg_cp3_tilt_joint",
+    "etvcg_cp8_pan_joint", "etvcg_cp8_tilt_joint", "etvcg_cp9_pan_joint", "etvcg_cp9_tilt_joint",
     "joint_canadarm2_1", "joint_canadarm2_2", "joint_canadarm2_3", "joint_canadarm2_4", "joint_canadarm2_5", "joint_canadarm2_6", "joint_canadarm2_7",
     "joint_dextre_arm_1_elbow_pitch", "joint_dextre_arm_1_shoulder_pitch", "joint_dextre_arm_1_shoulder_roll",
     "joint_dextre_arm_1_shoulder_yaw", "joint_dextre_arm_1_wrist_pitch_yaw", "joint_dextre_arm_1_wrist_roll",
@@ -32,7 +35,8 @@ class MobileServicingSystemJointStatePublisher(Node):
     "joint_port_bga_1", "joint_port_bga_2", "joint_port_bga_3", "joint_port_bga_4",
     "joint_port_sarj",
     "joint_starboard_bga_1", "joint_starboard_bga_2", "joint_starboard_bga_3", "joint_starboard_bga_4",
-    "joint_starboard_sarj"
+    "joint_starboard_sarj",
+    "outrigger_1_clpa_pan_joint", "outrigger_1_clpa_tilt_joint", "outrigger_2_clpa_pan_joint", "outrigger_2_clpa_tilt_joint"
     ]
 
     def __init__(self):

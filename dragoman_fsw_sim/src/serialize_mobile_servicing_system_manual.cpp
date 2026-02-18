@@ -75,7 +75,7 @@ bool SerializeMobileServicingSystemManual::receiveMessage(std::string &_group, s
   {
     if(!deserialize(buffer_rcvd, (size_t) buffer_rcvd_size, 0, _group, _state))
       return false;
-      
+
     return true;
   }
 
@@ -93,19 +93,22 @@ size_t SerializeMobileServicingSystemManual::serialize(sensor_msgs::msg::JointSt
     return 0;
 
   size_t num_joints = _js->position.size();
-  
-  // canadarm: 7, 
+
+  // boom clpa: 4
+  // etvcg: 8
+  // canadarm: 7,
   // dextre arm 1: 6, dextre arm 2: 6, dextre body: 1
   // mbs: 1
   // port_bga: 4, port_sraj: 1
   // starboard_bga: 4, starboard_sarj: 1
-  // total: 7 + 6 +6 +1 + 1+4+1+4+1 = 31
-  if(num_joints != 31) 
+  // outrigger clpa: 4
+  // total: 4 + 8 + 7 + 6 + 6 + 1 + 1 + 4 + 1 + 4 + 1 + 4 = 47
+  if(num_joints != 47)
   {
-    RCLCPP_ERROR(rclcpp::get_logger("debug_fsw_sim"), "Error in number of joints received. Expecting 31!");
+    RCLCPP_ERROR(rclcpp::get_logger("debug_fsw_sim"), "Error in number of joints received. Expecting 47!");
     return 0;
   }
-  
+
   size_t data_size = num_joints * sizeof(float) + sizeof(int32_t) + sizeof(uint32_t); // joints + sec + nanosec
 
   *_buf = static_cast<uint8_t *> (malloc(data_size));
@@ -139,20 +142,20 @@ bool SerializeMobileServicingSystemManual::deserialize(const uint8_t* _buf, cons
 {
   const int char_length = 60;
   char group_state[char_length];
-  
+
   size_t offset = start_offset;
 
   memcpy(&group_state, _buf + offset, char_length*sizeof(char)); offset += char_length * sizeof(char);
 
   int end_group; int end_state;
   char group_array[30]; char state_array[30];
-   
+
   if(!getString(group_state, char_length, 0, group_array, end_group))
     return false;
-    
+
   if(!getString(group_state, char_length, 30, state_array, end_state))
     return false;
-    
+
   _group = std::string(group_array);
   _state = std::string(state_array);
 
@@ -162,7 +165,7 @@ bool SerializeMobileServicingSystemManual::deserialize(const uint8_t* _buf, cons
 bool SerializeMobileServicingSystemManual::getString(char _input_string[], int _input_size, int _start_index, char _output_string[], int &_end_index)
 {
    // End of group
-   _end_index = -1; 
+   _end_index = -1;
    for(int i = _start_index; i < _input_size; ++i)
    {
       if(_input_string[i] == '\0')
@@ -171,17 +174,17 @@ bool SerializeMobileServicingSystemManual::getString(char _input_string[], int _
          break;
        }
    }
-   
+
    if(_end_index == -1)
      return false;
-            
+
    // Fill string
    int index = 0;
    for(int i = _start_index; i <= _end_index; ++i)
    {
       _output_string[index] = _input_string[i];
       index++;
-   }                          
+   }
 
    return true;
 }

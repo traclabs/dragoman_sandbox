@@ -134,8 +134,8 @@ def generate_xtce_mobile_servicing_system_demo(filename):
     system=spacecraft,
     name="joint_state",
     data_type=yp.datatypes.FloatDataType(encoding=yp.float32le_t),
-    length=31,
-    short_description="full_joint [31]"
+    length=47,
+    short_description="full_joint [47]"
   )
 
   telemetry_container = yp.Container(
