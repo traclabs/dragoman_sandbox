@@ -12,15 +12,18 @@
 class SerializeLunarExplorationManual
 {
  public:
- 
+
  SerializeLunarExplorationManual();
- bool initializeComm( const int &_own_port, const int &_other_port, 
-                      const std::string &_robot_ip, 
+ bool initializeComm( const int &_own_port, const int &_other_port,
+                      const std::string &_robot_ip,
                       const std::string &_fsw_ip,
                       std::string &_error_msg);
  bool sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose );
- bool receiveMessage(uint8_t &code, float &_val1, float &_val2);
- 
+ bool peekCommandCode(uint8_t &_code);
+ bool receiveTwistCommand(float &_linear_vel, float &_angular_vel);
+ bool receiveCameraCommand(float &_pan, float &_tilt);
+ bool receiveNavigationPoseCommand(float &_x, float &_y, float &_theta);
+
  protected:
 
   size_t serialize(sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose, uint8_t** buf);
@@ -30,6 +33,6 @@ class SerializeLunarExplorationManual
   char buffer_[1024];
   struct sockaddr_in own_address_;
   struct sockaddr_in other_address_;
- 
- 
+
+
 };

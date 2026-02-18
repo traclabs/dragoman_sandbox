@@ -145,6 +145,39 @@ def generate_xtce_lunar_exploration_demo(filename):
      ]
   )
 
+  # **************************************************
+  # Command to navigate to a pose
+  # **************************************************
+
+  navigation_pose_arg = yp.commands.AggregateArgument(
+        name="pose",
+        members=[
+          yp.FloatMember(name="x", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="y", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="theta", bits=32, encoding=yp.float32le_t),
+        ]
+      )
+
+  navigation_pose_command = yp.Command(
+     system=spacecraft,
+     name="NavigationPosePacket",
+     short_description="Send navigation pose (x, y, theta)",
+     base=cFS_command,
+     assignments={
+       ccsds_header.tc_apid.name: CMD_MID,
+       "scr_header": {
+         "fcn_code": 0x03,
+         "checksum": 0
+        }
+     },
+     arguments=[
+        navigation_pose_arg
+     ],
+     entries=[
+      yp.ArgumentEntry(navigation_pose_arg)
+     ]
+  )
+
 
   #############################################
   # TELEMETRY

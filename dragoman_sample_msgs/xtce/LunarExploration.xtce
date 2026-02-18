@@ -273,6 +273,22 @@ The first 6 bytes of a Space Packet are known as the
       <IntegerArgumentType name="CfsPacket__scr_header__checksum" signed="false" sizeInBits="8">
         <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
       </IntegerArgumentType>
+      <AggregateArgumentType name="NavigationPosePacket__pose">
+        <MemberList>
+          <Member name="x" typeRef="NavigationPosePacket__pose__x"/>
+          <Member name="y" typeRef="NavigationPosePacket__pose__y"/>
+          <Member name="theta" typeRef="NavigationPosePacket__pose__theta"/>
+        </MemberList>
+      </AggregateArgumentType>
+      <FloatArgumentType name="NavigationPosePacket__pose__x" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatArgumentType>
+      <FloatArgumentType name="NavigationPosePacket__pose__y" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatArgumentType>
+      <FloatArgumentType name="NavigationPosePacket__pose__theta" sizeInBits="32">
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatArgumentType>
       <StringArgumentType name="TOLabEnablePacket__dest_ip">
         <StringDataEncoding encoding="US-ASCII">
           <Variable maxSizeInBits="8388608">
@@ -361,6 +377,29 @@ The first 6 bytes of a Space Packet are known as the
         </BaseMetaCommand>
         <CommandContainer name="LunarExplorationPacket">
           <EntryList/>
+          <BaseContainer containerRef="CfsPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="NavigationPosePacket" abstract="false" shortDescription="Send navigation pose (x, y, theta)">
+        <BaseMetaCommand metaCommandRef="CfsPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="39"/>
+            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 3, 'checksum': 0}"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="pose" argumentTypeRef="NavigationPosePacket__pose"/>
+        </ArgumentList>
+        <CommandContainer name="NavigationPosePacket">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="pose">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
           <BaseContainer containerRef="CfsPacket"/>
         </CommandContainer>
         <DefaultSignificance consequenceLevel="normal"/>

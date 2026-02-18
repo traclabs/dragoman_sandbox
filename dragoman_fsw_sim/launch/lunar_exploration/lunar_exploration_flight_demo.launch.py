@@ -15,7 +15,7 @@ def generate_launch_description():
     # Lunar Terrain world
     #world_models_path = get_package_share_directory("lunar_terrain_gz_worlds")
     #world_terrain = os.path.join(world_models_path, "worlds/dem_moon.sdf")
-    
+
     # Regular Lunar Pole Exploration rover world (flatter)
     world_models_path = get_package_share_directory("lunar_pole_exploration_rover_gazebo")
     world_terrain = os.path.join(world_models_path, 'worlds/lunar_pole.world')
@@ -85,12 +85,23 @@ def generate_launch_description():
         output="screen",
     )
 
+    # ***********************************************
+    # Navigation controller
+    # ***********************************************
+    navigation_controller_node = Node(
+        package="dragoman_fsw_sim",
+        executable="lunar_exploration_navigation_controller.py",
+        name="lunar_navigation_controller",
+        output="screen",
+    )
+
     return LaunchDescription(
-      launch_args + 
-      [robot, 
+      launch_args +
+      [robot,
        cmd_vel_node,
-       odom_node, 
-       robot_comm_node, 
+       odom_node,
+       robot_comm_node,
+       navigation_controller_node,
        rviz_node]
     )
 
