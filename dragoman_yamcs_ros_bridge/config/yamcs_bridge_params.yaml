@@ -11,16 +11,6 @@ bridges:
     ros_topic: "/yamcs/all_types"
     yamcs_packet_name: "/AllTypes/AllTelemetryPacket"
 
-  # Curiosity telemetry packet
-  - ros_message_type: "dragoman_sample_msgs/msg/CuriosityTelemetryPacket"
-    ros_topic: "/yamcs/curiosity"
-    yamcs_packet_name: "/Curiosity/CuriosityTelemetryPacket"
-
-  # IMetro telemetry packet
-  - ros_message_type: "dragoman_sample_msgs/msg/IMetroTelemetryPacket"
-    ros_topic: "/yamcs/imetro"
-    yamcs_packet_name: "/IMetro/IMetroTelemetryPacket"
-
   # MultiPacket temperature packet
   - ros_message_type: "dragoman_sample_msgs/msg/TemperaturePacket"
     ros_topic: "/yamcs/temperature"
@@ -30,8 +20,3 @@ bridges:
   - ros_message_type: "dragoman_sample_msgs/msg/VoltagePacket"
     ros_topic: "/yamcs/voltage"
     yamcs_packet_name: "/MultiPacket/VoltagePacket"
-
-  # Gateway telemetry packet
-  - ros_message_type: "dragoman_sample_msgs/msg/GatewayTelemetryPacket"
-    ros_topic: "/yamcs/gateway"
-    yamcs_packet_name: "/Gateway/GatewayTelemetryPacket"    

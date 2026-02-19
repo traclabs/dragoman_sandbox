@@ -13,7 +13,7 @@ install(PROGRAMS
 
 # Install configuration files
 install(
-  DIRECTORY config launch
+  DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
 

@@ -1,0 +1,12 @@
+# YAMCS-ROS Bridge Configuration
+
+yamcs:
+  url: "localhost:8090"
+  instance: "dragoman"
+  processor: "realtime"
+
+bridges:
+  # IMetro telemetry packet
+  - ros_message_type: "dragoman_sample_msgs/msg/IMetroTelemetryPacket"
+    ros_topic: "/yamcs/imetro"
+    yamcs_packet_name: "/IMetro/IMetroTelemetryPacket"
