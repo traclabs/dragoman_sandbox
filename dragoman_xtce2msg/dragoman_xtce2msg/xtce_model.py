@@ -356,6 +356,7 @@ def resolve_aggregate_type(elem, type_definitions):
                 member_ros_type, is_fixed = resolve_type_definition(member_type_ref, type_definitions)
                 fields.append({
                     'name': member_name,
+                    'type_ref': member_type_ref,
                     'ros_type': member_ros_type,
                     'is_fixed': is_fixed
                 })

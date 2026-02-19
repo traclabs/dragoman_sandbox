@@ -17,15 +17,7 @@ Node("lunar_exploration_comm_udp")
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-   base_link_ = "big_arm_link_1";
-   tip_link_ = "big_arm_link_8";
-   robot_description_ = "robot_description";
-   eps_ = 1e-5;
-   max_time_ = 0.005;
-   solve_type_ = TRAC_IK::Speed;
-
-   cmd_freq_ = 30.0;
-   cmd_rate_ = 1.0/cmd_freq_; // 30 Hz
+  continuous_twist_mode_ = false;
 
 }
 
@@ -34,9 +26,9 @@ Node("lunar_exploration_comm_udp")
  */
 bool LunarExplorationCommUdp::initDefaults()
 {
-   camera_joints_ = {"mast_head_pivot_joint", "mast_camera_joint"};   
+   camera_joints_ = {"mast_head_pivot_joint", "mast_camera_joint"};
    duration_ = 5.0;
-   
+
    return true;
 }
 
@@ -52,9 +44,10 @@ bool LunarExplorationCommUdp::initRobotComm()
 
   pub_cmd_vel_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
   pub_camera_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/mast_camera_joint_trajectory_controller/joint_trajectory", 10);
+  pub_goal_pose_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", 10);
 
   initDefaults();
-  
+
   return true;
 }
 
@@ -108,7 +101,7 @@ void LunarExplorationCommUdp::send_telemetry()
    js = joint_state_;
    mux_.unlock();
 
-   // 
+   //
    geometry_msgs::msg::Pose pose;
    pose.orientation.w = 1.0;
    if(!getTransform("odom", "base_footprint", pose))
@@ -128,39 +121,93 @@ void LunarExplorationCommUdp::send_telemetry()
  */
 void LunarExplorationCommUdp::rcv_command()
 {
-  uint8_t code; float val1, val2;
+  float linear_vel, angular_vel;
+  float pan, tilt;
+  float x, y, theta;
 
-  if(sm_.receiveMessage(code, val1, val2))
+  // Peek at the command code to determine message type without consuming it
+  // Code 1 (twist): linear velocity, angular velocity
+  // Code 2 (camera): pan, tilt
+  // Code 3 (navigation pose): x, y, theta
+  uint8_t code = 0;
+  if(sm_.peekCommandCode(code))
   {
-    RCLCPP_INFO(this->get_logger(), "** Received command %d %f %f", code, val1, val2);
-
-    // Send service call
-    if(code == 1)
-    {    
-      // Publish motion
-      twist_ = geometry_msgs::msg::Twist();
-      twist_.linear.x = val1;
-      twist_.angular.z = val2;      
-    } 
-    // Camera
-    else if(code == 2)
+    // Based on command code, receive the appropriate data format
+    switch(code)
     {
-      auto traj = trajectory_msgs::msg::JointTrajectory();
-      traj.joint_names = camera_joints_;
-        
-      auto point1 = trajectory_msgs::msg::JointTrajectoryPoint();
-      
-      point1.positions = {val1, val2};
-      point1.time_from_start = rclcpp::Duration(duration_, 0);
+      case 1:
+        // Twist command
+        if(sm_.receiveTwistCommand(linear_vel, angular_vel))
+        {
+          RCLCPP_INFO(this->get_logger(), "** Twist command: linear=%f, angular=%f", linear_vel, angular_vel);
+          // Publish motion
+          twist_ = geometry_msgs::msg::Twist();
+          twist_.linear.x = linear_vel;
+          twist_.angular.z = angular_vel;
+          continuous_twist_mode_ = true;  // Enable continuous twist publishing
+        }
+        break;
 
-      traj.points.push_back(point1);
-      pub_camera_->publish(traj);    
+      case 2:
+        // Camera command
+        if(sm_.receiveCameraCommand(pan, tilt))
+        {
+          RCLCPP_INFO(this->get_logger(), "** Camera command: pan=%f, tilt=%f", pan, tilt);
+          auto traj = trajectory_msgs::msg::JointTrajectory();
+          traj.joint_names = camera_joints_;
+
+          auto point1 = trajectory_msgs::msg::JointTrajectoryPoint();
+
+          point1.positions = {pan, tilt};
+          point1.time_from_start = rclcpp::Duration(duration_, 0);
+
+          traj.points.push_back(point1);
+          pub_camera_->publish(traj);
+        }
+        break;
+
+      case 3:
+        // Navigation pose command
+        if(sm_.receiveNavigationPoseCommand(x, y, theta))
+        {
+          RCLCPP_INFO(this->get_logger(), "** Navigation pose command: x=%f, y=%f, theta=%f", x, y, theta);
+
+          // Create PoseStamped message for navigation controller
+          auto goal_pose = geometry_msgs::msg::PoseStamped();
+          goal_pose.header.stamp = this->now();
+          goal_pose.header.frame_id = "odom";
+
+          // Set position
+          goal_pose.pose.position.x = x;
+          goal_pose.pose.position.y = y;
+          goal_pose.pose.position.z = 0.0;
+
+          // Convert theta (yaw) to quaternion
+          // Using simple 2D rotation: qw = cos(theta/2), qz = sin(theta/2)
+          double half_theta = theta / 2.0;
+          goal_pose.pose.orientation.x = 0.0;
+          goal_pose.pose.orientation.y = 0.0;
+          goal_pose.pose.orientation.z = sin(half_theta);
+          goal_pose.pose.orientation.w = cos(half_theta);
+
+          // Publish to navigation controller
+          pub_goal_pose_->publish(goal_pose);
+          // Stop continuous twist mode - let navigation controller handle cmd_vel
+          continuous_twist_mode_ = false;
+        }
+        break;
+
+      default:
+        RCLCPP_WARN(this->get_logger(), "** Received unknown command code: %d", code);
+        break;
     }
-    
   }
-  
-  // Constantly publishes twist
-  pub_cmd_vel_->publish(twist_);
+
+  // Publish twist if we're in twist mode
+  if (continuous_twist_mode_)
+  {
+    pub_cmd_vel_->publish(twist_);
+  }
 }
 
 
@@ -177,8 +224,8 @@ void LunarExplorationCommUdp::js_cb(const sensor_msgs::msg::JointState::SharedPt
 /**
  * @function getTransform
  */
-bool  LunarExplorationCommUdp::getTransform(const std::string &_source, 
-                                            const std::string &_target, 
+bool  LunarExplorationCommUdp::getTransform(const std::string &_source,
+                                            const std::string &_target,
                                             geometry_msgs::msg::Pose &_pose)
 {
     geometry_msgs::msg::TransformStamped tfs;

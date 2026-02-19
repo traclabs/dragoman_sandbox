@@ -91,7 +91,7 @@ def generate_xtce_lunar_exploration_demo(filename):
   # **************************************************
   # Command to send velocity linear + angular
   # **************************************************
-  
+
   # Important! Use le_t (little endian) for compatibility with cFS
   twist_rover_arg = yp.commands.ArrayArgument(
         name="twist",
@@ -112,11 +112,11 @@ def generate_xtce_lunar_exploration_demo(filename):
       yp.ArgumentEntry(twist_rover_arg)
     ]
   )
-  
+
   # **************************************************
   # Command to move camera
   # **************************************************
-  
+
   # Important! Use le_t (little endian) for compatibility with cFS
   camera_joint_arg = yp.commands.ArrayArgument(
         name="camera_joint",
@@ -142,7 +142,40 @@ def generate_xtce_lunar_exploration_demo(filename):
      ],
      entries=[
       yp.ArgumentEntry(camera_joint_arg)
-     ]     
+     ]
+  )
+
+  # **************************************************
+  # Command to navigate to a pose
+  # **************************************************
+
+  navigation_pose_arg = yp.commands.AggregateArgument(
+        name="pose",
+        members=[
+          yp.FloatMember(name="x", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="y", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="theta", bits=32, encoding=yp.float32le_t),
+        ]
+      )
+
+  navigation_pose_command = yp.Command(
+     system=spacecraft,
+     name="NavigationPosePacket",
+     short_description="Send navigation pose (x, y, theta)",
+     base=cFS_command,
+     assignments={
+       ccsds_header.tc_apid.name: CMD_MID,
+       "scr_header": {
+         "fcn_code": 0x03,
+         "checksum": 0
+        }
+     },
+     arguments=[
+        navigation_pose_arg
+     ],
+     entries=[
+      yp.ArgumentEntry(navigation_pose_arg)
+     ]
   )
 
 
@@ -153,14 +186,39 @@ def generate_xtce_lunar_exploration_demo(filename):
   cFS_telemetry_container = add_cfs_telemetry_header(spacecraft, ccsds_header)
 
   # ***********************************************
-  # Telemetry packet containing joint state data
+  # Telemetry packet containing joint state + odom pose
   # ***********************************************
   joint_state_parameter = yp.ArrayParameter(
     system=spacecraft,
     name="joint_state",
     data_type=yp.datatypes.FloatDataType(encoding=yp.float32le_t),
-    length=24,
-    short_description="Joints [17] + XYZ/QXYZW"
+    length=17,
+    short_description="Joint state (17 floats)"
+  )
+
+  pose_parameter = yp.AggregateParameter(
+    system=spacecraft,
+    name="pose",
+    members=[
+      yp.AggregateMember(
+        name="position",
+        members=[
+          yp.FloatMember(name="x", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="y", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="z", bits=32, encoding=yp.float32le_t),
+        ],
+      ),
+      yp.AggregateMember(
+        name="orientation",
+        members=[
+          yp.FloatMember(name="x", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="y", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="z", bits=32, encoding=yp.float32le_t),
+          yp.FloatMember(name="w", bits=32, encoding=yp.float32le_t),
+        ],
+      ),
+    ],
+    short_description="Odometry pose (position + orientation quaternion)"
   )
 
   telemetry_container = yp.Container(
@@ -168,7 +226,8 @@ def generate_xtce_lunar_exploration_demo(filename):
     name="LunarExplorationTelemetryPacket",
     base=cFS_telemetry_container,
     entries=[
-      yp.ParameterEntry(parameter=joint_state_parameter)
+      yp.ParameterEntry(parameter=joint_state_parameter),
+      yp.ParameterEntry(parameter=pose_parameter)
     ],
     condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
   )
@@ -186,4 +245,3 @@ if __name__ == '__main__':
 
   filename = sys.argv[1]
   generate_xtce_lunar_exploration_demo(filename)
-

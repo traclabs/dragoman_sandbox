@@ -13,7 +13,6 @@ from dragoman_sample_msgs.msg import LunarExplorationTelemetryPacket
 
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
-import numpy as np
 
 class LunarExplorationJointStatePublisher(Node):
     """
@@ -64,10 +63,10 @@ class LunarExplorationJointStatePublisher(Node):
             self.telemetry_callback,
             10
         )
- 
+
         # Broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
-           
+
         self.get_logger().info(f'LunarExploration Joint State Publisher initialized')
         self.get_logger().info(f'Subscribing to: {input_topic}')
         self.get_logger().info(f'Publishing to: /joint_states')
@@ -81,13 +80,12 @@ class LunarExplorationJointStatePublisher(Node):
         joint_state_msg.header.frame_id = ''
 
         # Set joint positions and names from telemetry packet
-        joint_state_msg.position = list(msg.joint_state[0:17])
+        joint_state_msg.position = list(msg.joint_state)
         joint_state_msg.name = self.JOINT_NAMES
 
-                                                          
+
         # Publish the joint state message
         self.publisher.publish(joint_state_msg)
-        self.get_logger().info(f'Published joint state!')
         self.get_logger().debug(f'Published {len(joint_state_msg.name)} joint states')
 
         # Publish transform between odom and base_footprint
@@ -99,22 +97,14 @@ class LunarExplorationJointStatePublisher(Node):
         tfx.header.frame_id = 'odom'
         tfx.child_frame_id = 'base_footprint'
 
-        self.get_logger().info(f'Transform x!')
-        tfx.transform.translation.x = msg.joint_state[17].astype(np.float64)
-        self.get_logger().info(f'Transform y!')
-        tfx.transform.translation.y = msg.joint_state[18].astype(np.float64)
-        self.get_logger().info(f'Transform z!')
+        tfx.transform.translation.x = float(msg.pose.position.x)
+        tfx.transform.translation.y = float(msg.pose.position.y)
+        tfx.transform.translation.z = float(msg.pose.position.z)
 
-        tfx.transform.translation.z = msg.joint_state[19].astype(np.float64)
-        self.get_logger().info(f'Transform qx!')
-
-        tfx.transform.rotation.x = msg.joint_state[20].astype(np.float64)
-        tfx.transform.rotation.y = msg.joint_state[21].astype(np.float64)
-        tfx.transform.rotation.z = msg.joint_state[22].astype(np.float64)
-        self.get_logger().info(f'Transform qw!')
-
-        tfx.transform.rotation.w = msg.joint_state[23].astype(np.float64)
-        self.get_logger().info(f'Transform send!!!')
+        tfx.transform.rotation.x = float(msg.pose.orientation.x)
+        tfx.transform.rotation.y = float(msg.pose.orientation.y)
+        tfx.transform.rotation.z = float(msg.pose.orientation.z)
+        tfx.transform.rotation.w = float(msg.pose.orientation.w)
 
         # Send the transformation
         self.tf_broadcaster.sendTransform(tfx)

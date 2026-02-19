@@ -63,19 +63,105 @@ bool SerializeLunarExplorationManual::sendMessage( sensor_msgs::msg::JointState*
 }
 
 
-bool SerializeLunarExplorationManual::receiveMessage(uint8_t &_code, float &_val1, float &_val2)
+bool SerializeLunarExplorationManual::peekCommandCode(uint8_t &_code)
 {
   ssize_t buffer_rcvd_size;
   const int MAXLINE = 1024;
   uint8_t buffer_rcvd[MAXLINE];
 
-  // Receive............
+  // Peek at the buffer without consuming it using MSG_PEEK flag
+  buffer_rcvd_size = recvfrom(sockfd_, (uint8_t*) buffer_rcvd, MAXLINE, MSG_DONTWAIT | MSG_PEEK, (struct sockaddr*)NULL, NULL);
+  if(buffer_rcvd_size > 0)
+  {
+    // Extract just the command code (first byte)
+    memcpy(&_code, buffer_rcvd, sizeof(uint8_t));
+    return true;
+  }
+
+  return false;
+}
+
+bool SerializeLunarExplorationManual::receiveTwistCommand(float &_linear_vel, float &_angular_vel)
+{
+  ssize_t buffer_rcvd_size;
+  const int MAXLINE = 1024;
+  uint8_t buffer_rcvd[MAXLINE];
+
+  // Receive and consume the message
   buffer_rcvd_size = recvfrom(sockfd_, (uint8_t*) buffer_rcvd, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)NULL, NULL);
   if(buffer_rcvd_size > 0)
   {
-    if(!deserialize(buffer_rcvd, (size_t) buffer_rcvd_size, 0, _code, _val1, _val2))
-      return false;
-      
+    // Deserialize: 1 byte (code) + 2 floats (linear_vel, angular_vel)
+    size_t offset = 0;
+
+    // Skip the command code (already peeked)
+    offset += sizeof(uint8_t);
+
+    memcpy(&_linear_vel, buffer_rcvd + offset, sizeof(float));
+    offset += sizeof(float);
+
+    memcpy(&_angular_vel, buffer_rcvd + offset, sizeof(float));
+    offset += sizeof(float);
+
+    return true;
+  }
+
+  return false;
+}
+
+bool SerializeLunarExplorationManual::receiveCameraCommand(float &_pan, float &_tilt)
+{
+  ssize_t buffer_rcvd_size;
+  const int MAXLINE = 1024;
+  uint8_t buffer_rcvd[MAXLINE];
+
+  // Receive and consume the message
+  buffer_rcvd_size = recvfrom(sockfd_, (uint8_t*) buffer_rcvd, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)NULL, NULL);
+  if(buffer_rcvd_size > 0)
+  {
+    // Deserialize: 1 byte (code) + 2 floats (pan, tilt)
+    size_t offset = 0;
+
+    // Skip the command code (already peeked)
+    offset += sizeof(uint8_t);
+
+    memcpy(&_pan, buffer_rcvd + offset, sizeof(float));
+    offset += sizeof(float);
+
+    memcpy(&_tilt, buffer_rcvd + offset, sizeof(float));
+    offset += sizeof(float);
+
+    return true;
+  }
+
+  return false;
+}
+
+bool SerializeLunarExplorationManual::receiveNavigationPoseCommand(float &_x, float &_y, float &_theta)
+{
+  ssize_t buffer_rcvd_size;
+  const int MAXLINE = 1024;
+  uint8_t buffer_rcvd[MAXLINE];
+
+  // Receive and consume the message
+  buffer_rcvd_size = recvfrom(sockfd_, (uint8_t*) buffer_rcvd, MAXLINE, MSG_DONTWAIT, (struct sockaddr*)NULL, NULL);
+  if(buffer_rcvd_size > 0)
+  {
+    // Deserialize: 1 byte (code) + 3 floats (x, y, theta)
+    size_t offset = 0;
+
+    // Skip the command code (already peeked)
+    offset += sizeof(uint8_t);
+
+    memcpy(&_x, buffer_rcvd + offset, sizeof(float));
+    offset += sizeof(float);
+
+    memcpy(&_y, buffer_rcvd + offset, sizeof(float));
+    offset += sizeof(float);
+
+    memcpy(&_theta, buffer_rcvd + offset, sizeof(float));
+    offset += sizeof(float);
+
     return true;
   }
 
@@ -112,7 +198,7 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
 - rear_solar_panel_joint
 - right_solar_panel_joint
 */
-  // xyz, qxyzw = 17 + 7 = 24  
+  // xyz, qxyzw = 17 + 7 = 24
   float x, y, z, qx, qy, qz, qw;
   x = (float)_pose.position.x;
   y = (float)_pose.position.y;
@@ -120,14 +206,14 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
   qx = (float)_pose.orientation.x;
   qy = (float)_pose.orientation.y;
   qz = (float)_pose.orientation.z;
-  qw = (float)_pose.orientation.w;          
+  qw = (float)_pose.orientation.w;
 
-  if(num_joints != 17) 
+  if(num_joints != 17)
   {
     RCLCPP_ERROR(rclcpp::get_logger("debug_fsw_sim"), "Error in number of joints received. Expecting 17!");
     return 0;
   }
-  
+
   size_t data_size = num_joints * sizeof(float) + 7*sizeof(float) + sizeof(int32_t) + sizeof(uint32_t); // joints + sec + nanosec
 
   *_buf = static_cast<uint8_t *> (malloc(data_size));
@@ -180,16 +266,16 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
 }
 
 bool SerializeLunarExplorationManual::deserialize(const uint8_t* _buf, const size_t bufSize, size_t start_offset, uint8_t &_code, float &_val1, float &_val2)
-{  
+{
   size_t offset = start_offset;
 
-  memcpy(&_code, _buf + offset, sizeof(uint8_t)); 
+  memcpy(&_code, _buf + offset, sizeof(uint8_t));
   offset += sizeof(uint8_t);
 
-  memcpy(&_val1, _buf + offset, sizeof(float)); 
+  memcpy(&_val1, _buf + offset, sizeof(float));
   offset += sizeof(float);
 
-  memcpy(&_val2, _buf + offset, sizeof(float)); 
+  memcpy(&_val2, _buf + offset, sizeof(float));
   offset += sizeof(float);
 
  return true;
