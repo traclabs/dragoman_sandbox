@@ -69,7 +69,7 @@ use a different convention where 0=core and 1=payload.
               <FixedValue>0</FixedValue>
             </StartingIndex>
             <EndingIndex>
-              <FixedValue>30</FixedValue>
+              <FixedValue>46</FixedValue>
             </EndingIndex>
           </Dimension>
         </DimensionList>
@@ -124,7 +124,7 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="ccsds_packet_sequence" parameterTypeRef="ccsds_packet_sequence" shortDescription="Second word of the primary CCSDS header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
-      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="full_joint [31]">
+      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="full_joint [47]">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
       <Parameter name="scr_header" parameterTypeRef="scr_header">
