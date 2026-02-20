@@ -67,18 +67,13 @@ def generate_launch_description():
 
 
     # Yamcs-ROS Bridge - subscribes to Yamcs and publishes telemetry messages
-    yamcs_ros_bridge = Node(
-        package="dragoman_yamcs_ros_bridge",
-        executable="yamcs_ros_bridge.py",
-        name="yamcs_curiosity_bridge",
-        output="screen",
-        arguments=[
-            "--config", LaunchConfiguration("bridge_config"),
-            "--yamcs-url", LaunchConfiguration("yamcs_url"),
-        ],
-        parameters=[
-            {"use_sim_time": LaunchConfiguration("use_sim_time")},
-        ],
+    yamcs_ros_bridge = IncludeLaunchDescription(
+      PathJoinSubstitution([FindPackageShare("dragoman_yamcs_ros_bridge"), "launch", "yamcs_ros_bridge.launch.py"]),
+      launch_arguments={
+        "use_sim_time": LaunchConfiguration("use_sim_time"),
+        "yamcs_url": LaunchConfiguration("yamcs_url"),
+        "bridge_config": LaunchConfiguration("bridge_config"),
+      }.items()
     )
 
     # Joint State Publisher - converts MobileServicingSystemTelemetryPacket to JointState
