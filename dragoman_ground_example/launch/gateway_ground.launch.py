@@ -29,8 +29,8 @@ def generate_launch_description():
 
     # Default bridge configuration file
     default_bridge_config = os.path.join(
-        dragoman_yamcs_ros_bridge_dir,
-        "config",
+        dragoman_ground_example_dir,
+        "config", "gateway",
         "yamcs_bridge_params.yaml"
     )
 

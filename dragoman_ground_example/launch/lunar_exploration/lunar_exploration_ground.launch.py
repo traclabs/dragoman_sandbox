@@ -31,7 +31,7 @@ def generate_launch_description():
         dragoman_ground_example_dir,
         "config", "lunar_exploration",
         "yamcs_bridge_params.yaml"
-    )    
+    )
 
     # RViz configuration file
     rviz_config = os.path.join(dragoman_ground_example_dir, "rviz", "lunar_exploration.rviz")

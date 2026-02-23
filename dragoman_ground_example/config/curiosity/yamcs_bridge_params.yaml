@@ -1,0 +1,12 @@
+# YAMCS-ROS Bridge Configuration
+
+yamcs:
+  url: "localhost:8090"
+  instance: "dragoman"
+  processor: "realtime"
+
+bridges:
+  # Curiosity telemetry packet
+  - ros_message_type: "dragoman_sample_msgs/msg/CuriosityTelemetryPacket"
+    ros_topic: "/yamcs/curiosity"
+    yamcs_packet_name: "/Curiosity/CuriosityTelemetryPacket"

@@ -30,7 +30,7 @@ def generate_launch_description():
     # Bridge configuration file
     bridge_config = os.path.join(
         dragoman_yamcs_ros_bridge_dir,
-        "config",
+        "config", "curiosity",
         "yamcs_bridge_params.yaml"
     )
 
