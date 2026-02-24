@@ -15,6 +15,7 @@ install(
     scripts/gateway_joint_state_publisher.py
     scripts/mobile_servicing_system_joint_state_publisher.py
     scripts/lunar_exploration_joint_state_publisher.py
+    scripts/lunar_exploration_overlay_text_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

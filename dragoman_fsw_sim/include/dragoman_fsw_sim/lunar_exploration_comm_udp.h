@@ -15,6 +15,7 @@
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <std_msgs/msg/u_int8.hpp>
 
 #include <dragoman_fsw_sim/serialize_lunar_exploration_manual.h>
 
@@ -33,11 +34,13 @@ protected:
   void rcv_command();
 
   void js_cb(const sensor_msgs::msg::JointState::SharedPtr _msg);
+  void nav_status_cb(const std_msgs::msg::UInt8::SharedPtr _msg);
   bool initDefaults();
   bool getTransform(const std::string &_source,
                     const std::string &_target,
                     geometry_msgs::msg::Pose &_pose);
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_js_;
+  rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr sub_nav_status_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_camera_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_goal_pose_;
@@ -66,5 +69,8 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   geometry_msgs::msg::Twist twist_;
   bool continuous_twist_mode_;
+
+  // Navigation status tracking
+  uint8_t nav_status_;
 
 };

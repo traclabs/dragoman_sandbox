@@ -221,13 +221,27 @@ def generate_xtce_lunar_exploration_demo(filename):
     short_description="Odometry pose (position + orientation quaternion)"
   )
 
+  # Navigation status enumeration parameter
+  navigation_status_parameter = yp.EnumeratedParameter(
+    system=spacecraft,
+    name="navigation_status",
+    choices=[
+      (0, "IDLE"),
+      (1, "IN_PROGRESS"),
+      (2, "DONE")
+    ],
+    encoding=yp.uint8_t,
+    short_description="Navigation command status"
+  )
+
   telemetry_container = yp.Container(
     system=spacecraft,
     name="LunarExplorationTelemetryPacket",
     base=cFS_telemetry_container,
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter),
-      yp.ParameterEntry(parameter=pose_parameter)
+      yp.ParameterEntry(parameter=pose_parameter),
+      yp.ParameterEntry(parameter=navigation_status_parameter)
     ],
     condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
   )

@@ -77,6 +77,14 @@ use a different convention where 0=core and 1=payload.
       <FloatParameterType name="joint_state__el" sizeInBits="32">
         <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
       </FloatParameterType>
+      <EnumeratedParameterType name="navigation_status">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
       <AggregateParameterType name="pose">
         <MemberList>
           <Member name="position" typeRef="pose__position"/>
@@ -169,6 +177,9 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="Joint state (17 floats)">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
+      <Parameter name="navigation_status" parameterTypeRef="navigation_status" shortDescription="Navigation command status">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
       <Parameter name="pose" parameterTypeRef="pose" shortDescription="Odometry pose (position + orientation quaternion)">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
@@ -195,6 +206,11 @@ use a different convention where 0=core and 1=payload.
             </LocationInContainerInBits>
           </ParameterRefEntry>
           <ParameterRefEntry parameterRef="pose">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="navigation_status">
             <LocationInContainerInBits referenceLocation="previousEntry">
               <FixedValue>0</FixedValue>
             </LocationInContainerInBits>

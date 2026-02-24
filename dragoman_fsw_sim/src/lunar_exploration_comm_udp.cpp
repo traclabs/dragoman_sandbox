@@ -18,6 +18,7 @@ Node("lunar_exploration_comm_udp")
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   continuous_twist_mode_ = false;
+  nav_status_ = NAV_STATUS_IDLE;  // Initialize to IDLE
 
 }
 
@@ -41,6 +42,8 @@ bool LunarExplorationCommUdp::initRobotComm()
   this->get_parameter("joint_state", js_topic);
 
   sub_js_ = this->create_subscription<sensor_msgs::msg::JointState>(js_topic, 10, std::bind(&LunarExplorationCommUdp::js_cb, this, _1));
+
+  sub_nav_status_ = this->create_subscription<std_msgs::msg::UInt8>("/nav_status", 10, std::bind(&LunarExplorationCommUdp::nav_status_cb, this, _1));
 
   pub_cmd_vel_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
   pub_camera_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/mast_camera_joint_trajectory_controller/joint_trajectory", 10);
@@ -111,7 +114,7 @@ void LunarExplorationCommUdp::send_telemetry()
    if(js.name.size() == 0)
      return;
 
-   if(!sm_.sendMessage(&js, pose))
+   if(!sm_.sendMessage(&js, pose, nav_status_))
      RCLCPP_ERROR(this->get_logger(), "Error sending message");
 }
 
@@ -145,6 +148,11 @@ void LunarExplorationCommUdp::rcv_command()
           twist_.linear.x = linear_vel;
           twist_.angular.z = angular_vel;
           continuous_twist_mode_ = true;  // Enable continuous twist publishing
+          // Set navigation status based on whether robot is moving
+          if (linear_vel == 0.0 && angular_vel == 0.0)
+            nav_status_ = NAV_STATUS_IDLE;
+          else
+            nav_status_ = NAV_STATUS_IN_PROGRESS;
         }
         break;
 
@@ -194,6 +202,8 @@ void LunarExplorationCommUdp::rcv_command()
           pub_goal_pose_->publish(goal_pose);
           // Stop continuous twist mode - let navigation controller handle cmd_vel
           continuous_twist_mode_ = false;
+          // Set navigation status to IN_PROGRESS when new goal is received
+          nav_status_ = NAV_STATUS_IN_PROGRESS;
         }
         break;
 
@@ -219,6 +229,15 @@ void LunarExplorationCommUdp::js_cb(const sensor_msgs::msg::JointState::SharedPt
   mux_.lock();
  joint_state_ = *_msg;
  mux_.unlock();
+}
+
+/**
+ * @function nav_status_cb
+ */
+void LunarExplorationCommUdp::nav_status_cb(const std_msgs::msg::UInt8::SharedPtr _msg)
+{
+  nav_status_ = _msg->data;
+  RCLCPP_DEBUG(this->get_logger(), "Nav status updated to: %d", nav_status_);
 }
 
 /**

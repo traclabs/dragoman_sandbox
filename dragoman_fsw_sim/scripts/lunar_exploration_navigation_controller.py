@@ -3,10 +3,16 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped, Twist, TransformStamped
+from std_msgs.msg import UInt8
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 import math
+
+# Navigation status constants
+NAV_STATUS_IDLE = 0
+NAV_STATUS_IN_PROGRESS = 1
+NAV_STATUS_DONE = 2
 
 class LunarNavigationController(Node):
     """
@@ -42,6 +48,7 @@ class LunarNavigationController(Node):
 
         # Publishers and subscribers
         self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.nav_status_publisher = self.create_publisher(UInt8, 'nav_status', 10)
         self.goal_subscriber = self.create_subscription(
             PoseStamped,
             'goal_pose',
@@ -51,10 +58,14 @@ class LunarNavigationController(Node):
 
         # Control loop timer (20 Hz)
         self.timer = self.create_timer(0.05, self.control_loop)
+        # Nav status publishing timer (10 Hz)
+        self.nav_status_timer = self.create_timer(0.1, self.publish_nav_status)
 
         # State variables
         self.goal_pose = None
         self.state = 'IDLE'  # States: IDLE, TURN_TO_GOAL, DRIVE_TO_GOAL, TURN_TO_HEADING
+        self.nav_status = NAV_STATUS_IDLE
+        self.done_start_time = None  # Time when DONE status was set
 
         self.get_logger().info('Lunar Navigation Controller initialized')
 
@@ -62,6 +73,7 @@ class LunarNavigationController(Node):
         """Receive new goal pose"""
         self.goal_pose = msg
         self.state = 'TURN_TO_GOAL'
+        self.nav_status = NAV_STATUS_IN_PROGRESS
         self.get_logger().info(f'New goal received: x={msg.pose.position.x:.2f}, y={msg.pose.position.y:.2f}')
 
     def get_current_pose(self):
@@ -91,6 +103,20 @@ class LunarNavigationController(Node):
         while angle < -math.pi:
             angle += 2.0 * math.pi
         return angle
+
+    def publish_nav_status(self):
+        """Publish navigation status"""
+        # Check if we've been in DONE state for 5 seconds, then switch to IDLE
+        if self.nav_status == NAV_STATUS_DONE and self.done_start_time is not None:
+            elapsed_time = (self.get_clock().now() - self.done_start_time).nanoseconds / 1e9
+            if elapsed_time >= 5.0:
+                self.nav_status = NAV_STATUS_IDLE
+                self.done_start_time = None
+                self.get_logger().info('Switching from DONE to IDLE after 5 seconds')
+
+        msg = UInt8()
+        msg.data = self.nav_status
+        self.nav_status_publisher.publish(msg)
 
     def control_loop(self):
         """Main control loop running at fixed rate"""
@@ -157,7 +183,10 @@ class LunarNavigationController(Node):
             if abs(angle_diff) < self.ang_tol:
                 # Goal reached!
                 self.state = 'IDLE'
-                self.get_logger().info('Goal reached!')
+                if self.nav_status != NAV_STATUS_DONE:
+                    self.nav_status = NAV_STATUS_DONE
+                    self.done_start_time = self.get_clock().now()
+                    self.get_logger().info('Goal reached!')
                 self.goal_pose = None
             else:
                 # Continue turning to final heading

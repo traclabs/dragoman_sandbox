@@ -9,6 +9,14 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 
+// Navigation status enum
+enum NavigationStatus
+{
+  NAV_STATUS_IDLE = 0,
+  NAV_STATUS_IN_PROGRESS = 1,
+  NAV_STATUS_DONE = 2
+};
+
 class SerializeLunarExplorationManual
 {
  public:
@@ -18,7 +26,7 @@ class SerializeLunarExplorationManual
                       const std::string &_robot_ip,
                       const std::string &_fsw_ip,
                       std::string &_error_msg);
- bool sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose );
+ bool sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status );
  bool peekCommandCode(uint8_t &_code);
  bool receiveTwistCommand(float &_linear_vel, float &_angular_vel);
  bool receiveCameraCommand(float &_pan, float &_tilt);
@@ -26,7 +34,7 @@ class SerializeLunarExplorationManual
 
  protected:
 
-  size_t serialize(sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose, uint8_t** buf);
+  size_t serialize(sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status, uint8_t** buf);
   bool deserialize(const uint8_t* buf, const size_t bufSize, size_t start_offset, uint8_t &code, float &_val1, float &_val2);
 
   int sockfd_;
