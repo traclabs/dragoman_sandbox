@@ -38,8 +38,10 @@ macro(xtce_generate_messages)
   file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/msg")
   message(STATUS "xtce_generate_messages: Converting XTCE files to .msg format...")
 
+  # Convert relative paths to absolute and process each XTCE file
+  set(XTCE_FILES_ABS "")
+
   foreach(XTCE_FILE ${ARG_FILES})
-    # Get absolute path
     if(NOT IS_ABSOLUTE ${XTCE_FILE})
       set(XTCE_FILE_ABS "${CMAKE_CURRENT_SOURCE_DIR}/${XTCE_FILE}")
     else()
@@ -48,13 +50,14 @@ macro(xtce_generate_messages)
 
     # Validate XTCE file exists
     if(NOT EXISTS ${XTCE_FILE_ABS})
-      message(FATAL_ERROR
-        "xtce_generate_messages: XTCE file not found: ${XTCE_FILE_ABS}\n"
-        "Make sure the file exists before building."
-      )
+      message(FATAL_ERROR "xtce_generate_messages: XTCE file not found: ${XTCE_FILE_ABS}")
     endif()
 
-    # Run xtce2msg to generate .msg files
+    list(APPEND XTCE_FILES_ABS ${XTCE_FILE_ABS})
+  endforeach()
+
+  # Convert XTCE files to ROS message files
+  foreach(XTCE_FILE_ABS ${XTCE_FILES_ABS})
     execute_process(
       COMMAND ${Python3_EXECUTABLE} -m dragoman_xtce2msg.xtce2msg
               ${XTCE_FILE_ABS} "${CMAKE_CURRENT_BINARY_DIR}/msg"
@@ -97,6 +100,18 @@ macro(xtce_generate_messages)
     ${GENERATED_MSG_FILES}
     DEPENDENCIES builtin_interfaces
   )
+
+  # Make generated .msg files depend on XTCE source files
+  # This ensures if XTCE files change, the .msg files are regenerated
+  foreach(MSG_FILE_ABS ${GENERATED_MSG_FILES_ABS})
+    set_source_files_properties(${MSG_FILE_ABS}
+      PROPERTIES
+      OBJECT_DEPENDS "${XTCE_FILES_ABS}"
+    )
+  endforeach()
+
+  # Set up configure dependency so CMake reconfigures if XTCE files change
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${XTCE_FILES_ABS})
 
   message(STATUS "xtce_generate_messages: Configuration complete for ${PROJECT_NAME}")
 
