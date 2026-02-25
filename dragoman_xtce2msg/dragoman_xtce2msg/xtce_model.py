@@ -373,8 +373,11 @@ def resolve_type_definition(type_name, type_definitions):
     tag = elem.tag.split('}')[-1] # Get tag name without the URI prefix
 
     # Handle standard primitive types
-    if tag in ('IntegerParameterType', 'EnumeratedParameterType'):
+    if tag == 'IntegerParameterType':
         return resolve_integer_type(elem, type_definitions)
+    elif tag == 'EnumeratedParameterType':
+        # Map enumerated types to string to hold engineering values
+        return 'string', False
     elif tag == 'FloatParameterType':
         return resolve_float_type(elem, type_definitions)
     elif tag == 'BooleanParameterType':

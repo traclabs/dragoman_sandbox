@@ -49,10 +49,10 @@ bool SerializeLunarExplorationManual::initializeComm( const int &_own_port,
 /**
  * @brief Serialize joint state from robot and send back to cFS
  */
-bool SerializeLunarExplorationManual::sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose )
+bool SerializeLunarExplorationManual::sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status )
 {
   unsigned char* buf     = 0;
-  size_t         bufSize = serialize(_js, _pose, &buf);
+  size_t         bufSize = serialize(_js, _pose, _nav_status, &buf);
 
   int res = sendto(sockfd_, buf, bufSize, 0, (const struct sockaddr *)&other_address_, sizeof(other_address_));
 
@@ -173,7 +173,7 @@ bool SerializeLunarExplorationManual::receiveNavigationPoseCommand(float &_x, fl
  * @function serialize
  * @brief Send data back
  */
-size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *_js, geometry_msgs::msg::Pose _pose, uint8_t** _buf)
+size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *_js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status, uint8_t** _buf)
 {
   if (_js->name.size() == 0 || _js->position.size() == 0)
     return 0;
@@ -214,7 +214,7 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
     return 0;
   }
 
-  size_t data_size = num_joints * sizeof(float) + 7*sizeof(float) + sizeof(int32_t) + sizeof(uint32_t); // joints + sec + nanosec
+  size_t data_size = num_joints * sizeof(float) + 7*sizeof(float) + sizeof(uint8_t) + sizeof(int32_t) + sizeof(uint32_t); // joints + pose + nav_status + sec + nanosec
 
   *_buf = static_cast<uint8_t *> (malloc(data_size));
   if (*_buf)
@@ -251,6 +251,9 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
     memcpy(*_buf + offset, &qw, sizeof(float));
     offset += sizeof(float);
 
+    // Navigation status
+    memcpy(*_buf + offset, &_nav_status, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
 
     int32_t sec = _js->header.stamp.sec;
     uint32_t nanosec = _js->header.stamp.nanosec;

@@ -67,14 +67,13 @@ class LunarExplorationJointStatePublisher(Node):
         # Broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
 
-        self.get_logger().info(f'LunarExploration Joint State Publisher initialized')
-        self.get_logger().info(f'Subscribing to: {input_topic}')
-        self.get_logger().info(f'Publishing to: /joint_states')
+        self.get_logger().debug(f'LunarExploration Joint State Publisher initialized')
+        self.get_logger().debug(f'Subscribing to: {input_topic}')
+        self.get_logger().debug(f'Publishing to: /joint_states')
 
     def telemetry_callback(self, msg):
         """Convert LunarExplorationTelemetryPacket to JointState message and publish."""
         joint_state_msg = JointState()
-        self.get_logger().info(f'Gotten telemetry at ground!')
         # Set timestamp
         joint_state_msg.header.stamp = self.get_clock().now().to_msg()
         joint_state_msg.header.frame_id = ''

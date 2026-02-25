@@ -224,33 +224,10 @@ class MessageIntrospector:
 class TypeConverter:
     """Handles type conversion from YAMCS parameter values to ROS message field types."""
 
-    # Enum mapping for enumerated types
-    ENUM_MAPPINGS = {
-        'T_EnumeratedAlarm': {
-            'STATE_OFF': 0,
-            'STATE_NOMINAL': 1,
-            'STATE_FAULT': 2
-        }
-    }
-
     _ROS_INT_TYPES = {
         'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64'
     }
     _ROS_FLOAT_TYPES = {'float32', 'float64'}
-
-    # Common string enums that YAMCS may return for numeric CCSDS-like fields
-    # (kept generic; applies when the ROS field is an integer type)
-    _COMMON_STRING_TO_INT = {
-        # CCSDS primary header "type" bit (common naming)
-        'TM': 0,
-        'TC': 1,
-
-        # CCSDS packet sequence "sequence flags" (2-bit)
-        'CONTINUATION': 0,
-        'FIRST': 1,
-        'LAST': 2,
-        'STANDALONE': 3,
-    }
 
     @staticmethod
     def is_ros_message_type(type_str: str) -> bool:
@@ -386,10 +363,6 @@ class TypeConverter:
         if base.endswith('/Time'):
             return TypeConverter._convert_absolute_time(value)
 
-        # Enumerated types (YAMCS often provides strings for enums)
-        if isinstance(value, str) and param_name in TypeConverter.ENUM_MAPPINGS and base in TypeConverter._ROS_INT_TYPES:
-            return TypeConverter._convert_enum(param_name, value, logger)
-
         # bytes -> list of ints for sequences (esp uint8[])
         if isinstance(value, bytes):
             if is_array and base == 'uint8':
@@ -416,22 +389,12 @@ class TypeConverter:
 
         if base in TypeConverter._ROS_INT_TYPES:
             if isinstance(value, str):
-                s = value.strip()
-
-                # Try well-known enum-like strings first (case-insensitive)
-                if s in TypeConverter._COMMON_STRING_TO_INT:
-                    return TypeConverter._COMMON_STRING_TO_INT[s]
-                su = s.upper()
-                if su in TypeConverter._COMMON_STRING_TO_INT:
-                    return TypeConverter._COMMON_STRING_TO_INT[su]
-
-                # Then try parsing numeric strings (supports "0x.." via base=0)
+                # Try parsing numeric strings (supports "0x.." via base=0)
                 try:
-                    return int(s, 0)
+                    return int(value.strip(), 0)
                 except Exception:
                     # Some values might come as "12.0" strings; allow that too
-                    return int(float(s))
-
+                    return int(float(value.strip()))
             return int(value)
 
         if base in TypeConverter._ROS_FLOAT_TYPES:
@@ -455,18 +418,6 @@ class TypeConverter:
         time_msg.sec = int(timestamp)
         time_msg.nanosec = int((timestamp - int(timestamp)) * 1e9)
         return time_msg
-
-    @staticmethod
-    def _convert_enum(param_name: str, value: Any, logger: Optional[Any] = None) -> Any:
-        """Convert enumerated string to numeric value."""
-        if isinstance(value, str) and param_name in TypeConverter.ENUM_MAPPINGS:
-            enum_map = TypeConverter.ENUM_MAPPINGS[param_name]
-            if value in enum_map:
-                converted = enum_map[value]
-                if logger:
-                    logger.debug(f'Converted enum to numeric: {converted}')
-                return converted
-        return value
 
     @staticmethod
     def populate_message(msg: Any, eng_value: Any, logger: Optional[Any] = None, root_param_name: str = "") -> None:
@@ -906,7 +857,8 @@ class YamcsRosBridge(Node):
             return
 
         leaf = parts[-1]
-        eng_value = param_value.eng_value if hasattr(param_value, 'eng_value') else None
+        # Use eng_value to get engineering/calibrated values (including enum labels as strings)
+        value = param_value.eng_value if hasattr(param_value, 'eng_value') else None
 
         # Try nested field mapping first (e.g., Parent/Member -> parent.member)
         if len(parts) >= 3:  # e.g., /Curiosity/ccsds_packet_id/apid
@@ -915,7 +867,7 @@ class YamcsRosBridge(Node):
             ros_path = MessageIntrospector._yamcs_member_to_ros_path(type(msg), dotted_name)
             if ros_path:
                 try:
-                    self._set_field_value(msg, ros_path, eng_value, leaf)
+                    self._set_field_value(msg, ros_path, value, leaf)
                     return
                 except Exception as e:
                     self.get_logger().debug(f'Nested mapping failed: {e}')
@@ -925,7 +877,7 @@ class YamcsRosBridge(Node):
 
         if hasattr(msg, ros_field_name):
             try:
-                self._set_field_value(msg, ros_field_name, eng_value, leaf)
+                self._set_field_value(msg, ros_field_name, value, leaf)
             except Exception as e:
                 self.get_logger().error(f'Could not map {param_name}: {e}')
         else:
