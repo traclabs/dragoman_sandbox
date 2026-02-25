@@ -8,11 +8,47 @@
 #include <netinet/in.h>
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
+#include <control_msgs/action/follow_joint_trajectory.hpp>
 
 #include <dragoman_fsw_sim/serialize_mobile_servicing_system_manual.h>
 #include <trac_ik/trac_ik.hpp>
+
+// Motion command status enum
+enum class MotionStatus : uint8_t
+{
+  IDLE = 0,
+  IN_PROGRESS = 1,
+  DONE = 2
+};
+
+// Motion status for all MSS subsystems
+struct MSSMotionStatus
+{
+  MotionStatus mbs;
+  MotionStatus canadarm2;
+  MotionStatus dextre_body;
+  MotionStatus dextre_arm_1;
+  MotionStatus dextre_arm_2;
+  MotionStatus sarj;
+  MotionStatus port_bga;
+  MotionStatus starboard_bga;
+};
+
+// Timestamps for when each subsystem was set to DONE status
+struct MSSDoneTimestamps
+{
+  rclcpp::Time mbs;
+  rclcpp::Time canadarm2;
+  rclcpp::Time dextre_body;
+  rclcpp::Time dextre_arm_1;
+  rclcpp::Time dextre_arm_2;
+  rclcpp::Time sarj;
+  rclcpp::Time port_bga;
+  rclcpp::Time starboard_bga;
+};
 
 class MobileServicingSystemCommUdp : public rclcpp::Node {
 
@@ -25,19 +61,31 @@ public:
 
 protected:
 
+  using FollowJointTrajectory = control_msgs::action::FollowJointTrajectory;
+  using GoalHandleFJT = rclcpp_action::ClientGoalHandle<FollowJointTrajectory>;
+
   void send_telemetry();
   void rcv_command();
 
   void js_cb(const sensor_msgs::msg::JointState::SharedPtr _msg);
   bool initDefaults();
 
+  // Action callbacks
+  void goal_response_callback(MotionStatus* status_ptr, std::shared_ptr<GoalHandleFJT> goal_handle);
+  void feedback_callback(GoalHandleFJT::SharedPtr, const std::shared_ptr<const FollowJointTrajectory::Feedback> feedback);
+  void result_callback(MotionStatus* status_ptr, rclcpp::Time* timestamp_ptr, const GoalHandleFJT::WrappedResult & result);
+
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_js_;
-  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_canadarm_;
-  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_mbs_;
-  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_dextre_body_;
-  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_dextre_arm_1_;
-  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_dextre_arm_2_;
-  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_starboard_bga_;
+
+  // Action clients for each controller
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_canadarm_;
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_mbs_;
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_dextre_body_;
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_dextre_arm_1_;
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_dextre_arm_2_;
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_sarj_;
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_port_bga_;
+  rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client_starboard_bga_;
 
   rclcpp::TimerBase::SharedPtr timer_tlm_;
   rclcpp::TimerBase::SharedPtr timer_cmd_;
@@ -69,8 +117,14 @@ protected:
   std::vector<std::string> canadarm_joints_, mbs_joints_;
   std::vector<std::string> dextre_joints_;
   std::vector<std::string> dextre_body_joints_, dextre_arm_1_joints_, dextre_arm_2_joints_;
-  std::vector<std::string> starboard_bga_joints_;
+  std::vector<std::string> sarj_joints_, port_bga_joints_, starboard_bga_joints_;
   std::map<std::string, std::map<std::string, std::vector<double> > > group_states_;
   int duration_;
+
+  // Motion command status for all subsystems
+  MSSMotionStatus motion_status_;
+
+  // Timestamps for when subsystems were set to DONE status
+  MSSDoneTimestamps done_timestamps_;
 
 };

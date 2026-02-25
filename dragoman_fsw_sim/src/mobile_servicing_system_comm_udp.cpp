@@ -25,6 +25,16 @@ Node("arm_comm_udp")
    cmd_freq_ = 30.0;
    cmd_rate_ = 1.0/cmd_freq_; // 30 Hz
 
+   // Initialize motion status to IDLE for all subsystems
+   motion_status_.mbs = MotionStatus::IDLE;
+   motion_status_.canadarm2 = MotionStatus::IDLE;
+   motion_status_.dextre_body = MotionStatus::IDLE;
+   motion_status_.dextre_arm_1 = MotionStatus::IDLE;
+   motion_status_.dextre_arm_2 = MotionStatus::IDLE;
+   motion_status_.sarj = MotionStatus::IDLE;
+   motion_status_.port_bga = MotionStatus::IDLE;
+   motion_status_.starboard_bga = MotionStatus::IDLE;
+
 }
 
 /**
@@ -37,6 +47,8 @@ bool MobileServicingSystemCommUdp::initDefaults()
    dextre_body_joints_ = {"joint_dextre_body"};
    dextre_arm_1_joints_ = {"joint_dextre_arm_1_shoulder_roll", "joint_dextre_arm_1_shoulder_yaw", "joint_dextre_arm_1_shoulder_pitch", "joint_dextre_arm_1_elbow_pitch", "joint_dextre_arm_1_wrist_pitch_yaw", "joint_dextre_arm_1_wrist_roll"};
    dextre_arm_2_joints_ = {"joint_dextre_arm_2_shoulder_roll", "joint_dextre_arm_2_shoulder_yaw", "joint_dextre_arm_2_shoulder_pitch", "joint_dextre_arm_2_elbow_pitch", "joint_dextre_arm_2_wrist_pitch_yaw", "joint_dextre_arm_2_wrist_roll"};
+   sarj_joints_ = {"joint_starboard_sarj", "joint_port_sarj"};
+   port_bga_joints_ = {"joint_port_bga_1", "joint_port_bga_2", "joint_port_bga_3", "joint_port_bga_4"};
    starboard_bga_joints_ = {"joint_starboard_bga_1", "joint_starboard_bga_2", "joint_starboard_bga_3", "joint_starboard_bga_4"};
    duration_ = 5;
 
@@ -56,6 +68,16 @@ bool MobileServicingSystemCommUdp::initDefaults()
    group_states_["canadarm"]["battery_approach_5"] = {-0.605002074884394, 0.21107525936356275, -0.7465880981813328, -0.26361884120485235, 0.051124460930129345, -0.2960438164053687, 0.38809889416538945};
    group_states_["dextre_arm_2"]["battery_approach_6"] = {0.1852359229366735, -0.5242074747970021, -1.1729191164615993, -1.6061683715275838, 0.17661993791396646, 2.3745498761609554};
 
+   // Initialize done timestamps to zero
+   done_timestamps_.mbs = rclcpp::Time(0);
+   done_timestamps_.canadarm2 = rclcpp::Time(0);
+   done_timestamps_.dextre_body = rclcpp::Time(0);
+   done_timestamps_.dextre_arm_1 = rclcpp::Time(0);
+   done_timestamps_.dextre_arm_2 = rclcpp::Time(0);
+   done_timestamps_.sarj = rclcpp::Time(0);
+   done_timestamps_.port_bga = rclcpp::Time(0);
+   done_timestamps_.starboard_bga = rclcpp::Time(0);
+
    return true;
 }
 
@@ -63,18 +85,28 @@ bool MobileServicingSystemCommUdp::initDefaults()
 bool MobileServicingSystemCommUdp::initRobotComm()
 {
   std::string js_topic;
-  std::string jc_topic;
 
   this->get_parameter("joint_state", js_topic);
 
   sub_js_ = this->create_subscription<sensor_msgs::msg::JointState>(js_topic, 10, std::bind(&MobileServicingSystemCommUdp::js_cb, this, _1));
 
-  pub_canadarm_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/canadarm2_joint_trajectory_controller/joint_trajectory", 10);
-  pub_mbs_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/mobile_base_system_joint_trajectory_controller/joint_trajectory", 10);
-  pub_dextre_body_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/dextre_body_joint_trajectory_controller/joint_trajectory", 10);
-  pub_dextre_arm_1_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/dextre_arm_1_joint_trajectory_controller/joint_trajectory", 10);
-  pub_dextre_arm_2_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/dextre_arm_2_joint_trajectory_controller/joint_trajectory", 10);
-  pub_starboard_bga_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/starboard_bga_joint_trajectory_controller/joint_trajectory", 10);
+  // Create action clients for each controller
+  action_client_canadarm_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/canadarm2_joint_trajectory_controller/follow_joint_trajectory");
+  action_client_mbs_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/mobile_base_system_joint_trajectory_controller/follow_joint_trajectory");
+  action_client_dextre_body_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/dextre_body_joint_trajectory_controller/follow_joint_trajectory");
+  action_client_dextre_arm_1_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/dextre_arm_1_joint_trajectory_controller/follow_joint_trajectory");
+  action_client_dextre_arm_2_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/dextre_arm_2_joint_trajectory_controller/follow_joint_trajectory");
+  action_client_sarj_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/sarj_joint_trajectory_controller/follow_joint_trajectory");
+  action_client_port_bga_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/port_bga_joint_trajectory_controller/follow_joint_trajectory");
+  action_client_starboard_bga_ = rclcpp_action::create_client<FollowJointTrajectory>(
+    this, "/starboard_bga_joint_trajectory_controller/follow_joint_trajectory");
 
   initDefaults();
 
@@ -135,7 +167,42 @@ void MobileServicingSystemCommUdp::send_telemetry()
    if(js.name.size() == 0)
      return;
 
-   if(!sm_.sendMessage(&js))
+   // Lambda to check and reset DONE status to IDLE after 5 seconds
+   auto check_and_reset_done_status = [this](MotionStatus& status, rclcpp::Time& timestamp) {
+     if (status == MotionStatus::DONE && timestamp.nanoseconds() > 0) {
+       auto current_time = this->get_clock()->now();
+       double elapsed_time = (current_time - timestamp).seconds();
+       if (elapsed_time >= 5.0) {
+         status = MotionStatus::IDLE;
+         timestamp = rclcpp::Time(0);
+       }
+     }
+   };
+
+   // Check if any subsystem has been in DONE state for 5 seconds, then switch to IDLE
+   check_and_reset_done_status(motion_status_.mbs, done_timestamps_.mbs);
+   check_and_reset_done_status(motion_status_.canadarm2, done_timestamps_.canadarm2);
+   check_and_reset_done_status(motion_status_.dextre_body, done_timestamps_.dextre_body);
+   check_and_reset_done_status(motion_status_.dextre_arm_1, done_timestamps_.dextre_arm_1);
+   check_and_reset_done_status(motion_status_.dextre_arm_2, done_timestamps_.dextre_arm_2);
+   check_and_reset_done_status(motion_status_.sarj, done_timestamps_.sarj);
+   check_and_reset_done_status(motion_status_.port_bga, done_timestamps_.port_bga);
+   check_and_reset_done_status(motion_status_.starboard_bga, done_timestamps_.starboard_bga);
+
+   // Convert MotionStatus struct to uint8_t array for transmission
+   // Order: mbs, canadarm2, dextre_body, dextre_arm_1, dextre_arm_2, sarj, port_bga, starboard_bga
+   uint8_t status_bytes[8] = {
+     static_cast<uint8_t>(motion_status_.mbs),
+     static_cast<uint8_t>(motion_status_.canadarm2),
+     static_cast<uint8_t>(motion_status_.dextre_body),
+     static_cast<uint8_t>(motion_status_.dextre_arm_1),
+     static_cast<uint8_t>(motion_status_.dextre_arm_2),
+     static_cast<uint8_t>(motion_status_.sarj),
+     static_cast<uint8_t>(motion_status_.port_bga),
+     static_cast<uint8_t>(motion_status_.starboard_bga)
+   };
+
+   if(!sm_.sendMessage(&js, status_bytes))
      RCLCPP_ERROR(this->get_logger(), "Error sending message");
 }
 
@@ -151,39 +218,67 @@ void MobileServicingSystemCommUdp::rcv_command()
   {
     RCLCPP_INFO(this->get_logger(), "Received command group: %s and state: %s", group.c_str(), state.c_str());
 
-    auto traj = trajectory_msgs::msg::JointTrajectory();
+    // Map group name to action client and motion status pointer
+    rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client;
+    std::vector<std::string> joint_names;
+    MotionStatus* status_ptr = nullptr;
+    rclcpp::Time* timestamp_ptr = nullptr;
 
-    // Select the correct joint list and publisher based on the group
-    rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub;
     if(group == "canadarm")
     {
-      traj.joint_names = canadarm_joints_;
-      pub = pub_canadarm_;
+      action_client = action_client_canadarm_;
+      joint_names = canadarm_joints_;
+      status_ptr = &motion_status_.canadarm2;
+      timestamp_ptr = &done_timestamps_.canadarm2;
     }
     else if (group == "mbs")
     {
-      traj.joint_names = mbs_joints_;
-      pub = pub_mbs_;
+      action_client = action_client_mbs_;
+      joint_names = mbs_joints_;
+      status_ptr = &motion_status_.mbs;
+      timestamp_ptr = &done_timestamps_.mbs;
     }
     else if (group == "dextre_body")
     {
-      traj.joint_names = dextre_body_joints_;
-      pub = pub_dextre_body_;
+      action_client = action_client_dextre_body_;
+      joint_names = dextre_body_joints_;
+      status_ptr = &motion_status_.dextre_body;
+      timestamp_ptr = &done_timestamps_.dextre_body;
     }
     else if (group == "dextre_arm_1")
     {
-      traj.joint_names = dextre_arm_1_joints_;
-      pub = pub_dextre_arm_1_;
+      action_client = action_client_dextre_arm_1_;
+      joint_names = dextre_arm_1_joints_;
+      status_ptr = &motion_status_.dextre_arm_1;
+      timestamp_ptr = &done_timestamps_.dextre_arm_1;
     }
     else if (group == "dextre_arm_2")
     {
-      traj.joint_names = dextre_arm_2_joints_;
-      pub = pub_dextre_arm_2_;
+      action_client = action_client_dextre_arm_2_;
+      joint_names = dextre_arm_2_joints_;
+      status_ptr = &motion_status_.dextre_arm_2;
+      timestamp_ptr = &done_timestamps_.dextre_arm_2;
+    }
+    else if (group == "sarj")
+    {
+      action_client = action_client_sarj_;
+      joint_names = sarj_joints_;
+      status_ptr = &motion_status_.sarj;
+      timestamp_ptr = &done_timestamps_.sarj;
+    }
+    else if (group == "port_bga")
+    {
+      action_client = action_client_port_bga_;
+      joint_names = port_bga_joints_;
+      status_ptr = &motion_status_.port_bga;
+      timestamp_ptr = &done_timestamps_.port_bga;
     }
     else if (group == "starboard_bga")
     {
-      traj.joint_names = starboard_bga_joints_;
-      pub = pub_starboard_bga_;
+      action_client = action_client_starboard_bga_;
+      joint_names = starboard_bga_joints_;
+      status_ptr = &motion_status_.starboard_bga;
+      timestamp_ptr = &done_timestamps_.starboard_bga;
     }
     else
     {
@@ -191,8 +286,7 @@ void MobileServicingSystemCommUdp::rcv_command()
       return;
     }
 
-    auto point1 = trajectory_msgs::msg::JointTrajectoryPoint();
-
+    // Validate group and state exist
     if(group_states_.find(group) == group_states_.end())
     {
       RCLCPP_ERROR(this->get_logger(), "Group %s not stored", group.c_str());
@@ -203,15 +297,88 @@ void MobileServicingSystemCommUdp::rcv_command()
       RCLCPP_ERROR(this->get_logger(), "State %s for group %s not stored", state.c_str(), group.c_str());
       return;
     }
-    point1.positions = group_states_[group][state];
-    point1.time_from_start = rclcpp::Duration(duration_, 0);
 
-    traj.points.push_back(point1);
-    pub->publish(traj);
+    // Check if action server is ready
+    if (!action_client->wait_for_action_server(std::chrono::seconds(1)))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Action server for %s not available", group.c_str());
+      return;
+    }
 
-    // Do IK magic
-    //double jv = 5.0*M_PI/180.0;
-    //calculateMotion(cmd, jv);
+    // Create goal message
+    auto goal_msg = FollowJointTrajectory::Goal();
+    goal_msg.trajectory.joint_names = joint_names;
+
+    auto point = trajectory_msgs::msg::JointTrajectoryPoint();
+    point.positions = group_states_[group][state];
+    point.time_from_start = rclcpp::Duration(duration_, 0);
+    goal_msg.trajectory.points.push_back(point);
+
+    // Send goal with async callbacks to avoid blocking
+    auto send_goal_options = rclcpp_action::Client<FollowJointTrajectory>::SendGoalOptions();
+
+    // Goal response callback - called when server accepts/rejects goal
+    send_goal_options.goal_response_callback =
+      [this, status_ptr](std::shared_ptr<GoalHandleFJT> goal_handle)
+      {
+        this->goal_response_callback(status_ptr, goal_handle);
+      };
+
+    // Result callback - called when action completes
+    send_goal_options.result_callback =
+      [this, status_ptr, timestamp_ptr](const GoalHandleFJT::WrappedResult & result)
+      {
+        this->result_callback(status_ptr, timestamp_ptr, result);
+      };
+
+    // Send goal asynchronously
+    action_client->async_send_goal(goal_msg, send_goal_options);
+
+    RCLCPP_INFO(this->get_logger(), "Goal sent for group %s", group.c_str());
+  }
+}
+
+/**
+ * @function goal_response_callback
+ */
+void MobileServicingSystemCommUdp::goal_response_callback(MotionStatus* status_ptr, std::shared_ptr<GoalHandleFJT> goal_handle)
+{
+  if (!goal_handle)
+  {
+    RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
+    *status_ptr = MotionStatus::IDLE;
+  }
+  else
+  {
+    RCLCPP_INFO(this->get_logger(), "Goal accepted by server");
+    *status_ptr = MotionStatus::IN_PROGRESS;
+  }
+}
+
+/**
+ * @function result_callback
+ */
+void MobileServicingSystemCommUdp::result_callback(MotionStatus* status_ptr, rclcpp::Time* timestamp_ptr, const GoalHandleFJT::WrappedResult & result)
+{
+  switch (result.code)
+  {
+    case rclcpp_action::ResultCode::SUCCEEDED:
+      RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+      *status_ptr = MotionStatus::DONE;
+      *timestamp_ptr = this->get_clock()->now();
+      break;
+    case rclcpp_action::ResultCode::ABORTED:
+      RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+      *status_ptr = MotionStatus::IDLE;
+      break;
+    case rclcpp_action::ResultCode::CANCELED:
+      RCLCPP_WARN(this->get_logger(), "Goal was canceled");
+      *status_ptr = MotionStatus::IDLE;
+      break;
+    default:
+      RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+      *status_ptr = MotionStatus::IDLE;
+      break;
   }
 }
 
