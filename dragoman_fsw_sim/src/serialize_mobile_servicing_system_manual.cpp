@@ -49,10 +49,10 @@ bool SerializeMobileServicingSystemManual::initializeComm( const int &_own_port,
 /**
  * @brief Serialize joint state from robot and send back to cFS
  */
-bool SerializeMobileServicingSystemManual::sendMessage( sensor_msgs::msg::JointState* _js )
+bool SerializeMobileServicingSystemManual::sendMessage( sensor_msgs::msg::JointState* _js, uint8_t motion_status[8] )
 {
   unsigned char* buf     = 0;
-  size_t         bufSize = serialize(_js, &buf);
+  size_t         bufSize = serialize(_js, motion_status, &buf);
 
   int res = sendto(sockfd_, buf, bufSize, 0, (const struct sockaddr *)&other_address_, sizeof(other_address_));
 
@@ -87,7 +87,7 @@ bool SerializeMobileServicingSystemManual::receiveMessage(std::string &_group, s
  * @function serialize
  * @brief Send data back
  */
-size_t SerializeMobileServicingSystemManual::serialize(sensor_msgs::msg::JointState *_js, uint8_t** _buf)
+size_t SerializeMobileServicingSystemManual::serialize(sensor_msgs::msg::JointState *_js, uint8_t motion_status[8], uint8_t** _buf)
 {
   if (_js->name.size() == 0 || _js->position.size() == 0)
     return 0;
@@ -109,7 +109,7 @@ size_t SerializeMobileServicingSystemManual::serialize(sensor_msgs::msg::JointSt
     return 0;
   }
 
-  size_t data_size = num_joints * sizeof(float) + sizeof(int32_t) + sizeof(uint32_t); // joints + sec + nanosec
+  size_t data_size = num_joints * sizeof(float) + 8 * sizeof(uint8_t) + sizeof(int32_t) + sizeof(uint32_t); // joints + motion_status + sec + nanosec
 
   *_buf = static_cast<uint8_t *> (malloc(data_size));
   if (*_buf)
@@ -123,6 +123,13 @@ size_t SerializeMobileServicingSystemManual::serialize(sensor_msgs::msg::JointSt
     {
       memcpy(*_buf + offset, &data[i], sizeof(float));
       offset += sizeof(float);
+    }
+
+    // Add motion status (8 uint8_t values)
+    for(size_t i = 0; i < 8; i++)
+    {
+      memcpy(*_buf + offset, &motion_status[i], sizeof(uint8_t));
+      offset += sizeof(uint8_t);
     }
 
     int32_t sec = _js->header.stamp.sec;

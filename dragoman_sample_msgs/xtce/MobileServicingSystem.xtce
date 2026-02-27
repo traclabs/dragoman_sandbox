@@ -77,6 +77,82 @@ use a different convention where 0=core and 1=payload.
       <FloatParameterType name="joint_state__el" sizeInBits="32">
         <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
       </FloatParameterType>
+      <AggregateParameterType name="motion_command_status">
+        <MemberList>
+          <Member name="mbs" typeRef="motion_command_status__mbs"/>
+          <Member name="canadarm2" typeRef="motion_command_status__canadarm2"/>
+          <Member name="dextre_body" typeRef="motion_command_status__dextre_body"/>
+          <Member name="dextre_arm_1" typeRef="motion_command_status__dextre_arm_1"/>
+          <Member name="dextre_arm_2" typeRef="motion_command_status__dextre_arm_2"/>
+          <Member name="sarj" typeRef="motion_command_status__sarj"/>
+          <Member name="port_bga" typeRef="motion_command_status__port_bga"/>
+          <Member name="starboard_bga" typeRef="motion_command_status__starboard_bga"/>
+        </MemberList>
+      </AggregateParameterType>
+      <EnumeratedParameterType name="motion_command_status__mbs">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <EnumeratedParameterType name="motion_command_status__canadarm2">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <EnumeratedParameterType name="motion_command_status__dextre_body">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <EnumeratedParameterType name="motion_command_status__dextre_arm_1">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <EnumeratedParameterType name="motion_command_status__dextre_arm_2">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <EnumeratedParameterType name="motion_command_status__sarj">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <EnumeratedParameterType name="motion_command_status__port_bga">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
+      <EnumeratedParameterType name="motion_command_status__starboard_bga">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="IDLE"/>
+          <Enumeration value="1" label="IN_PROGRESS"/>
+          <Enumeration value="2" label="DONE"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
       <AggregateParameterType name="scr_header">
         <MemberList>
           <Member name="Sec" typeRef="scr_header__Sec"/>
@@ -127,6 +203,9 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="full_joint [47]">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
+      <Parameter name="motion_command_status" parameterTypeRef="motion_command_status" shortDescription="Motion command status">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
       <Parameter name="scr_header" parameterTypeRef="scr_header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
@@ -145,6 +224,11 @@ use a different convention where 0=core and 1=payload.
       <SequenceContainer name="MobileServicingSystemTelemetryPacket" abstract="false">
         <EntryList>
           <ParameterRefEntry parameterRef="joint_state">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="motion_command_status">
             <LocationInContainerInBits referenceLocation="previousEntry">
               <FixedValue>0</FixedValue>
             </LocationInContainerInBits>

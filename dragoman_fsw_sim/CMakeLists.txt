@@ -8,6 +8,7 @@ find_package(ament_cmake_python REQUIRED)
 
 
 set(DEPS
+  control_msgs
   rclcpp
   rclpy
   geometry_msgs

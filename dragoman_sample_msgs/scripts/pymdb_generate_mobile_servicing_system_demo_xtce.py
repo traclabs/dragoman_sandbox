@@ -2,8 +2,12 @@
 """
 Generate XTCE for Mobile Servicing System demo.
 
-Telemetry: Joint state (float[31]: 1 MBS joint + 7 Canadarm2 joints + 1 Dextre waist + 6x2 Dextre arms) + (4+1)x2 solar panels
-Command: ee_goal_pose (float[7]: xyz position + xyzw quaternion)
+Telemetry: Joint state (float[47]) + motion command status (uint8[8])
+  - Joint state: all joints for MBS, Canadarm2, Dextre body/arms, SARJ, and BGAs
+  - Motion command status: status for mbs, canadarm2, dextre_body, dextre_arm_1, dextre_arm_2, sarj, port_bga, starboard_bga
+    Status values: 0=IDLE, 1=IN_PROGRESS, 2=DONE
+
+Command: send_canned_pose (group_name, group_canned_pose)
 """
 
 import sys
@@ -138,12 +142,37 @@ def generate_xtce_mobile_servicing_system_demo(filename):
     short_description="full_joint [47]"
   )
 
+  # Define reusable motion status choices
+  motion_status_choices = [
+    (0, "IDLE"),
+    (1, "IN_PROGRESS"),
+    (2, "DONE")
+  ]
+
+  # Motion command status for all subsystems
+  motion_command_status = yp.AggregateParameter(
+    system=spacecraft,
+    name="motion_command_status",
+    members=[
+      yp.EnumeratedMember(name="mbs", choices=motion_status_choices, encoding=yp.uint8_t),
+      yp.EnumeratedMember(name="canadarm2", choices=motion_status_choices, encoding=yp.uint8_t),
+      yp.EnumeratedMember(name="dextre_body", choices=motion_status_choices, encoding=yp.uint8_t),
+      yp.EnumeratedMember(name="dextre_arm_1", choices=motion_status_choices, encoding=yp.uint8_t),
+      yp.EnumeratedMember(name="dextre_arm_2", choices=motion_status_choices, encoding=yp.uint8_t),
+      yp.EnumeratedMember(name="sarj", choices=motion_status_choices, encoding=yp.uint8_t),
+      yp.EnumeratedMember(name="port_bga", choices=motion_status_choices, encoding=yp.uint8_t),
+      yp.EnumeratedMember(name="starboard_bga", choices=motion_status_choices, encoding=yp.uint8_t)
+    ],
+    short_description="Motion command status"
+  )
+
   telemetry_container = yp.Container(
     system=spacecraft,
     name="MobileServicingSystemTelemetryPacket",
     base=cFS_telemetry_container,
     entries=[
-      yp.ParameterEntry(parameter=joint_state_parameter)
+      yp.ParameterEntry(parameter=joint_state_parameter),
+      yp.ParameterEntry(parameter=motion_command_status)
     ],
     condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
   )
