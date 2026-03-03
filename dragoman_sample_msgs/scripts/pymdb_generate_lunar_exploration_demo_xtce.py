@@ -234,6 +234,20 @@ def generate_xtce_lunar_exploration_demo(filename):
     short_description="Navigation command status"
   )
 
+  # Battery aggregate parameter
+  battery_parameter = yp.AggregateParameter(
+    system=spacecraft,
+    name="battery",
+    members=[
+      yp.FloatMember(name="voltage", bits=32, encoding=yp.float32le_t, units="V", short_description="Battery voltage"),
+      yp.FloatMember(name="current", bits=32, encoding=yp.float32le_t, units="A", short_description="Battery current (amps)"),
+      yp.FloatMember(name="percentage", bits=32, encoding=yp.float32le_t, units="%", short_description="Battery charge percentage"),
+      yp.BooleanMember(name="charging", zero_string_value="Not charging", one_string_value="Charging", encoding=yp.uint8_t, short_description="Battery charging status"),
+      yp.FloatMember(name="temperature", bits=32, encoding=yp.float32le_t, units="°C", short_description="Battery temperature in celsius"),
+    ],
+    short_description="Battery status"
+  )
+
   telemetry_container = yp.Container(
     system=spacecraft,
     name="LunarExplorationTelemetryPacket",
@@ -241,7 +255,8 @@ def generate_xtce_lunar_exploration_demo(filename):
     entries=[
       yp.ParameterEntry(parameter=joint_state_parameter),
       yp.ParameterEntry(parameter=pose_parameter),
-      yp.ParameterEntry(parameter=navigation_status_parameter)
+      yp.ParameterEntry(parameter=navigation_status_parameter),
+      yp.ParameterEntry(parameter=battery_parameter)
     ],
     condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
   )
