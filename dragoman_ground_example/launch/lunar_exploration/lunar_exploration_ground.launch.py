@@ -104,6 +104,19 @@ def generate_launch_description():
         ],
     )
 
+    # Overlay Pie Chart Publisher - publishes battery power as RViz overlay pie chart
+    overlay_pie_chart_publisher = Node(
+        package="dragoman_ground_example",
+        executable="lunar_exploration_overlay_pie_chart_publisher.py",
+        name="lunar_exploration_overlay_pie_chart_publisher",
+        output="screen",
+        parameters=[
+            {
+                "use_sim_time": LaunchConfiguration("use_sim_time"),
+            }
+        ],
+    )
+
     # RViz2 - visualization
     rviz_node = Node(
         package="rviz2",
@@ -121,6 +134,7 @@ def generate_launch_description():
             yamcs_ros_bridge,
             joint_state_publisher,
             overlay_text_publisher,
+            overlay_pie_chart_publisher,
             rviz_node,
         ]
     )

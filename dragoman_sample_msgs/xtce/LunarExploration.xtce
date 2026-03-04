@@ -6,6 +6,42 @@ See https://github.com/yamcs/pymdb
 <SpaceSystem xmlns="http://www.omg.org/spec/XTCE/20180204" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.omg.org/spec/XTCE/20180204 https://www.omg.org/spec/XTCE/20180204/SpaceSystem.xsd" name="LunarExploration">
   <TelemetryMetaData>
     <ParameterTypeSet>
+      <AggregateParameterType name="battery">
+        <MemberList>
+          <Member name="voltage" typeRef="battery__voltage" shortDescription="Battery voltage"/>
+          <Member name="current" typeRef="battery__current" shortDescription="Battery current (amps)"/>
+          <Member name="percentage" typeRef="battery__percentage" shortDescription="Battery charge percentage"/>
+          <Member name="charging" typeRef="battery__charging" shortDescription="Battery charging status"/>
+          <Member name="temperature" typeRef="battery__temperature" shortDescription="Battery temperature in celsius"/>
+        </MemberList>
+      </AggregateParameterType>
+      <FloatParameterType name="battery__voltage" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">V</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="battery__current" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">A</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="battery__percentage" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">%</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <BooleanParameterType name="battery__charging" zeroStringValue="Not charging" oneStringValue="Charging">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+      </BooleanParameterType>
+      <FloatParameterType name="battery__temperature" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">°C</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
       <AggregateParameterType name="ccsds_packet_id">
         <MemberList>
           <Member name="version" typeRef="ccsds_packet_id__version"/>
@@ -165,6 +201,9 @@ use a different convention where 0=core and 1=payload.
       </IntegerParameterType>
     </ParameterTypeSet>
     <ParameterSet>
+      <Parameter name="battery" parameterTypeRef="battery" shortDescription="Battery status">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
       <Parameter name="ccsds_packet_id" parameterTypeRef="ccsds_packet_id" shortDescription="First word of the primary CCSDS header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
@@ -211,6 +250,11 @@ use a different convention where 0=core and 1=payload.
             </LocationInContainerInBits>
           </ParameterRefEntry>
           <ParameterRefEntry parameterRef="navigation_status">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="battery">
             <LocationInContainerInBits referenceLocation="previousEntry">
               <FixedValue>0</FixedValue>
             </LocationInContainerInBits>

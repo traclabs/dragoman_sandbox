@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Battery1
       Splitter Ratio: 0.5
     Tree Height: 555
   - Class: rviz_common/Selection
@@ -251,6 +252,34 @@ Visualization Manager:
       ver_alignment: top
       ver_dist: 0
       width: 128
+    - Class: rviz_2d_overlay_plugins/PieChartOverlay
+      Enabled: true
+      Name: Battery
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /overlay_pie_chart/battery_power
+      Value: true
+      auto color change: false
+      background color: 0; 0; 0
+      backround alpha: 0
+      clockwise rotate direction: false
+      foreground alpha: 0.699999988079071
+      foreground alpha 2: 0
+      foreground color: 179; 179; 179
+      left: 8
+      max color: 255; 0; 0
+      max color change threthold: 0
+      max value: 100
+      med color: 255; 0; 0
+      med color change threthold: 0
+      min value: 0
+      show caption: true
+      size: 100
+      text size: 12
+      top: 40
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -297,7 +326,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.990894079208374
+      Distance: 2.03821063041687
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
