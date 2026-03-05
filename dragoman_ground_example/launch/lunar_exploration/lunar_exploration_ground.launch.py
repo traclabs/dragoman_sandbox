@@ -9,7 +9,7 @@ No simulation - only visualization of telemetry from YAMCS.
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, GroupAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, GroupAction, ExecuteProcess, LogInfo
 from launch.substitutions import (
     Command,
     FindExecutable,
@@ -17,7 +17,7 @@ from launch.substitutions import (
     PathJoinSubstitution,
 )
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
+from launch_ros.substitutions import FindPackageShare, FindPackagePrefix
 
 
 def generate_launch_description():
@@ -117,6 +117,22 @@ def generate_launch_description():
         ],
     )
 
+    # DSN Simulator - generates mock DSN telemetry (standalone Python script, not a ROS node)
+    dsn_simulator = ExecuteProcess(
+        cmd=[
+            PathJoinSubstitution([
+                FindPackagePrefix("dragoman_ground_example"),
+                "lib", "dragoman_ground_example",
+                "lunar_exploration_demo_dsn_simulator.py"
+            ]),
+            "--tm-host", "localhost",
+            "--tm-port", "2238",
+            "--rate", "1.0"
+        ],
+        output="screen",
+        shell=False
+    )
+
     # RViz2 - visualization
     rviz_node = Node(
         package="rviz2",
@@ -131,10 +147,11 @@ def generate_launch_description():
         launch_args
         + [
             robot,
-            yamcs_ros_bridge,
+            # yamcs_ros_bridge,
             joint_state_publisher,
             overlay_text_publisher,
             overlay_pie_chart_publisher,
+            dsn_simulator,
             rviz_node,
         ]
     )

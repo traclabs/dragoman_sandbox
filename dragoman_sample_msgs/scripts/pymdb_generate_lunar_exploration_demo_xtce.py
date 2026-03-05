@@ -31,6 +31,7 @@ def generate_xtce_lunar_exploration_demo(filename):
   #define EDORAS_APP_TLM_MID   (CFE_PLATFORM_TLM_MID_BASE + 0x27)
   CMD_MID=(0x1827 - 0x1800)
   TLM_MID= (0x0827 - 0x0800)
+  GROUND_TLM_MID = (0x0828 - 0x0800)
 
   cFS_command = add_cfs_command_header(spacecraft, ccsds_header, name="CfsPacket")
 
@@ -259,6 +260,66 @@ def generate_xtce_lunar_exploration_demo(filename):
       yp.ParameterEntry(parameter=battery_parameter)
     ],
     condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
+  )
+
+  # ***********************************************
+  # Ground Telemetry Packet (DSN - Deep Space Network)
+  # ***********************************************
+
+  # DSN Location enumeration parameter
+  dsn_location_parameter = yp.EnumeratedParameter(
+    system=spacecraft,
+    name="dsn_location",
+    choices=[
+      (0, "Canberra"),
+      (1, "Madrid"),
+      (2, "Goldstone")
+    ],
+    encoding=yp.uint8_t,
+    short_description="DSN Location - which 'gate' the data is coming through"
+  )
+
+  # Uplink power parameter (dBW - decibels relative to 1 Watt)
+  uplink_dbw_parameter = yp.FloatParameter(
+    system=spacecraft,
+    name="uplink_power",
+    bits=32,
+    encoding=yp.float32le_t,
+    units="dBW",
+    short_description="Uplink power from ground station (High Power: +40 to +53 dBW)"
+  )
+
+  # Downlink signal strength parameter (dBm)
+  downlink_dbm_parameter = yp.FloatParameter(
+    system=spacecraft,
+    name="downlink_signal",
+    bits=32,
+    encoding=yp.float32le_t,
+    units="dBm",
+    short_description="Downlink signal strength from space (Very Weak: -120 to -160 dBm)"
+  )
+
+  # Downlink SNR parameter (Signal-to-Noise Ratio)
+  downlink_snr_parameter = yp.FloatParameter(
+    system=spacecraft,
+    name="downlink_snr",
+    bits=32,
+    encoding=yp.float32le_t,
+    units="dB",
+    short_description="Downlink SNR - signal quality score (2 to 20+ dB)"
+  )
+
+  ground_telemetry_container = yp.Container(
+    system=spacecraft,
+    name="GroundTelemetryPacket",
+    base=ccsds_header.tm_container,
+    entries=[
+      yp.ParameterEntry(parameter=dsn_location_parameter),
+      yp.ParameterEntry(parameter=uplink_dbw_parameter),
+      yp.ParameterEntry(parameter=downlink_dbm_parameter),
+      yp.ParameterEntry(parameter=downlink_snr_parameter)
+    ],
+    condition=yp.eq(ccsds_header.tm_apid, GROUND_TLM_MID)
   )
 
   # Create an XML that conforms to XTCE
