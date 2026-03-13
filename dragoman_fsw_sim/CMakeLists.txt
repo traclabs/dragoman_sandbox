@@ -79,7 +79,7 @@ install(PROGRAMS
 )
 
 install(
-  DIRECTORY launch config rviz urdf
+  DIRECTORY launch config rviz urdf worlds
   DESTINATION share/${PROJECT_NAME}
 )
 

@@ -53,6 +53,7 @@ def generate_launch_description():
             default_value=lunar_bridge_config,
             description="Path to YAMCS bridge configuration file"
         ),
+        DeclareLaunchArgument("yamcs_ip", default_value="127.0.0.1"),
     ]
 
     # Robot visualization
@@ -86,7 +87,6 @@ def generate_launch_description():
         parameters=[
             {
                 "use_sim_time": LaunchConfiguration("use_sim_time"),
-                "input_topic": "/yamcs/lunar_exploration",
             }
         ],
     )
@@ -125,7 +125,7 @@ def generate_launch_description():
                 "lib", "dragoman_ground_example",
                 "lunar_exploration_demo_dsn_simulator.py"
             ]),
-            "--tm-host", "localhost",
+            "--tm-host", LaunchConfiguration("yamcs_ip"),
             "--tm-port", "2238",
             "--rate", "1.0"
         ],
@@ -147,7 +147,7 @@ def generate_launch_description():
         launch_args
         + [
             robot,
-            # yamcs_ros_bridge,
+            yamcs_ros_bridge,
             joint_state_publisher,
             overlay_text_publisher,
             overlay_pie_chart_publisher,

@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, TimerAction, IncludeLaunchDescription, GroupAction
+from launch.actions import DeclareLaunchArgument, TimerAction, IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -17,20 +17,22 @@ def generate_launch_description():
     #world_terrain = os.path.join(world_models_path, "worlds/dem_moon.sdf")
 
     # Regular Lunar Pole Exploration rover world (flatter)
-    world_models_path = get_package_share_directory("lunar_pole_exploration_rover_gazebo")
-    world_terrain = os.path.join(world_models_path, 'worlds/lunar_pole.world')
+    # world_models_path = get_package_share_directory("lunar_pole_exploration_rover_gazebo")
+    # world_terrain = os.path.join(world_models_path, 'worlds/lunar_pole.world')
 
+    # Dragoman specific Lunar Pole Exploration rover world
+    world_terrain = os.path.join(dragoman_fsw_sim_dir, 'worlds/lunar_gz.sdf')
 
     launch_args = [
         DeclareLaunchArgument("rviz", default_value="False"),
         DeclareLaunchArgument("cfs_ip", default_value="127.0.0.1"),
         DeclareLaunchArgument("robot_ip", default_value="127.0.0.1"),
         DeclareLaunchArgument("world", default_value=world_terrain),
-        # xyz: 0 0 0 for flatter world, 0.0, 0.0, 550.5 for Lunar Terrain world
-        DeclareLaunchArgument("x", default_value="0.0"),
-        DeclareLaunchArgument("y", default_value="0.0"),
-        DeclareLaunchArgument("z", default_value="0.0"), #550.5 0.0
-        DeclareLaunchArgument("yaw", default_value="3.1416")
+        # xyz: 0 0 0 for flatter world, 0.0, 0.0, 550.5 for Lunar Terrain world, 35.2, 338.64, -11.50 for Dragoman Lunar Terrain
+        DeclareLaunchArgument("x", default_value="53.2"),
+        DeclareLaunchArgument("y", default_value="338.64"),
+        DeclareLaunchArgument("z", default_value="-11.50"), #550.5 0.0
+        DeclareLaunchArgument("yaw", default_value="0.0")
     ]
 
     robot = GroupAction([
@@ -95,6 +97,27 @@ def generate_launch_description():
         output="screen",
     )
 
+    # ***********************************************
+    # Move Gazebo camera to desired pose (can't be done in .world file)
+    # https://robotics.stackexchange.com/questions/115454/how-to-set-a-default-camera-pose-in-gazebo-harmonic-ubuntu-24-04
+    # ***********************************************
+    move_camera_action = TimerAction(
+        period=5.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    'gz', 'service',
+                    '-s', '/gui/move_to/pose',
+                    '--reqtype', 'gz.msgs.GUICamera',
+                    '--reptype', 'gz.msgs.Boolean',
+                    '--timeout', '2000',
+                    '--req', 'pose: {position: {x: 79.034355163574219, y: 338.47543334960938, z: -2.2349140644073486}, orientation: {x: 0.25594308972358704, y: 0.085092991590499878, z: -0.9137614369392395, w: 0.30379649996757507}}'
+                ],
+                output='screen'
+            )
+        ]
+    )
+
     return LaunchDescription(
       launch_args +
       [robot,
@@ -102,7 +125,8 @@ def generate_launch_description():
        odom_node,
        robot_comm_node,
        navigation_controller_node,
-       rviz_node]
+       rviz_node,
+       move_camera_action]
     )
 
 

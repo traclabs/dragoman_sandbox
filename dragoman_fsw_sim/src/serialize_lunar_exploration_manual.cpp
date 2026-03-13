@@ -49,10 +49,10 @@ bool SerializeLunarExplorationManual::initializeComm( const int &_own_port,
 /**
  * @brief Serialize joint state from robot and send back to cFS
  */
-bool SerializeLunarExplorationManual::sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status )
+bool SerializeLunarExplorationManual::sendMessage( sensor_msgs::msg::JointState* _js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status, float _solar_left, float _solar_right, float _solar_rear )
 {
   unsigned char* buf     = 0;
-  size_t         bufSize = serialize(_js, _pose, _nav_status, &buf);
+  size_t         bufSize = serialize(_js, _pose, _nav_status, _solar_left, _solar_right, _solar_rear, &buf);
 
   int res = sendto(sockfd_, buf, bufSize, 0, (const struct sockaddr *)&other_address_, sizeof(other_address_));
 
@@ -173,7 +173,7 @@ bool SerializeLunarExplorationManual::receiveNavigationPoseCommand(float &_x, fl
  * @function serialize
  * @brief Send data back
  */
-size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *_js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status, uint8_t** _buf)
+size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *_js, geometry_msgs::msg::Pose _pose, uint8_t _nav_status, float _solar_left, float _solar_right, float _solar_rear, uint8_t** _buf)
 {
   if (_js->name.size() == 0 || _js->position.size() == 0)
     return 0;
@@ -214,7 +214,7 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
     return 0;
   }
 
-  size_t data_size = num_joints * sizeof(float) + 7*sizeof(float) + sizeof(uint8_t) + sizeof(int32_t) + sizeof(uint32_t); // joints + pose + nav_status + sec + nanosec
+  size_t data_size = num_joints * sizeof(float) + 7*sizeof(float) + sizeof(uint8_t) + 3*sizeof(float) + sizeof(int32_t) + sizeof(uint32_t); // joints + pose + nav_status + solar_panels + sec + nanosec
 
   *_buf = static_cast<uint8_t *> (malloc(data_size));
   if (*_buf)
@@ -254,6 +254,16 @@ size_t SerializeLunarExplorationManual::serialize(sensor_msgs::msg::JointState *
     // Navigation status
     memcpy(*_buf + offset, &_nav_status, sizeof(uint8_t));
     offset += sizeof(uint8_t);
+
+    // Solar panel data (left, right, rear)
+    memcpy(*_buf + offset, &_solar_left, sizeof(float));
+    offset += sizeof(float);
+
+    memcpy(*_buf + offset, &_solar_right, sizeof(float));
+    offset += sizeof(float);
+
+    memcpy(*_buf + offset, &_solar_rear, sizeof(float));
+    offset += sizeof(float);
 
     int32_t sec = _js->header.stamp.sec;
     uint32_t nanosec = _js->header.stamp.nanosec;

@@ -249,6 +249,18 @@ def generate_xtce_lunar_exploration_demo(filename):
     short_description="Battery status"
   )
 
+  # Solar panels aggregate parameter
+  solar_panels_parameter = yp.AggregateParameter(
+    system=spacecraft,
+    name="solar_panels",
+    members=[
+      yp.FloatMember(name="left", bits=32, encoding=yp.float32le_t, units="W", short_description="Left solar panel power generation (max 150.0W)"),
+      yp.FloatMember(name="right", bits=32, encoding=yp.float32le_t, units="W", short_description="Right solar panel power generation (max 150.0W)"),
+      yp.FloatMember(name="rear", bits=32, encoding=yp.float32le_t, units="W", short_description="Rear solar panel power generation (max 150.0W)"),
+    ],
+    short_description="Solar panel power generation"
+  )
+
   telemetry_container = yp.Container(
     system=spacecraft,
     name="LunarExplorationTelemetryPacket",
@@ -257,7 +269,8 @@ def generate_xtce_lunar_exploration_demo(filename):
       yp.ParameterEntry(parameter=joint_state_parameter),
       yp.ParameterEntry(parameter=pose_parameter),
       yp.ParameterEntry(parameter=navigation_status_parameter),
-      yp.ParameterEntry(parameter=battery_parameter)
+      yp.ParameterEntry(parameter=battery_parameter),
+      yp.ParameterEntry(parameter=solar_panels_parameter)
     ],
     condition=yp.eq(ccsds_header.tm_apid, TLM_MID)
   )

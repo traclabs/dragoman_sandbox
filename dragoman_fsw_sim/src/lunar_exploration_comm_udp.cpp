@@ -20,6 +20,11 @@ Node("lunar_exploration_comm_udp")
   continuous_twist_mode_ = false;
   nav_status_ = NAV_STATUS_IDLE;  // Initialize to IDLE
 
+  // Initialize solar panel data
+  solar_left_ = 0.0f;
+  solar_right_ = 0.0f;
+  solar_rear_ = 0.0f;
+
 }
 
 /**
@@ -44,6 +49,11 @@ bool LunarExplorationCommUdp::initRobotComm()
   sub_js_ = this->create_subscription<sensor_msgs::msg::JointState>(js_topic, 10, std::bind(&LunarExplorationCommUdp::js_cb, this, _1));
 
   sub_nav_status_ = this->create_subscription<std_msgs::msg::UInt8>("/nav_status", 10, std::bind(&LunarExplorationCommUdp::nav_status_cb, this, _1));
+
+  // Subscribe to solar panel topics
+  sub_solar_left_ = this->create_subscription<std_msgs::msg::Float32>("/model/lunar_pole_exploration_rover/left_solar_panel/solar_panel_output", 10, std::bind(&LunarExplorationCommUdp::solar_left_cb, this, _1));
+  sub_solar_right_ = this->create_subscription<std_msgs::msg::Float32>("/model/lunar_pole_exploration_rover/right_solar_panel/solar_panel_output", 10, std::bind(&LunarExplorationCommUdp::solar_right_cb, this, _1));
+  sub_solar_rear_ = this->create_subscription<std_msgs::msg::Float32>("/model/lunar_pole_exploration_rover/rear_solar_panel/solar_panel_output", 10, std::bind(&LunarExplorationCommUdp::solar_rear_cb, this, _1));
 
   pub_cmd_vel_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
   pub_camera_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/mast_camera_joint_trajectory_controller/joint_trajectory", 10);
@@ -114,7 +124,7 @@ void LunarExplorationCommUdp::send_telemetry()
    if(js.name.size() == 0)
      return;
 
-   if(!sm_.sendMessage(&js, pose, nav_status_))
+   if(!sm_.sendMessage(&js, pose, nav_status_, solar_left_, solar_right_, solar_rear_))
      RCLCPP_ERROR(this->get_logger(), "Error sending message");
 }
 
@@ -238,6 +248,33 @@ void LunarExplorationCommUdp::nav_status_cb(const std_msgs::msg::UInt8::SharedPt
 {
   nav_status_ = _msg->data;
   RCLCPP_DEBUG(this->get_logger(), "Nav status updated to: %d", nav_status_);
+}
+
+/**
+ * @function solar_left_cb
+ */
+void LunarExplorationCommUdp::solar_left_cb(const std_msgs::msg::Float32::SharedPtr _msg)
+{
+  solar_left_ = _msg->data;
+  RCLCPP_DEBUG(this->get_logger(), "Left solar panel: %.2f W", solar_left_);
+}
+
+/**
+ * @function solar_right_cb
+ */
+void LunarExplorationCommUdp::solar_right_cb(const std_msgs::msg::Float32::SharedPtr _msg)
+{
+  solar_right_ = _msg->data;
+  RCLCPP_DEBUG(this->get_logger(), "Right solar panel: %.2f W", solar_right_);
+}
+
+/**
+ * @function solar_rear_cb
+ */
+void LunarExplorationCommUdp::solar_rear_cb(const std_msgs::msg::Float32::SharedPtr _msg)
+{
+  solar_rear_ = _msg->data;
+  RCLCPP_DEBUG(this->get_logger(), "Rear solar panel: %.2f W", solar_rear_);
 }
 
 /**

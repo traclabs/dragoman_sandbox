@@ -219,6 +219,31 @@ use a different convention where 0=core and 1=payload.
       <IntegerParameterType name="scr_header__Spare__el" signed="true" sizeInBits="8">
         <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
       </IntegerParameterType>
+      <AggregateParameterType name="solar_panels">
+        <MemberList>
+          <Member name="left" typeRef="solar_panels__left" shortDescription="Left solar panel power generation (max 150.0W)"/>
+          <Member name="right" typeRef="solar_panels__right" shortDescription="Right solar panel power generation (max 150.0W)"/>
+          <Member name="rear" typeRef="solar_panels__rear" shortDescription="Rear solar panel power generation (max 150.0W)"/>
+        </MemberList>
+      </AggregateParameterType>
+      <FloatParameterType name="solar_panels__left" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">W</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="solar_panels__right" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">W</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="solar_panels__rear" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">W</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
       <FloatParameterType name="uplink_power" sizeInBits="32">
         <UnitSet>
           <Unit form="calibrated">dBW</Unit>
@@ -258,6 +283,9 @@ use a different convention where 0=core and 1=payload.
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
       <Parameter name="scr_header" parameterTypeRef="scr_header">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="solar_panels" parameterTypeRef="solar_panels" shortDescription="Solar panel power generation">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
       <Parameter name="uplink_power" parameterTypeRef="uplink_power" shortDescription="Uplink power from ground station (High Power: +40 to +53 dBW)">
@@ -328,6 +356,11 @@ use a different convention where 0=core and 1=payload.
             </LocationInContainerInBits>
           </ParameterRefEntry>
           <ParameterRefEntry parameterRef="battery">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="solar_panels">
             <LocationInContainerInBits referenceLocation="previousEntry">
               <FixedValue>0</FixedValue>
             </LocationInContainerInBits>
