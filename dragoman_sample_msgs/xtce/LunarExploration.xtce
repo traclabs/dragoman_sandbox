@@ -98,6 +98,26 @@ use a different convention where 0=core and 1=payload.
       <IntegerParameterType name="ccsds_packet_sequence__source_sequence_count" signed="false" sizeInBits="32">
         <IntegerDataEncoding sizeInBits="14" encoding="unsigned" byteOrder="mostSignificantByteFirst"/>
       </IntegerParameterType>
+      <FloatParameterType name="downlink_signal" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">dBm</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="downlink_snr" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">dB</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <EnumeratedParameterType name="dsn_location">
+        <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
+        <EnumerationList>
+          <Enumeration value="0" label="Canberra"/>
+          <Enumeration value="1" label="Madrid"/>
+          <Enumeration value="2" label="Goldstone"/>
+        </EnumerationList>
+      </EnumeratedParameterType>
       <ArrayParameterType name="joint_state" arrayTypeRef="joint_state__el">
         <DimensionList>
           <Dimension>
@@ -199,6 +219,37 @@ use a different convention where 0=core and 1=payload.
       <IntegerParameterType name="scr_header__Spare__el" signed="true" sizeInBits="8">
         <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
       </IntegerParameterType>
+      <AggregateParameterType name="solar_panels">
+        <MemberList>
+          <Member name="left" typeRef="solar_panels__left" shortDescription="Left solar panel power generation (max 150.0W)"/>
+          <Member name="right" typeRef="solar_panels__right" shortDescription="Right solar panel power generation (max 150.0W)"/>
+          <Member name="rear" typeRef="solar_panels__rear" shortDescription="Rear solar panel power generation (max 150.0W)"/>
+        </MemberList>
+      </AggregateParameterType>
+      <FloatParameterType name="solar_panels__left" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">W</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="solar_panels__right" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">W</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="solar_panels__rear" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">W</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
+      <FloatParameterType name="uplink_power" sizeInBits="32">
+        <UnitSet>
+          <Unit form="calibrated">dBW</Unit>
+        </UnitSet>
+        <FloatDataEncoding sizeInBits="32" encoding="IEEE754_1985" byteOrder="leastSignificantByteFirst"/>
+      </FloatParameterType>
     </ParameterTypeSet>
     <ParameterSet>
       <Parameter name="battery" parameterTypeRef="battery" shortDescription="Battery status">
@@ -213,6 +264,15 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="ccsds_packet_sequence" parameterTypeRef="ccsds_packet_sequence" shortDescription="Second word of the primary CCSDS header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
+      <Parameter name="downlink_signal" parameterTypeRef="downlink_signal" shortDescription="Downlink signal strength from space (Very Weak: -120 to -160 dBm)">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="downlink_snr" parameterTypeRef="downlink_snr" shortDescription="Downlink SNR - signal quality score (2 to 20+ dB)">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="dsn_location" parameterTypeRef="dsn_location" shortDescription="DSN Location - which 'gate' the data is coming through">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
       <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="Joint state (17 floats)">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
@@ -223,6 +283,12 @@ use a different convention where 0=core and 1=payload.
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
       <Parameter name="scr_header" parameterTypeRef="scr_header">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="solar_panels" parameterTypeRef="solar_panels" shortDescription="Solar panel power generation">
+        <ParameterProperties dataSource="telemetered" persistence="true"/>
+      </Parameter>
+      <Parameter name="uplink_power" parameterTypeRef="uplink_power" shortDescription="Uplink power from ground station (High Power: +40 to +53 dBW)">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
     </ParameterSet>
@@ -236,6 +302,41 @@ use a different convention where 0=core and 1=payload.
           </ParameterRefEntry>
         </EntryList>
         <BaseContainer containerRef="ccsds_space_packet"/>
+      </SequenceContainer>
+      <SequenceContainer name="GroundTelemetryPacket" abstract="false">
+        <EntryList>
+          <ParameterRefEntry parameterRef="dsn_location">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="uplink_power">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="downlink_signal">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="downlink_snr">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+        </EntryList>
+        <BaseContainer containerRef="ccsds_space_packet">
+          <RestrictionCriteria>
+            <BooleanExpression>
+              <Condition>
+                <ParameterInstanceRef parameterRef="ccsds_packet_id/apid" useCalibratedValue="true"/>
+                <ComparisonOperator>==</ComparisonOperator>
+                <Value>40</Value>
+              </Condition>
+            </BooleanExpression>
+          </RestrictionCriteria>
+        </BaseContainer>
       </SequenceContainer>
       <SequenceContainer name="LunarExplorationTelemetryPacket" abstract="false">
         <EntryList>
@@ -255,6 +356,11 @@ use a different convention where 0=core and 1=payload.
             </LocationInContainerInBits>
           </ParameterRefEntry>
           <ParameterRefEntry parameterRef="battery">
+            <LocationInContainerInBits referenceLocation="previousEntry">
+              <FixedValue>0</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="solar_panels">
             <LocationInContainerInBits referenceLocation="previousEntry">
               <FixedValue>0</FixedValue>
             </LocationInContainerInBits>

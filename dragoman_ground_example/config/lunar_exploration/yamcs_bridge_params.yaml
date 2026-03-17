@@ -7,7 +7,12 @@ yamcs:
 
 bridges:
 
-  # Lunar Exploration telemetry packet
+  # Lunar Exploration space telemetry packet
   - ros_message_type: "dragoman_sample_msgs/msg/LunarExplorationTelemetryPacket"
-    ros_topic: "/yamcs/lunar_exploration"
+    ros_topic: "/yamcs/lunar_exploration_space"
     yamcs_packet_name: "/LunarExploration/LunarExplorationTelemetryPacket"
+
+  # Lunar Exploration ground telemetry packet
+  - ros_message_type: "dragoman_sample_msgs/msg/GroundTelemetryPacket"
+    ros_topic: "/yamcs/lunar_exploration_ground"
+    yamcs_packet_name: "/LunarExploration/GroundTelemetryPacket"

@@ -16,6 +16,7 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_msgs/msg/u_int8.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 #include <dragoman_fsw_sim/serialize_lunar_exploration_manual.h>
 
@@ -35,12 +36,18 @@ protected:
 
   void js_cb(const sensor_msgs::msg::JointState::SharedPtr _msg);
   void nav_status_cb(const std_msgs::msg::UInt8::SharedPtr _msg);
+  void solar_left_cb(const std_msgs::msg::Float32::SharedPtr _msg);
+  void solar_right_cb(const std_msgs::msg::Float32::SharedPtr _msg);
+  void solar_rear_cb(const std_msgs::msg::Float32::SharedPtr _msg);
   bool initDefaults();
   bool getTransform(const std::string &_source,
                     const std::string &_target,
                     geometry_msgs::msg::Pose &_pose);
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_js_;
   rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr sub_nav_status_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_solar_left_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_solar_right_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_solar_rear_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_camera_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_goal_pose_;
@@ -72,5 +79,10 @@ protected:
 
   // Navigation status tracking
   uint8_t nav_status_;
+
+  // Solar panel data
+  float solar_left_;
+  float solar_right_;
+  float solar_rear_;
 
 };

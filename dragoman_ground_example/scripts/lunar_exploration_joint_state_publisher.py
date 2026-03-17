@@ -48,7 +48,7 @@ class LunarExplorationJointStatePublisher(Node):
         super().__init__('lunar_exploration_joint_state_publisher')
 
         # Declare parameters
-        self.declare_parameter('input_topic', '/yamcs/lunar_exploration')
+        self.declare_parameter('input_topic', '/yamcs/lunar_exploration_space')
 
         # Get parameters
         input_topic = self.get_parameter('input_topic').value

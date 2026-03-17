@@ -23,7 +23,7 @@ class LunarExplorationOverlayTextPublisher(Node):
         super().__init__('lunar_exploration_overlay_text_publisher')
 
         # Declare parameters
-        self.declare_parameter('input_topic', '/yamcs/lunar_exploration')
+        self.declare_parameter('input_topic', '/yamcs/lunar_exploration_space')
         self.declare_parameter('output_topic', '/overlay_text/navigation_status')
         self.declare_parameter('width', 400)
         self.declare_parameter('height', 60)
