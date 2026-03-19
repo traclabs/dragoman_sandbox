@@ -69,7 +69,7 @@ use a different convention where 0=core and 1=payload.
               <FixedValue>0</FixedValue>
             </StartingIndex>
             <EndingIndex>
-              <FixedValue>46</FixedValue>
+              <FixedValue>48</FixedValue>
             </EndingIndex>
           </Dimension>
         </DimensionList>
@@ -200,7 +200,7 @@ use a different convention where 0=core and 1=payload.
       <Parameter name="ccsds_packet_sequence" parameterTypeRef="ccsds_packet_sequence" shortDescription="Second word of the primary CCSDS header">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
-      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="full_joint [47]">
+      <Parameter name="joint_state" parameterTypeRef="joint_state" shortDescription="full_joint [49]">
         <ParameterProperties dataSource="telemetered" persistence="true"/>
       </Parameter>
       <Parameter name="motion_command_status" parameterTypeRef="motion_command_status" shortDescription="Motion command status">
@@ -292,6 +292,28 @@ The first 6 bytes of a Space Packet are known as the
       <IntegerArgumentType name="CfsPacket__scr_header__checksum" signed="false" sizeInBits="8">
         <IntegerDataEncoding sizeInBits="8" encoding="unsigned"/>
       </IntegerArgumentType>
+      <StringArgumentType name="GraspBattery__battery_name">
+        <StringDataEncoding encoding="US-ASCII">
+          <Variable maxSizeInBits="8388608">
+            <DynamicValue>
+              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
+            </DynamicValue>
+            <TerminationChar>00</TerminationChar>
+          </Variable>
+        </StringDataEncoding>
+        <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
+      </StringArgumentType>
+      <StringArgumentType name="ReleaseBattery__battery_name">
+        <StringDataEncoding encoding="US-ASCII">
+          <Variable maxSizeInBits="8388608">
+            <DynamicValue>
+              <ParameterInstanceRef parameterRef="_yamcs_ignore"/>
+            </DynamicValue>
+            <TerminationChar>00</TerminationChar>
+          </Variable>
+        </StringDataEncoding>
+        <SizeRangeInCharacters minInclusive="0" maxInclusive="30"/>
+      </StringArgumentType>
       <StringArgumentType name="TOLabEnablePacket__dest_ip">
         <StringDataEncoding encoding="US-ASCII">
           <Variable maxSizeInBits="8388608">
@@ -355,15 +377,47 @@ The first 6 bytes of a Space Packet are known as the
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>
       </MetaCommand>
-      <MetaCommand name="MobileServicingSystemPacket" abstract="true">
+      <MetaCommand name="GraspBattery" abstract="false" shortDescription="Grasp a battery">
         <BaseMetaCommand metaCommandRef="CfsPacket">
           <ArgumentAssignmentList>
             <ArgumentAssignment argumentName="ccsds_apid" argumentValue="39"/>
-            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 1, 'checksum': 0}"/>
+            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 2, 'checksum': 0}"/>
           </ArgumentAssignmentList>
         </BaseMetaCommand>
-        <CommandContainer name="MobileServicingSystemPacket">
-          <EntryList/>
+        <ArgumentList>
+          <Argument name="battery_name" argumentTypeRef="GraspBattery__battery_name"/>
+        </ArgumentList>
+        <CommandContainer name="GraspBattery">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="battery_name">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
+          <BaseContainer containerRef="CfsPacket"/>
+        </CommandContainer>
+        <DefaultSignificance consequenceLevel="normal"/>
+        <VerifierSet/>
+      </MetaCommand>
+      <MetaCommand name="ReleaseBattery" abstract="false" shortDescription="Release a battery">
+        <BaseMetaCommand metaCommandRef="CfsPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="39"/>
+            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 3, 'checksum': 0}"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
+        <ArgumentList>
+          <Argument name="battery_name" argumentTypeRef="ReleaseBattery__battery_name"/>
+        </ArgumentList>
+        <CommandContainer name="ReleaseBattery">
+          <EntryList>
+            <ArgumentRefEntry argumentRef="battery_name">
+              <LocationInContainerInBits referenceLocation="previousEntry">
+                <FixedValue>0</FixedValue>
+              </LocationInContainerInBits>
+            </ArgumentRefEntry>
+          </EntryList>
           <BaseContainer containerRef="CfsPacket"/>
         </CommandContainer>
         <DefaultSignificance consequenceLevel="normal"/>
@@ -446,7 +500,12 @@ The first 6 bytes of a Space Packet are known as the
         <VerifierSet/>
       </MetaCommand>
       <MetaCommand name="send_canned_pose" abstract="false" shortDescription="Send a canned pose">
-        <BaseMetaCommand metaCommandRef="MobileServicingSystemPacket"/>
+        <BaseMetaCommand metaCommandRef="CfsPacket">
+          <ArgumentAssignmentList>
+            <ArgumentAssignment argumentName="ccsds_apid" argumentValue="39"/>
+            <ArgumentAssignment argumentName="scr_header" argumentValue="{'fcn_code': 1, 'checksum': 0}"/>
+          </ArgumentAssignmentList>
+        </BaseMetaCommand>
         <ArgumentList>
           <Argument name="group_name" argumentTypeRef="send_canned_pose__group_name"/>
           <Argument name="group_canned_pose" argumentTypeRef="send_canned_pose__group_canned_pose"/>
@@ -464,7 +523,7 @@ The first 6 bytes of a Space Packet are known as the
               </LocationInContainerInBits>
             </ArgumentRefEntry>
           </EntryList>
-          <BaseContainer containerRef="MobileServicingSystemPacket"/>
+          <BaseContainer containerRef="CfsPacket"/>
         </CommandContainer>
         <DefaultSignificance consequenceLevel="normal"/>
         <VerifierSet/>

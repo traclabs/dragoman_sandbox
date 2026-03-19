@@ -45,8 +45,8 @@ bool MobileServicingSystemCommUdp::initDefaults()
    canadarm_joints_ = {"joint_canadarm2_1", "joint_canadarm2_2", "joint_canadarm2_3", "joint_canadarm2_4", "joint_canadarm2_5", "joint_canadarm2_6", "joint_canadarm2_7"};
    mbs_joints_ = {"joint_mbs"};
    dextre_body_joints_ = {"joint_dextre_body"};
-   dextre_arm_1_joints_ = {"joint_dextre_arm_1_shoulder_roll", "joint_dextre_arm_1_shoulder_yaw", "joint_dextre_arm_1_shoulder_pitch", "joint_dextre_arm_1_elbow_pitch", "joint_dextre_arm_1_wrist_pitch_yaw", "joint_dextre_arm_1_wrist_roll"};
-   dextre_arm_2_joints_ = {"joint_dextre_arm_2_shoulder_roll", "joint_dextre_arm_2_shoulder_yaw", "joint_dextre_arm_2_shoulder_pitch", "joint_dextre_arm_2_elbow_pitch", "joint_dextre_arm_2_wrist_pitch_yaw", "joint_dextre_arm_2_wrist_roll"};
+   dextre_arm_1_joints_ = {"joint_dextre_arm_1_shoulder_roll", "joint_dextre_arm_1_shoulder_yaw", "joint_dextre_arm_1_shoulder_pitch", "joint_dextre_arm_1_elbow_pitch", "joint_dextre_arm_1_wrist_pitch", "joint_dextre_arm_1_wrist_yaw", "joint_dextre_arm_1_wrist_roll"};
+   dextre_arm_2_joints_ = {"joint_dextre_arm_2_shoulder_roll", "joint_dextre_arm_2_shoulder_yaw", "joint_dextre_arm_2_shoulder_pitch", "joint_dextre_arm_2_elbow_pitch", "joint_dextre_arm_2_wrist_pitch", "joint_dextre_arm_2_wrist_yaw", "joint_dextre_arm_2_wrist_roll"};
    sarj_joints_ = {"joint_starboard_sarj", "joint_port_sarj"};
    port_bga_joints_ = {"joint_port_bga_1", "joint_port_bga_2", "joint_port_bga_3", "joint_port_bga_4"};
    starboard_bga_joints_ = {"joint_starboard_bga_1", "joint_starboard_bga_2", "joint_starboard_bga_3", "joint_starboard_bga_4"};
@@ -63,10 +63,32 @@ bool MobileServicingSystemCommUdp::initDefaults()
    // Battery approach sequence
    group_states_["starboard_bga"]["battery_approach_1"] = {1.51, 0.0, 0.0, 0.0};
    group_states_["mbs"]["battery_approach_2"] = {-11.9};
-   group_states_["dextre_arm_2"]["battery_approach_3"] = {0.18523718752476404, -0.5241987958083291, -1.682263170735807, -1.9513613753267156, 1.0311423725630433, 2.3745585005169585};
+   group_states_["dextre_arm_2"]["battery_approach_3"] = {0.18523718752476404, -0.5241987958083291, -1.682263170735807, -1.9513613753267156, 1.0311423725630433, 0.0, 2.3745585005169585};
    group_states_["canadarm"]["battery_approach_4"] = {-0.7979664, 0.8997542399999996, -0.7465880981813328, -0.26361884120485235, 0.051124460930129345, -0.2960438164053687, 0.38809889416538945};
    group_states_["canadarm"]["battery_approach_5"] = {-0.605002074884394, 0.21107525936356275, -0.7465880981813328, -0.26361884120485235, 0.051124460930129345, -0.2960438164053687, 0.38809889416538945};
-   group_states_["dextre_arm_2"]["battery_approach_6"] = {0.1852359229366735, -0.5242074747970021, -1.1729191164615993, -1.6061683715275838, 0.17661993791396646, 2.3745498761609554};
+   group_states_["dextre_arm_2"]["battery_approach_6"] = {0.1852359229366735, -0.5242074747970021, -1.1729191164615993, -1.6061683715275838, 0.17661993791396646, 0.0, 2.3745498761609554};
+
+   // Canadarm2 poses used in bt.xml
+   group_states_["canadarm"]["go_to_rack_1"] = {-0.28, 1.0, -1.36, -0.214, 1.551, 0.168, -0.3924};
+   group_states_["canadarm"]["go_to_rack_2"] = {-0.57, 0.86, -1.18, -0.28, 1.66, 0.38, -1.52};
+   group_states_["canadarm"]["go_to_rack_3"] = {-0.22, 0.24, -1.22, -0.30, 1.56, 0.12, -0.91};
+   group_states_["canadarm"]["go_to_pallet_1"] = {-0.197, 0.213, -1.177, -0.724, 1.922, 0.117, -0.886};
+   group_states_["canadarm"]["go_to_pallet_2"] = {-0.692, -0.024, -1.883, 0.202, 2.223, 0.098, -0.651};
+   group_states_["canadarm"]["go_to_pallet_3"] = {-0.121, -0.807, -2.555, 0.174, 2.439, 0.099, -1.552};
+   group_states_["canadarm"]["go_to_pallet_4"] = {-0.836, -0.977, -2.304, 0.162, 2.665, -0.478, -1.813};
+   group_states_["canadarm"]["go_to_pallet_5"] = {-1.137, -1.064, -2.306, 0.436, 2.608, -0.736, -1.911};
+
+   // Dextre Arm 1 poses used in bt.xml (7 joints: shoulder_roll, shoulder_yaw, shoulder_pitch, elbow_pitch, wrist_pitch, wrist_yaw, wrist_roll)
+   group_states_["dextre_arm_1"]["zero"] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+   group_states_["dextre_arm_1"]["go_to_rack_1"] = {-0.675, -0.092, -0.589, 1.656, 2.752, -0.420, -0.109};
+   group_states_["dextre_arm_1"]["go_to_rack_2"] = {-0.317, 0.001, 0.578, 1.363, 1.771, -0.182, 0.187};
+   group_states_["dextre_arm_1"]["place_on_pallet_1"] = {-0.456, -0.0187, 1.150, 0.551, 1.151, -1.798, -0.715};
+   group_states_["dextre_arm_1"]["place_on_pallet_2"] = {0.0696, 0.103, 1.047, 0.711, 1.213, -1.260, -0.806};
+   group_states_["dextre_arm_1"]["leave_on_pallet_1"] = {-0.309, 0.042, 0.898, 0.918, 1.261, -1.644, -0.938};
+   group_states_["dextre_arm_1"]["go_to_spare_1"] = {-0.321, 0.101, 1.197, 1.541, 0.977, -1.671, -1.579};
+   group_states_["dextre_arm_1"]["go_to_spare_2"] = {0.1103, -0.141, 1.227, 1.409, 0.988, -1.177, -1.499};
+   group_states_["dextre_arm_1"]["carry_spare_1"] = {-0.321, 0.101, 1.197, 1.541, 0.977, -1.671, -1.579};
+   group_states_["dextre_arm_1"]["carry_spare_2"] = {-0.036, 0.171, 1.154, 1.670, 0.904, -0.0215, -1.357};
 
    // Initialize done timestamps to zero
    done_timestamps_.mbs = rclcpp::Time(0);
@@ -217,6 +239,13 @@ void MobileServicingSystemCommUdp::rcv_command()
   if(sm_.receiveMessage(group, state))
   {
     RCLCPP_INFO(this->get_logger(), "Received command group: %s and state: %s", group.c_str(), state.c_str());
+
+    // Check if this is a battery command
+    if(state == "grasp" || state == "release")
+    {
+      handle_battery_command(group, state);
+      return;
+    }
 
     // Map group name to action client and motion status pointer
     rclcpp_action::Client<FollowJointTrajectory>::SharedPtr action_client;
@@ -391,4 +420,53 @@ void MobileServicingSystemCommUdp::js_cb(const sensor_msgs::msg::JointState::Sha
   mux_.lock();
  joint_state_ = *_msg;
  mux_.unlock();
+}
+
+/**
+ * @function handle_battery_command
+ * @brief Handle battery grasp/release commands by calling gz service
+ */
+void MobileServicingSystemCommUdp::handle_battery_command(const std::string& battery_name, const std::string& command)
+{
+  RCLCPP_INFO(this->get_logger(), "Handling battery command: %s for battery: %s", command.c_str(), battery_name.c_str());
+
+  // Determine the attach/detach command
+  std::string gz_command;
+  if(command == "grasp")
+  {
+    gz_command = "attach";
+  }
+  else if(command == "release")
+  {
+    gz_command = "detach";
+  }
+  else
+  {
+    RCLCPP_ERROR(this->get_logger(), "Unknown battery command: %s", command.c_str());
+    return;
+  }
+
+  // Build gz service command similar to the example provided
+  // Simplified version - you may need to adjust child_link_name based on your robot setup
+  std::string child_link = "base_link";  // Default link name, may need to be adjusted
+  std::string cmd_line = "gz service -s /payload/attach_detach"
+                        " --reqtype gz.custom_msgs.AttachDetachRequest"
+                        " --reptype gz.custom_msgs.AttachDetachResponse"
+                        " --timeout 3000"
+                        " --req 'child_model_name: \"" + battery_name + "\","
+                        " child_link_name: \"" + child_link + "\","
+                        " command: \"" + gz_command + "\"'";
+
+  RCLCPP_INFO(this->get_logger(), "Executing: %s", cmd_line.c_str());
+
+  int return_code = std::system(cmd_line.c_str());
+
+  if(return_code == 0)
+  {
+    RCLCPP_INFO(this->get_logger(), "Battery command executed successfully");
+  }
+  else
+  {
+    RCLCPP_ERROR(this->get_logger(), "Battery command failed with return code: %d", return_code);
+  }
 }

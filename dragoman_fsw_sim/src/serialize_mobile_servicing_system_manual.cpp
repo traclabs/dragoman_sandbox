@@ -97,13 +97,13 @@ size_t SerializeMobileServicingSystemManual::serialize(sensor_msgs::msg::JointSt
   // boom clpa: 4
   // etvcg: 8
   // canadarm: 7,
-  // dextre arm 1: 6, dextre arm 2: 6, dextre body: 1
+  // dextre arm 1: 7, dextre arm 2: 7, dextre body: 1
   // mbs: 1
   // port_bga: 4, port_sraj: 1
   // starboard_bga: 4, starboard_sarj: 1
   // outrigger clpa: 4
-  // total: 4 + 8 + 7 + 6 + 6 + 1 + 1 + 4 + 1 + 4 + 1 + 4 = 47
-  if(num_joints != 47)
+  // total: 4 + 8 + 7 + 7 + 7 + 1 + 1 + 4 + 1 + 4 + 1 + 4 = 49
+  if(num_joints != 49)
   {
     RCLCPP_ERROR(rclcpp::get_logger("debug_fsw_sim"), "Error in number of joints received. Expecting 47!");
     return 0;

@@ -20,7 +20,7 @@ def generate_launch_description():
 
     robot = GroupAction([
       IncludeLaunchDescription(
-        PathJoinSubstitution([FindPackageShare("iss_description"), "launch", "mobile_servicing_system_gz.launch.py"]),
+        PathJoinSubstitution([FindPackageShare("iss_description"), "launch", "setups", "mobile_servicing_system_with_pallet_gz.launch.py"]),
         launch_arguments={
           "rviz": "False",
         }.items(),
@@ -54,7 +54,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription(
-      launch_args + 
+      launch_args +
       [robot, robot_comm_node, rviz_node]
     )
 
