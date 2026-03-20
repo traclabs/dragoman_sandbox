@@ -73,28 +73,11 @@ def generate_xtce_mobile_servicing_system_demo(filename):
   # Generic MobileServicingSystem command
   # ***************************************
 
-  # Mobile Servicing System abstract Command
-  mss_command = yp.Command(
-     system=spacecraft,
-     name="MobileServicingSystemPacket",
-     abstract=True,
-     base=cFS_command,
-     assignments={
-       ccsds_header.tc_apid.name: CMD_MID,
-       "scr_header": {
-         "fcn_code": 0x01,
-         "checksum": 0
-        }
-     },
-  )
+  # ***************************************
+  # send_canned_pose Command
+  # ***************************************
 
-  #############################################
-  # COMMAND
-  #############################################
-
-  # ********************************
-  # Command to request IC poses
-  # ********************************
+  # Command arguments
   group_arg = yp.StringArgument(
     name="group_name",
     min_length=0,
@@ -111,10 +94,16 @@ def generate_xtce_mobile_servicing_system_demo(filename):
 
   command_set_pose = yp.Command(
     system=spacecraft,
-    base=mss_command,
+    base=cFS_command,
     name="send_canned_pose",
     short_description="Send a canned pose",
-    #assignments={command_id.name: 0},
+    assignments={
+      ccsds_header.tc_apid.name: CMD_MID,
+      "scr_header": {
+        "fcn_code": 0x01,
+        "checksum": 0
+      }
+    },
     arguments=[
        group_arg,
        group_state_arg
@@ -122,6 +111,59 @@ def generate_xtce_mobile_servicing_system_demo(filename):
      entries=[
        yp.ArgumentEntry(group_arg),
        yp.ArgumentEntry(group_state_arg)
+     ]
+  )
+
+  # ********************************
+  # Command to grasp battery
+  # ********************************
+  battery_name_arg = yp.StringArgument(
+    name="battery_name",
+    min_length=0,
+    max_length=30,
+    encoding=yp.StringEncoding()
+  )
+
+  command_grasp_battery = yp.Command(
+    system=spacecraft,
+    base=cFS_command,
+    name="GraspBattery",
+    short_description="Grasp a battery",
+    assignments={
+      ccsds_header.tc_apid.name: CMD_MID,
+      "scr_header": {
+        "fcn_code": 0x02,
+        "checksum": 0
+      }
+    },
+    arguments=[
+       battery_name_arg
+     ],
+     entries=[
+       yp.ArgumentEntry(battery_name_arg)
+     ]
+  )
+
+  # ********************************
+  # Command to release battery
+  # ********************************
+  command_release_battery = yp.Command(
+    system=spacecraft,
+    base=cFS_command,
+    name="ReleaseBattery",
+    short_description="Release a battery",
+    assignments={
+      ccsds_header.tc_apid.name: CMD_MID,
+      "scr_header": {
+        "fcn_code": 0x03,
+        "checksum": 0
+      }
+    },
+    arguments=[
+       battery_name_arg
+     ],
+     entries=[
+       yp.ArgumentEntry(battery_name_arg)
      ]
   )
 
@@ -138,8 +180,8 @@ def generate_xtce_mobile_servicing_system_demo(filename):
     system=spacecraft,
     name="joint_state",
     data_type=yp.datatypes.FloatDataType(encoding=yp.float32le_t),
-    length=47,
-    short_description="full_joint [47]"
+    length=49,
+    short_description="full_joint [49]"
   )
 
   # Define reusable motion status choices

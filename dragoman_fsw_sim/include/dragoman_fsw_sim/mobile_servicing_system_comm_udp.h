@@ -66,6 +66,7 @@ protected:
 
   void send_telemetry();
   void rcv_command();
+  void handle_battery_command(const std::string& battery_name, const std::string& command);
 
   void js_cb(const sensor_msgs::msg::JointState::SharedPtr _msg);
   bool initDefaults();
