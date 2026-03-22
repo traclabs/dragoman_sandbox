@@ -57,7 +57,7 @@ def generate_launch_description():
 
     # Robot visualization
     robot = IncludeLaunchDescription(
-      PathJoinSubstitution([FindPackageShare("iss_description"), "launch", "view_mobile_servicing_system.launch.py"]),
+      PathJoinSubstitution([FindPackageShare("iss_description"), "launch/setups/view_mobile_servicing_system_with_pallet.launch.py"]),
       launch_arguments={
         "rviz": "False",
         "robot_publisher": "True",
