@@ -237,7 +237,7 @@ def resolve_float_type(elem, type_definitions=None):
     return ROS_FLOAT_MAP.get(bit_size, 'float64'), False
 
 def resolve_string_type(elem, type_definitions=None):
-    """Resolves String ParameterTypes, handling fixed size."""
+    """Resolves String ParameterTypes, handling fixed and variable sizes."""
     size = None
     is_variable = False
     data_enc = elem.find(Q_STR_ENC)
@@ -253,21 +253,20 @@ def resolve_string_type(elem, type_definitions=None):
                     size_bits = int(fixed_val_elem.text)
                     size = size_bits // 8
 
-        # If variable is set, check max size hint
+        # Check if Variable element exists (indicates variable-length string)
         variable_elem = data_enc.find(Q_STRING_VARIABLE)
         if variable_elem is not None:
             is_variable = True
-            max_size_bits = variable_elem.get('maxSizeInBits')
-            if max_size_bits and max_size_bits.isdigit():
-                size = int(max_size_bits) // 8
 
-    # For variable-length strings with very large max sizes (>4KB), use unbounded string
-    # This is more practical for ROS messages than allocating huge fixed buffers
+    # Variable-length strings always map to unbounded 'string'
+    if is_variable:
+        return "string", False
+
+    # Fixed-length strings with known size map to 'string[N]'
     if size is not None and size > 0:
-        if is_variable and size > 4096:
-            return "string", False
         return f"string[{size}]", True
 
+    # Default to unbounded string if size cannot be determined
     return "string", False
 
 def resolve_binary_type(elem, type_definitions=None):
