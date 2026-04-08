@@ -81,12 +81,13 @@ bool MobileServicingSystemCommUdp::initDefaults()
    // Dextre Arm 1 poses used in bt.xml (7 joints: shoulder_roll, shoulder_yaw, shoulder_pitch, elbow_pitch, wrist_pitch, wrist_yaw, wrist_roll)
    group_states_["dextre_arm_1"]["zero"] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
    group_states_["dextre_arm_1"]["go_to_rack_1"] = {-0.675, -0.092, -0.589, 1.656, 2.752, -0.420, -0.109};
-   group_states_["dextre_arm_1"]["go_to_rack_2"] = {-0.317, 0.001, 0.578, 1.363, 1.771, -0.182, 0.187};
+   group_states_["dextre_arm_1"]["go_to_rack_2"] = {-0.603, -0.089, -0.165, 1.791, 2.167, -0.365, -0.059};
+   group_states_["dextre_arm_1"]["go_to_rack_3"] = {-0.428, -0.027, 0.621, 1.333, 1.78, -0.259, 0.101};
    group_states_["dextre_arm_1"]["place_on_pallet_1"] = {-0.456, -0.0187, 1.150, 0.551, 1.151, -1.798, -0.715};
    group_states_["dextre_arm_1"]["place_on_pallet_2"] = {0.0696, 0.103, 1.047, 0.711, 1.213, -1.260, -0.806};
    group_states_["dextre_arm_1"]["leave_on_pallet_1"] = {-0.309, 0.042, 0.898, 0.918, 1.261, -1.644, -0.938};
    group_states_["dextre_arm_1"]["go_to_spare_1"] = {-0.321, 0.101, 1.197, 1.541, 0.977, -1.671, -1.579};
-   group_states_["dextre_arm_1"]["go_to_spare_2"] = {0.1103, -0.141, 1.227, 1.409, 0.988, -1.177, -1.499};
+   group_states_["dextre_arm_1"]["go_to_spare_2"] = {0.121, -0.167, 1.183, 1.506, 0.975, -1.155, -1.544};
    group_states_["dextre_arm_1"]["carry_spare_1"] = {-0.321, 0.101, 1.197, 1.541, 0.977, -1.671, -1.579};
    group_states_["dextre_arm_1"]["carry_spare_2"] = {-0.036, 0.171, 1.154, 1.670, 0.904, -0.0215, -1.357};
 
