@@ -49,7 +49,7 @@ def generate_launch_description():
     dragoman_fsw_sim_dir = get_package_share_directory("dragoman_fsw_sim")
     rviz_config = os.path.join(dragoman_fsw_sim_dir, 'rviz/mujoco_test_robot.rviz')
 
-    robot_dir = get_package_share_directory("mujoco_ros2_simulation")
+    robot_dir = get_package_share_directory("mujoco_ros2_control")
     urdf_file = os.path.join(robot_dir, 'test_resources/test_robot.urdf')
 
 
@@ -62,13 +62,13 @@ def generate_launch_description():
     ]
 
     controller_parameters = ParameterFile(
-        PathJoinSubstitution([FindPackageShare("mujoco_ros2_simulation"), "config", "controllers.yaml"]),
+        PathJoinSubstitution([FindPackageShare("mujoco_ros2_control"), "config", "controllers.yaml"]),
     )
 
     nodes_eval = OpaqueFunction(function=evaluate_nodes)
 
     mujoco_control_node = Node(
-        package="mujoco_ros2_simulation",
+        package="mujoco_ros2_control",
         executable="ros2_control_node",
         output="both",
         parameters=[
